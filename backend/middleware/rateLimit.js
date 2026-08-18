@@ -1,4 +1,4 @@
-import { rateLimit } from 'express-rate-limit'
+import { rateLimit, ipKeyGenerator } from 'express-rate-limit'
 
 const rateLimitResponse = (req,res) => { 
     return res.status(429).json({
@@ -21,7 +21,7 @@ export const moderateLimiter = rateLimit({
   max: 10,                  
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   handler: rateLimitResponse,
 });
  
@@ -31,7 +31,7 @@ export const strictLimiter = rateLimit({
   max: 5,                  
   standardHeaders: true,
   legacyHeaders: false,
-  keyGenerator: (req) => req.user?.id || req.ip,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   handler: rateLimitResponse,
 });
 

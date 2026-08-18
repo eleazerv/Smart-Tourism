@@ -15,5 +15,6 @@ Thumbs.db
 .idea/
 *.swp
 .pem
+seed/
 .npm
 .eslintcache
