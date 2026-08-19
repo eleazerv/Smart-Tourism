@@ -47,7 +47,7 @@ export const updatePreferences = async (req, res) => {
       tag_id: tagId
     }));
 
-    const { data, error: insertError } = await supabase
+    const { data, error: insertError } = await req.db
       .from('user_preference_tags')
       .insert(rows)
       .select('tag_id, tags ( id, name, slug )');

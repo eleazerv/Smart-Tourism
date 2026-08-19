@@ -9,60 +9,50 @@ export const getDestinations = async (req,res) => {
         const to = currentPage * PAGE_SIZE - 1
 
         let DestinationIdsFromTags = null 
-        if(tags){
-            const tagSlugs = tags.split(',').map(t=>t.trim()).filter(Boolean) ; 
-            
-            const {data : tagRows ,error: tagError} =  await supabase
-                                                            .from("tags")
-                                                            .select("id")
-                                                            .in("slug",tagSlugs)
-            if (tagError) throw tagError;
-            const tagIds = tagRows.map(t => t.id)
+        const tagSlugs = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : null;
+        const { data, error } = await supabase.rpc('search_destinations', {
+            q: q || null,
+            tag_slugs: tagSlugs,
+            filter_province_id: province_id ? Number(province_id) : null,
+            filter_city_id: city_id ? Number(city_id) : null,
+            page_number: currentPage,
+            page_size: PAGE_SIZE,
+            });
 
-            if (tagIds.length == 0 ){ 
-                return res.json({ data: [], page: currentPage, total: 0, total_pages: 0 });
-            }
 
-            const { data : destTagRows, error: destTagError} = await supabase
-                                                                    .from('destination_tags')
-                                                                    .select('destination_id')
-                                                                    .in('tag_id',tagIds)
-            if (destTagError) throw destTagError;
-
-            DestinationIdsFromTags = [...new Set(destTagRows.map(r => r.destination_id))];
-            if (DestinationIdsFromTags.length === 0) {
-                return res.json({ data: [], page: currentPage, total: 0, total_pages: 0 });
-            }
-        }
-
-        let query = supabase.from('destinations').select(`id,name,description,category,latitude,longitude,cover_image_url,avg_rating,view_count,provinces(id,code,name),cities(id,name)`,{count: 'exact'});
-        
-        if (q) { 
-            query = query.or(`name.ilike.%${q}%,description.ilike.%${q}%`);
-        }
-
-        if (province_id) { 
-            query = query.eq('province_id',province_id);
-        }
-
-        if (city_id) { 
-            query = query.eq('city_id',city_id);
-        }
-
-        if (DestinationIdsFromTags) {
-            query = query.in('id',DestinationIdsFromTags);
-        }
-
-        query = query.order ('created_at', { ascending: false }).range(from, to);
-
-        const { data, error, count } = await query;
         if (error) throw error;
+        const total = data.length > 0 ? Number(data[0].total_count) : 0;
+        
+        if (total === 0) {
+            return res.status(404).json({ error: 'not_found', message: 'Destinations not found' });
+        }
+
+        const destinations = data.map(row => ({
+            id: row.id,
+            name: row.name,
+            description: row.description,
+            category: row.category,
+            latitude: row.latitude,
+            longitude: row.longitude,
+            cover_image_url: row.cover_image_url,
+            avg_rating: row.avg_rating,
+            view_count: row.view_count,
+            provinces: {
+                id: row.province_id,
+                code: row.province_code,
+                name: row.province_name,
+            },
+            cities: {
+                id: row.city_id,
+                name: row.city_name,
+            },
+        }));
 
         return res.json({
-            data,
-            page: currentPage,
-            total: count,
-            total_pages: Math.ceil(count / PAGE_SIZE)
+        data: destinations,
+        page: currentPage,
+        total,
+        total_pages: Math.ceil(total / PAGE_SIZE),
         });
     }catch (err) { 
         console.error('[getDestinations] error', err);
@@ -81,6 +71,9 @@ export const getDestinationById = async ( req,res) => {
                                     .eq('id', destinationId)
                                     .maybeSingle();
         if (error) throw error;
+        if (!data) {
+            return res.status(404).json({ error: 'not_found', message: 'Destination not found' });
+        }
         return res.json({ data });
     } catch (err) { 
         console.error('[getDestinationById] error', err);
