@@ -11,44 +11,18 @@ export function photo(seed: string, w = 800, h = 600) {
   return `https://picsum.photos/seed/${encodeURIComponent(seed)}/${w}/${h}`;
 }
 
-export type SearchTab = {
-  id: string;
+export type QuickLink = {
   label: string;
-  icon: "compass" | "activity" | "crowd" | "time";
-  placeholder: string;
-  /** Where submitting this mode takes the visitor. */
+  icon: "destination" | "event" | "crowd" | "time";
   href: string;
 };
 
-export const searchTabs: SearchTab[] = [
-  {
-    id: "all",
-    label: "Cari Semua",
-    icon: "compass",
-    placeholder: "Destinasi, kota, atau taman nasional...",
-    href: "/destinations",
-  },
-  {
-    id: "things",
-    label: "Hal yang Dapat Dilakukan",
-    icon: "activity",
-    placeholder: "Aktivitas, tur, atau pengalaman di sekitar Anda...",
-    href: "/destinations",
-  },
-  {
-    id: "crowd",
-    label: "Cek Kepadatan",
-    icon: "crowd",
-    placeholder: "Lihat prediksi kepadatan destinasi hari ini...",
-    href: "/heatmap",
-  },
-  {
-    id: "timing",
-    label: "Waktu Terbaik",
-    icon: "time",
-    placeholder: "Cari jam & tanggal kunjungan paling sepi...",
-    href: "/recommendations",
-  },
+/** Shortcuts under the search field: what to browse, and the two data tools. */
+export const quickLinks: QuickLink[] = [
+  { label: "Destinasi", icon: "destination", href: "/destinations" },
+  { label: "Event", icon: "event", href: "/events" },
+  { label: "Peta Kepadatan", icon: "crowd", href: "/heatmap" },
+  { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
 ];
 
 export type Interest = {
