@@ -202,18 +202,9 @@ export const footerColumns: {
     ],
   },
   {
-    title: "Untuk Pengelola",
-    links: [
-      { label: "Dashboard Kepadatan", href: "/dashboard" },
-      { label: "Kuota Pengunjung", href: "/dashboard/kuota" },
-      { label: "Laporan Kunjungan", href: "/dashboard/laporan" },
-    ],
-  },
-  {
     title: "Informasi",
     links: [
       { label: "Tentang Kami", href: "/about" },
-      { label: "Sumber Data", href: "/sumber-data" },
       { label: "Hubungi Kami", href: "/kontak" },
     ],
   },
