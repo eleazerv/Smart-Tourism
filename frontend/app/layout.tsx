@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { Geist } from "next/font/google";
+import { Geist, Bricolage_Grotesque } from "next/font/google";
 import { ThemeProvider } from "next-themes";
 import "./globals.css";
 
@@ -9,12 +9,19 @@ const defaultUrl = process.env.VERCEL_URL
 
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Next.js and Supabase Starter Kit",
-  description: "The fastest way to build apps with Next.js and Supabase",
+  title: "Smart Tourism — Temukan destinasi terbaik di Indonesia",
+  description:
+    "Cari destinasi, baca ulasan terverifikasi, dan pantau kepadatan kunjungan sebelum Anda berangkat.",
 };
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const sans = Geist({
+  variable: "--font-sans",
+  display: "swap",
+  subsets: ["latin"],
+});
+
+const display = Bricolage_Grotesque({
+  variable: "--font-display",
   display: "swap",
   subsets: ["latin"],
 });
@@ -25,11 +32,13 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" suppressHydrationWarning>
-      <body className={`${geistSans.className} antialiased`}>
+    <html lang="id" suppressHydrationWarning>
+      <body
+        className={`${sans.variable} ${display.variable} font-sans antialiased`}
+      >
         <ThemeProvider
           attribute="class"
-          defaultTheme="system"
+          defaultTheme="light"
           enableSystem
           disableTransitionOnChange
         >
