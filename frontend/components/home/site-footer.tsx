@@ -21,7 +21,7 @@ export function SiteFooter() {
             </span>
           </div>
 
-          <div className="grid grid-cols-2 gap-8 sm:grid-cols-3 md:col-span-7 md:col-start-6">
+          <div className="grid grid-cols-2 gap-8 md:col-span-5 md:col-start-8">
             {footerColumns.map((column) => (
               <div key={column.title}>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
@@ -44,7 +44,7 @@ export function SiteFooter() {
           </div>
         </div>
 
-        <div className="mt-10 flex flex-col gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
+        <div className="mt-10 flex flex-col items-start gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
               &copy; 2026 Smart Tourism. Seluruh hak cipta dilindungi.
