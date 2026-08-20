@@ -7,11 +7,41 @@ const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
 
+const siteName = "Smart Tourism";
+const title = "Smart Tourism — Pantau Kepadatan Wisata & Waktu Terbaik";
+const description =
+  "Lihat prediksi kepadatan destinasi wisata Indonesia, temukan waktu kunjungan paling sepi, dan bantu cegah overtourism. Data BPS, BMKG, dan pengelola destinasi.";
+
 export const metadata: Metadata = {
   metadataBase: new URL(defaultUrl),
-  title: "Smart Tourism — Temukan destinasi terbaik di Indonesia",
-  description:
-    "Cari destinasi, baca ulasan terverifikasi, dan pantau kepadatan kunjungan sebelum Anda berangkat.",
+  title: {
+    default: title,
+    template: `%s | ${siteName}`,
+  },
+  description,
+  applicationName: siteName,
+  keywords: [
+    "kepadatan wisata",
+    "prediksi pengunjung",
+    "overtourism",
+    "pariwisata berkelanjutan",
+    "waktu terbaik berkunjung",
+    "kuota pengunjung",
+    "destinasi Indonesia",
+  ],
+  openGraph: {
+    type: "website",
+    siteName,
+    locale: "id_ID",
+    url: "/",
+    title,
+    description,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title,
+    description,
+  },
 };
 
 const sans = Geist({
