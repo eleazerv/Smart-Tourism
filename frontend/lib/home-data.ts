@@ -32,10 +32,10 @@ export type Interest = {
 };
 
 export const interests: Interest[] = [
-  { name: "Alam & Petualangan", slug: "alam", seed: "raja-ampat-cliff" },
-  { name: "Kuliner", slug: "kuliner", seed: "indonesian-street-food" },
-  { name: "Budaya", slug: "budaya", seed: "borobudur-temple" },
-  { name: "Bahari", slug: "bahari", seed: "coral-reef-blue" },
+  { name: "Taman Nasional", slug: "taman-nasional", seed: "national-park-forest" },
+  { name: "Wisata Bahari", slug: "bahari", seed: "coral-reef-blue" },
+  { name: "Cagar Budaya", slug: "cagar-budaya", seed: "borobudur-temple" },
+  { name: "Desa Wisata", slug: "desa-wisata", seed: "traditional-village-house" },
 ];
 
 export type Destination = {
@@ -121,19 +121,18 @@ export type Story = {
 
 export const stories: Story[] = [
   {
-    title:
-      "15 penginapan alam luar biasa di Indonesia untuk beristirahat dan bersantai",
+    title: "Menghindari puncak keramaian: panduan memilih jam kunjungan",
     excerpt:
-      "Hidup terkadang bisa begitu sibuk, dan Anda mungkin ingin terbebas dari semua itu. Tidak ada yang lebih menyenangkan dari menghabiskan waktu di hutan saat hujan turun atau di tepi danau yang tenang.",
-    seed: "jungle-villa-pool",
-    cta: "Baca sekarang",
+      "Sebagian besar wisatawan datang pada jam dan tanggal yang sama karena tidak ada informasi pembanding. Dengan melihat prediksi kepadatan sebelum berangkat, Anda menikmati destinasi yang sama dengan antrean yang jauh lebih pendek.",
+    seed: "sunrise-viewpoint-crowd",
+    cta: "Baca panduan",
   },
   {
-    title: "3 hari di Labuan Bajo",
+    title: "Apa itu overtourism dan mengapa kuota kunjungan diperlukan",
     excerpt:
-      "Labuan Bajo dikenal sebagai gerbang menuju Pulau Komodo, tetapi selain itu kota kecil ini menyuguhkan banyak hal menarik lainnya, mulai dari gua bersejarah hingga bukit dengan panorama terbaik.",
-    seed: "komodo-island-view",
-    cta: "Baca sekarang",
+      "Lonjakan wisatawan yang tidak terkendali menambah sampah, menekan ekosistem, dan menurunkan kualitas pengalaman berwisata. Kuota harian menjaga destinasi tetap lestari tanpa menutup aksesnya bagi pengunjung.",
+    seed: "eco-trail-forest-path",
+    cta: "Pelajari",
   },
 ];
 
