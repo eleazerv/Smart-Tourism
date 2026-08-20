@@ -6,8 +6,8 @@ import { Section } from "@/components/home/section";
 export function InterestGrid() {
   return (
     <Section
-      title="Hal yang Dapat Dilakukan berdasarkan minat"
-      subtitle="Apa pun yang Anda inginkan, kami siap membantu"
+      title="Jelajahi berdasarkan jenis destinasi"
+      subtitle="Setiap destinasi dilengkapi kuota harian dan prediksi kepadatannya"
       action={{ label: "Lihat semua", href: "/destinations" }}
     >
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
