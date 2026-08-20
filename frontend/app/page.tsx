@@ -1,4 +1,3 @@
-import { AwardsBanner } from "@/components/home/awards-banner";
 import { DestinationRail } from "@/components/home/destination-rail";
 import { HeroSearch } from "@/components/home/hero-search";
 import { IconicRail } from "@/components/home/iconic-rail";
@@ -24,7 +23,6 @@ export default function Home() {
         <StoryCard story={stories[1]} />
         <InspirationRail />
         <IconicRail />
-        <AwardsBanner />
       </main>
 
       <SiteFooter />
