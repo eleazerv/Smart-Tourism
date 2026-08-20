@@ -1,4 +1,6 @@
-import express from 'express';
+import express from 'express'; 
+import swaggerUi from 'swagger-ui-express';
+import {swaggerSpec } from './swagger.js'
 import cors from 'cors';
 import 'dotenv/config';
 import authRoutes from './router/auth.Route.js';
@@ -24,6 +26,8 @@ app.use("/api/preferences",preferencesRouter);
 app.use("/api/destinations",destinationsRouter)
 app.use("/api/events",eventRouter)
 app.use("/api/recommendations",reccommendationRouter)
+app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from Express backend!' });
 });

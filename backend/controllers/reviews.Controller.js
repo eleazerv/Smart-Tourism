@@ -1,4 +1,5 @@
 import { supabase } from "../lib/supabase.js";
+
 import { randomUUID } from 'node:crypto';
 
 const REVIEW_FIELDS = `
@@ -22,10 +23,10 @@ const shapeReview = (row) => ({
 
 
 
-async function deletePhotoFromStorage(path) {
+async function deletePhotoFromStorage(db, path) {
   if (!path) return;
   try {
-    await req.db.storage.from(BUCKET).remove([path]);
+    await db.storage.from(BUCKET).remove([path]);
   } catch (cleanupErr) {
     console.error('[createReview] or [deleteReview] deleted photo but failed to cleanup', path, cleanupErr);
   }
@@ -147,7 +148,7 @@ export const createReview = async (req, res) => {
                                                                          .single(); 
             if (insertError) { 
                 if (insertError.code === '23505') {
-                    await deletePhotoFromStorage(uploadedPath)
+                    await deletePhotoFromStorage(req.db,uploadedPath)
                     return res.status(409).json({
                         error: 'already_reviewed',
                         message: 'You have already reviewed this destination'
@@ -157,7 +158,7 @@ export const createReview = async (req, res) => {
             }
             return res.status(201).json({data : shapeReview(review)})
     } catch (err) {
-        await deletePhotoFromStorage(uploadedPath);
+        await deletePhotoFromStorage(req.db,uploadedPath);
     
         console.error('[createReview] error', err);
         return res.status(500).json({ error: 'server_error' });
@@ -189,7 +190,7 @@ export const deleteReview = async (req, res) => {
     }
     const path =  extractStoragePath(data.photo_url) 
     if (path) { 
-        await deletePhotoFromStorage(path)
+        await deletePhotoFromStorage(req.db,path)
     }
  
     return res.json({ deleted: true, id: data.id });
