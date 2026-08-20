@@ -7,6 +7,7 @@ import tagsRoutes from './router/tags.Route.js';
 import preferencesRouter from './router/preferences.Route.js';
 import destinationsRouter from './router/destinations.Route.js';
 import eventRouter from './router/events.Route.js';
+import reccommendationRouter from './router/recommendations.Route.js';
 const app = express();
 app.use(express.json());
 
@@ -22,6 +23,7 @@ app.use("/api/tags", tagsRoutes);
 app.use("/api/preferences",preferencesRouter);
 app.use("/api/destinations",destinationsRouter)
 app.use("/api/events",eventRouter)
+app.use("/api/recommendations",reccommendationRouter)
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from Express backend!' });
 });
