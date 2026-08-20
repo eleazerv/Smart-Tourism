@@ -11,6 +11,13 @@ export default {
   theme: {
     extend: {
       colors: {
+        brand: {
+          50: "hsl(var(--brand-50))",
+          100: "hsl(var(--brand-100))",
+          600: "hsl(var(--brand-600))",
+          700: "hsl(var(--brand-700))",
+          900: "hsl(var(--brand-900))",
+        },
         background: "hsl(var(--background))",
         foreground: "hsl(var(--foreground))",
         card: {
@@ -51,6 +58,14 @@ export default {
           "4": "hsl(var(--chart-4))",
           "5": "hsl(var(--chart-5))",
         },
+      },
+      fontFamily: {
+        sans: ["var(--font-sans)", "system-ui", "sans-serif"],
+        display: ["var(--font-display)", "var(--font-sans)", "serif"],
+      },
+      boxShadow: {
+        card: "0 1px 2px hsl(var(--brand-900) / 0.06), 0 8px 24px hsl(var(--brand-900) / 0.08)",
+        pop: "0 2px 6px hsl(var(--brand-900) / 0.10), 0 18px 40px hsl(var(--brand-900) / 0.16)",
       },
       borderRadius: {
         lg: "var(--radius)",
