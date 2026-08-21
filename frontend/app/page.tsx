@@ -6,8 +6,6 @@ import { InterestGrid } from "@/components/home/interest-grid";
 import { PromoBanner } from "@/components/home/promo-banner";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
-import { StoryCard } from "@/components/home/story-card";
-import { stories } from "@/lib/home-data";
 
 export default function Home() {
   return (
