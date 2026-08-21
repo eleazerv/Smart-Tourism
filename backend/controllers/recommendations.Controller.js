@@ -123,7 +123,7 @@ export const getForYou = async (req, res) => {
 
         const { data : destTagRows , error: destTagError} = await supabase
                                                             .from('destination_tags')  
-                                                            .select('destination_id')
+                                                            .select('destination_id, tag_id')
                                                             .in('tag_id',tagIds)
         if (destTagError) throw destTagError;
         if (!destTagRows || destTagRows.length === 0) {

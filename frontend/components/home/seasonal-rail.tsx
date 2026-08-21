@@ -38,7 +38,7 @@ export async function SeasonalRail() {
   if (destinations.length === 0) return null;
 
   const monthName = MONTHS[month - 1] ?? "bulan ini";
-  const season = season_summary.join(" dan ");
+  const season = season_summary?.join(" dan ") ?? "";
 
   return (
     <Section

@@ -1,32 +1,27 @@
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
+import type { Metadata } from "next";
+import { MailCheck } from "lucide-react";
+import { AuthLink, AuthShell } from "@/components/auth/auth-shell";
+
+export const metadata: Metadata = { title: "Cek Email Anda" };
 
 export default function Page() {
   return (
-    <div className="flex min-h-svh w-full items-center justify-center p-6 md:p-10">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col gap-6">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-2xl">
-                Thank you for signing up!
-              </CardTitle>
-              <CardDescription>Check your email to confirm</CardDescription>
-            </CardHeader>
-            <CardContent>
-              <p className="text-sm text-muted-foreground">
-                You&apos;ve successfully signed up. Please check your email to
-                confirm your account before signing in.
-              </p>
-            </CardContent>
-          </Card>
-        </div>
+    <AuthShell
+      title="Cek email Anda"
+      description="Akun Anda sudah dibuat."
+      footer={
+        <>
+          Sudah dikonfirmasi? <AuthLink href="/auth/login">Masuk</AuthLink>
+        </>
+      }
+    >
+      <div className="flex gap-3">
+        <MailCheck className="h-5 w-5 shrink-0 text-brand-700 dark:text-brand-100" />
+        <p className="text-sm text-muted-foreground">
+          Kami mengirim tautan konfirmasi ke email Anda. Buka tautan tersebut
+          untuk mengaktifkan akun sebelum masuk.
+        </p>
       </div>
-    </div>
+    </AuthShell>
   );
 }

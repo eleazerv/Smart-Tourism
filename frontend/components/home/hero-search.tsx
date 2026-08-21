@@ -69,7 +69,7 @@ export function HeroSearch() {
               <Link
                 key={link.href}
                 href={link.href}
-                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-50 hover:text-brand-700 dark:hover:bg-brand-600 dark:hover:text-brand-100"
+                className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 hover:text-brand-700 dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
               >
                 <Icon className="h-4 w-4" />
                 {link.label}

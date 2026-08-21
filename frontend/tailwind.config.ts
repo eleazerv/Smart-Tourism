@@ -13,6 +13,7 @@ export default {
       colors: {
         brand: {
           50: "hsl(var(--brand-50))",
+          tint: "hsl(var(--brand-tint))",
           100: "hsl(var(--brand-100))",
           600: "hsl(var(--brand-600))",
           700: "hsl(var(--brand-700))",

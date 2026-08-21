@@ -93,7 +93,7 @@ function RailButton({
       aria-label={label}
       tabIndex={hidden ? -1 : 0}
       className={cn(
-        "absolute top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border bg-background text-brand-900 shadow-pop transition hover:bg-brand-50 dark:text-brand-100 dark:hover:bg-brand-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 md:grid",
+        "absolute top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border bg-background text-brand-900 shadow-pop transition hover:bg-brand-tint/10 dark:text-brand-100 dark:hover:bg-brand-tint/15 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 md:grid",
         side === "left" ? "-left-4" : "-right-4",
         hidden && "pointer-events-none opacity-0",
       )}

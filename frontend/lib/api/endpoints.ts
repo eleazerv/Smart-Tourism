@@ -150,11 +150,12 @@ export async function getPersonalRecommendations(
 /* ------------------------------------------------- profile & preferences --- */
 
 export async function getProfile(auth: Auth): Promise<Profile | null> {
-  const result = await apiFetch<{ data: Profile }>("/api/auth/me", {
+  // getMe() keys the body as `user`, not `data` like every other controller.
+  const result = await apiFetch<{ user: Profile }>("/api/auth/me", {
     ...auth,
     nullOn404: true,
   });
-  return result?.data ?? null;
+  return result?.user ?? null;
 }
 
 export async function getPreferences(auth: Auth): Promise<Tag[]> {

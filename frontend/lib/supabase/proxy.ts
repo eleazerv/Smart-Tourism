@@ -2,6 +2,9 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 
+/** Route prefixes that require a signed-in user. */
+const PROTECTED_PREFIXES = ["/akun"];
+
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
     request,
@@ -47,13 +50,13 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  if (
-    request.nextUrl.pathname !== "/" &&
-    !user &&
-    !request.nextUrl.pathname.startsWith("/login") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    // no user, potentially respond by redirecting the user to the login page
+  // Smart Tourism is a public catalogue: browsing destinations, events and the
+  // heatmap must not require an account. Only the signed-in area is gated.
+  const isProtected = PROTECTED_PREFIXES.some((prefix) =>
+    request.nextUrl.pathname.startsWith(prefix),
+  );
+
+  if (!user && isProtected) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);

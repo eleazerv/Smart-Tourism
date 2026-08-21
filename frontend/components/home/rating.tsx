@@ -1,8 +1,13 @@
+import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
- * Tripadvisor-style five-dot rating, drawn in the brand palette.
- * Half steps are rendered by clipping the filled dot.
+ * Five-star rating in the conventional rating gold, deliberately outside the
+ * brand palette — the same exception every review UI makes.
+ *
+ * Each position stacks a filled star over an outline one and clips the filled
+ * layer to the fractional part, so half steps land on the exact percentage
+ * rather than snapping to a half-star glyph.
  */
 export function Rating({
   value,
@@ -24,17 +29,25 @@ export function Rating({
         aria-label={`Peringkat ${value} dari 5`}
       >
         {[0, 1, 2, 3, 4].map((i) => {
-          const fill = Math.min(Math.max(value - i, 0), 1);
+          // Rounded so float noise like 70.00000000000001% stays out of the DOM.
+          const fill = Math.round(Math.min(Math.max(value - i, 0), 1) * 1000) / 10;
           return (
             <span
               key={i}
-              className="relative block h-2.5 w-2.5 rounded-full border border-brand-700/70 dark:border-brand-100/70"
+              className="relative inline-block h-3.5 w-3.5 shrink-0"
             >
+              <Star
+                aria-hidden="true"
+                className="absolute left-0 top-0 h-3.5 w-3.5 text-amber-400/35"
+              />
               <span
-                className="absolute inset-0 block overflow-hidden rounded-full"
-                style={{ width: `${fill * 100}%` }}
+                className="absolute left-0 top-0 h-full overflow-hidden"
+                style={{ width: `${fill}%` }}
               >
-                <span className="block h-full w-2.5 rounded-full bg-brand-700 dark:bg-brand-100" />
+                <Star
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 max-w-none fill-amber-400 text-amber-400"
+                />
               </span>
             </span>
           );

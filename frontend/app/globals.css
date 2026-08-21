@@ -12,6 +12,10 @@
     --brand-600: 176 46% 18%;
     --brand-100: 176 100% 84%;
     --brand-50: 176 100% 92%;
+    /* Leaf green for hover washes. Deliberately greener than the teal
+       palette: diluting --brand-700 reads as grey, not green. Tune the
+       hover tint here rather than at the call sites. */
+    --brand-tint: 142 71% 45%;
 
     --background: 0 0% 100%;
     --foreground: 176 48% 13%;

@@ -74,16 +74,19 @@ export type HeatmapEntry = {
 
 export type SeasonalRecommendations = {
   month: number;
-  season_summary: string[];
+  /** Absent when no climate pattern matches the month. */
+  season_summary?: string[];
   province_id: number | null;
   destinations: Destination[];
 };
 
 export type PersonalRecommendations = {
   preference_tags: Tag[];
+  /** Set by the controller when the user has no preferences saved yet. */
+  message?: string;
   destinations: (Destination & {
     match_score: number;
-    matched_tags: string[];
+    matched_tags: Tag[];
   })[];
 };
 

@@ -8,16 +8,19 @@ export function Section({
   action,
   children,
   className,
+  bare = false,
 }: {
   title: string;
   subtitle?: string;
   action?: { label: string; href: string };
   children: React.ReactNode;
   className?: string;
+  /** Drop the page gutter and vertical rhythm, for use inside another column. */
+  bare?: boolean;
 }) {
   return (
-    <section className={cn("py-8 sm:py-10", className)}>
-      <div className="container-page">
+    <section className={cn(!bare && "py-8 sm:py-10", className)}>
+      <div className={cn(!bare && "container-page")}>
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
             <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">

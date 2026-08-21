@@ -1,4 +1,8 @@
 import { Suspense } from "react";
+import {
+  ForYouPrompt,
+  ForYouRail,
+} from "@/components/account/for-you-rail";
 import { DestinationRail } from "@/components/home/destination-rail";
 import { HeroSearch } from "@/components/home/hero-search";
 import { InspirationRail } from "@/components/home/inspiration-rail";
@@ -20,6 +24,14 @@ export default function Home() {
           endpoint delays one rail instead of the whole page. */}
       <main className="flex-1">
         <HeroSearch />
+
+        {/* Personalised slot: the rail for signed-in users, a sign-in nudge for
+            everyone else. Both read cookies, so the shell stays static and this
+            one hole streams in. */}
+        <Suspense fallback={null}>
+          <ForYouRail />
+          <ForYouPrompt />
+        </Suspense>
 
         <Suspense fallback={<GridSkeleton />}>
           <InterestGrid />
