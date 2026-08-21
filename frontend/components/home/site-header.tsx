@@ -49,7 +49,7 @@ export function SiteHeader() {
           </button>
           <Link
             href="/auth/login"
-            className="hidden rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-brand-50 transition hover:bg-brand-900 sm:inline-flex dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+            className="hidden rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 sm:inline-flex dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
           >
             Masuk
           </Link>
@@ -85,7 +85,7 @@ export function SiteHeader() {
           <Link
             href="/auth/login"
             onClick={() => setOpen(false)}
-            className="mt-2 rounded-full bg-brand-700 px-4 py-3 text-center text-sm font-semibold text-brand-50 dark:bg-brand-100 dark:text-brand-900"
+            className="mt-2 rounded-full bg-brand-700 px-4 py-3 text-center text-sm font-semibold text-white dark:bg-brand-100 dark:text-brand-900"
           >
             Masuk
           </Link>

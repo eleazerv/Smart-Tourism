@@ -16,11 +16,11 @@ export default function Home() {
 
       <main className="flex-1">
         <HeroSearch />
-        <PromoBanner />
         <InterestGrid />
-        <StoryCard story={stories[0]} />
+        <PromoBanner />
         <DestinationRail />
-        <StoryCard story={stories[1]} />
+        {/* <StoryCard story={stories[0]} /> */}
+        {/* <StoryCard story={stories[1]} /> */}
         <InspirationRail />
         <IconicRail />
       </main>

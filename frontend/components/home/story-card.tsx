@@ -27,7 +27,7 @@ export function StoryCard({ story }: { story: Story }) {
 
         <Link
           href="/stories"
-          className="shrink-0 self-start rounded-full border border-brand-700 px-5 py-2.5 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-700 hover:text-brand-50 sm:self-auto dark:border-brand-100 dark:text-brand-100 dark:hover:bg-brand-100 dark:hover:text-brand-900"
+          className="shrink-0 self-start rounded-full border border-brand-700 px-5 py-2.5 text-center text-sm font-semibold text-brand-700 transition hover:bg-brand-700 hover:text-white sm:self-auto dark:border-brand-100 dark:text-brand-100 dark:hover:bg-brand-100 dark:hover:text-brand-900"
         >
           {story.cta}
         </Link>

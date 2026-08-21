@@ -28,7 +28,7 @@ export function InterestGrid() {
               aria-hidden="true"
               className="absolute inset-0 bg-brand-900/40"
             />
-            <span className="absolute inset-x-0 bottom-0 p-4 font-display text-lg font-bold leading-tight text-brand-50">
+            <span className="absolute inset-x-0 bottom-0 p-4 font-display text-lg font-bold leading-tight text-white">
               {interest.name}
             </span>
           </Link>

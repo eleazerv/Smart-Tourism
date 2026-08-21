@@ -26,10 +26,10 @@ export function IconicRail() {
               className="absolute inset-0 bg-brand-900/45"
             />
             <span className="absolute inset-x-0 bottom-0 p-4">
-              <span className="block font-display text-lg font-bold text-brand-50">
+              <span className="block font-display text-lg font-bold text-white">
                 {city.name}
               </span>
-              <span className="block text-xs text-brand-100">{city.region}</span>
+              <span className="block text-xs text-white/80">{city.region}</span>
             </span>
           </Link>
         ))}

@@ -45,7 +45,7 @@ export function Logo({
       <span
         className={cn(
           "font-display text-lg font-bold tracking-tight",
-          tone === "dark" ? "text-brand-700 dark:text-brand-100" : "text-brand-50",
+          tone === "dark" ? "text-brand-700 dark:text-brand-100" : "text-white",
         )}
       >
         Smart<span className="font-normal">Tourism</span>
