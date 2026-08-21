@@ -4,9 +4,10 @@ const nextConfig: NextConfig = {
   cacheComponents: true,
   images: {
     remotePatterns: [
-      // Placeholder photos for the landing page. Swap for the real
-      // `cover_image_url` values coming from /api/destinations.
+      // Fallback photos, used wherever `cover_image_url` is still null.
       { protocol: "https", hostname: "picsum.photos" },
+      // Real destination covers and review photos live in Supabase Storage.
+      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
     ],
   },
 };

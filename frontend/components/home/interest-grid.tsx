@@ -1,9 +1,32 @@
 import Image from "next/image";
 import Link from "next/link";
-import { interests, photo } from "@/lib/home-data";
+import { cacheLife } from "next/cache";
+import { getTags } from "@/lib/api";
+import { photo } from "@/lib/home-data";
+import { LoadError } from "@/components/home/load-error";
 import { Section } from "@/components/home/section";
 
-export function InterestGrid() {
+/** Enough tags to fill two rows of four on desktop. */
+const SHOWN = 8;
+
+async function loadTags() {
+  "use cache";
+  cacheLife("hours");
+  return getTags();
+}
+
+export async function InterestGrid() {
+  let tags;
+  try {
+    tags = (await loadTags()).slice(0, SHOWN);
+  } catch {
+    return (
+      <Section title="Jelajahi berdasarkan jenis destinasi">
+        <LoadError what="Daftar kategori" />
+      </Section>
+    );
+  }
+
   return (
     <Section
       title="Jelajahi berdasarkan jenis destinasi"
@@ -11,14 +34,14 @@ export function InterestGrid() {
       action={{ label: "Lihat semua", href: "/destinations" }}
     >
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
-        {interests.map((interest) => (
+        {tags.map((tag) => (
           <Link
-            key={interest.slug}
-            href={`/destinations?tags=${interest.slug}`}
+            key={tag.id}
+            href={`/destinations?tags=${tag.slug}`}
             className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-brand-700 sm:aspect-[4/3]"
           >
             <Image
-              src={photo(interest.seed, 600, 700)}
+              src={photo(tag.slug, 600, 700)}
               alt=""
               fill
               sizes="(min-width: 1024px) 25vw, 50vw"
@@ -29,7 +52,7 @@ export function InterestGrid() {
               className="absolute inset-0 bg-brand-900/40"
             />
             <span className="absolute inset-x-0 bottom-0 p-4 font-display text-lg font-bold leading-tight text-white">
-              {interest.name}
+              {tag.name}
             </span>
           </Link>
         ))}

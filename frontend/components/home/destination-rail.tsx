@@ -1,20 +1,52 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Award } from "lucide-react";
-import { nearbyDestinations, photo, type Destination } from "@/lib/home-data";
+import { cacheLife } from "next/cache";
+import { getAllDestinations, type Destination } from "@/lib/api";
+import { coverImage } from "@/lib/home-data";
 import { FavoriteButton } from "@/components/home/favorite-button";
+import { LoadError } from "@/components/home/load-error";
 import { Rail } from "@/components/home/rail";
 import { Rating } from "@/components/home/rating";
 import { Section } from "@/components/home/section";
 
-export function DestinationRail() {
+const SHOWN = 8;
+/** Rating at which a destination earns the badge on its cover. */
+const TOP_RATED = 4.5;
+
+async function loadPopular() {
+  "use cache";
+  cacheLife("hours");
+
+  // `/api/destinations` orders by region, so popularity has to be applied
+  // across the whole catalogue rather than within the first page.
+  const all = await getAllDestinations();
+  return [...all]
+    .sort((a, b) => (b.view_count ?? 0) - (a.view_count ?? 0))
+    .slice(0, SHOWN);
+}
+
+export async function DestinationRail() {
+  let destinations: Destination[];
+  try {
+    destinations = await loadPopular();
+  } catch {
+    return (
+      <Section title="Destinasi populer di Indonesia">
+        <LoadError what="Destinasi populer" />
+      </Section>
+    );
+  }
+
+  if (destinations.length === 0) return null;
+
   return (
     <Section
       title="Destinasi populer di Indonesia"
       action={{ label: "Jelajahi semua", href: "/destinations" }}
     >
       <Rail label="Destinasi populer">
-        {nearbyDestinations.map((destination) => (
+        {destinations.map((destination) => (
           <DestinationCard key={destination.id} destination={destination} />
         ))}
       </Rail>
@@ -23,23 +55,27 @@ export function DestinationRail() {
 }
 
 function DestinationCard({ destination }: { destination: Destination }) {
+  const place = [destination.cities?.name, destination.provinces?.name]
+    .filter(Boolean)
+    .join(", ");
+
   return (
     <article className="w-[calc(75%-0.5rem)] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
       <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-700">
         <FavoriteButton label={destination.name} />
         <Link href={`/destinations/${destination.id}`}>
           <Image
-            src={photo(destination.seed, 600, 450)}
+            src={coverImage(destination, 600, 450)}
             alt={destination.name}
             fill
             sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 75vw"
             className="object-cover transition duration-500 hover:scale-105"
           />
         </Link>
-        {destination.badge && (
+        {(destination.avg_rating ?? 0) >= TOP_RATED && (
           <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-900">
             <Award className="h-3 w-3" />
-            2026
+            Rating tertinggi
           </span>
         )}
       </div>
@@ -53,13 +89,20 @@ function DestinationCard({ destination }: { destination: Destination }) {
             {destination.name}
           </Link>
         </h3>
-        <Rating value={destination.rating} reviews={destination.reviews} />
+        {destination.avg_rating !== null && (
+          <Rating value={destination.avg_rating} />
+        )}
         <p className="text-xs text-muted-foreground">
-          {destination.priceLevel} &middot; {destination.category}
+          {destination.category}
+          {destination.view_count !== null && (
+            <>
+              {" "}
+              &middot; {destination.view_count.toLocaleString("id-ID")} kali
+              dilihat
+            </>
+          )}
         </p>
-        <p className="text-xs text-muted-foreground">
-          {destination.city}, {destination.province}
-        </p>
+        {place && <p className="text-xs text-muted-foreground">{place}</p>}
       </div>
     </article>
   );
