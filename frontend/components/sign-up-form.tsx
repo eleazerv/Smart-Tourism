@@ -1,25 +1,14 @@
 "use client";
 
-import { cn } from "@/lib/utils";
 import { createClient } from "@/lib/supabase/client";
-import { Button } from "@/components/ui/button";
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import Link from "next/link";
+import { AuthError, AuthSubmit } from "@/components/auth/auth-shell";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function SignUpForm({
-  className,
-  ...props
-}: React.ComponentPropsWithoutRef<"div">) {
+export function SignUpForm() {
+  const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [repeatPassword, setRepeatPassword] = useState("");
@@ -34,7 +23,7 @@ export function SignUpForm({
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Passwords do not match");
+      setError("Konfirmasi kata sandi tidak cocok.");
       setIsLoading(false);
       return;
     }
@@ -44,77 +33,83 @@ export function SignUpForm({
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/protected`,
+          emailRedirectTo: `${window.location.origin}/akun`,
+          // Carried into the profile row, and used for the header greeting
+          // before /api/auth/me has been called.
+          data: { full_name: fullName.trim() },
         },
       });
       if (error) throw error;
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
-      setError(error instanceof Error ? error.message : "An error occurred");
+      setError(
+        error instanceof Error
+          ? error.message
+          : "Terjadi kesalahan. Coba lagi.",
+      );
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className={cn("flex flex-col gap-6", className)} {...props}>
-      <Card>
-        <CardHeader>
-          <CardTitle className="text-2xl">Sign up</CardTitle>
-          <CardDescription>Create a new account</CardDescription>
-        </CardHeader>
-        <CardContent>
-          <form onSubmit={handleSignUp}>
-            <div className="flex flex-col gap-6">
-              <div className="grid gap-2">
-                <Label htmlFor="email">Email</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  placeholder="m@example.com"
-                  required
-                  value={email}
-                  onChange={(e) => setEmail(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="password">Password</Label>
-                </div>
-                <Input
-                  id="password"
-                  type="password"
-                  required
-                  value={password}
-                  onChange={(e) => setPassword(e.target.value)}
-                />
-              </div>
-              <div className="grid gap-2">
-                <div className="flex items-center">
-                  <Label htmlFor="repeat-password">Repeat Password</Label>
-                </div>
-                <Input
-                  id="repeat-password"
-                  type="password"
-                  required
-                  value={repeatPassword}
-                  onChange={(e) => setRepeatPassword(e.target.value)}
-                />
-              </div>
-              {error && <p className="text-sm text-red-500">{error}</p>}
-              <Button type="submit" className="w-full" disabled={isLoading}>
-                {isLoading ? "Creating an account..." : "Sign up"}
-              </Button>
-            </div>
-            <div className="mt-4 text-center text-sm">
-              Already have an account?{" "}
-              <Link href="/auth/login" className="underline underline-offset-4">
-                Login
-              </Link>
-            </div>
-          </form>
-        </CardContent>
-      </Card>
-    </div>
+    <form onSubmit={handleSignUp} className="flex flex-col gap-5">
+      <div className="grid gap-2">
+        <Label htmlFor="full-name">Nama lengkap</Label>
+        <Input
+          id="full-name"
+          type="text"
+          autoComplete="name"
+          placeholder="Budi Santoso"
+          required
+          value={fullName}
+          onChange={(e) => setFullName(e.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="email">Email</Label>
+        <Input
+          id="email"
+          type="email"
+          autoComplete="email"
+          placeholder="nama@email.com"
+          required
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="password">Kata sandi</Label>
+        <Input
+          id="password"
+          type="password"
+          autoComplete="new-password"
+          minLength={6}
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+      </div>
+
+      <div className="grid gap-2">
+        <Label htmlFor="repeat-password">Ulangi kata sandi</Label>
+        <Input
+          id="repeat-password"
+          type="password"
+          autoComplete="new-password"
+          required
+          value={repeatPassword}
+          onChange={(e) => setRepeatPassword(e.target.value)}
+        />
+      </div>
+
+      <AuthError message={error} />
+
+      <AuthSubmit pending={isLoading} pendingLabel="Membuat akun...">
+        Daftar
+      </AuthSubmit>
+    </form>
   );
 }
