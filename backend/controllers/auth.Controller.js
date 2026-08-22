@@ -1,5 +1,3 @@
-import { supabase } from "../lib/supabase.js";
-
 export const getMe = async (req, res) => {
   try {
     const { data, error } = await req.db

@@ -36,7 +36,7 @@ export const getRecommendations = async (req, res) => {
                 month,
                 province_id: province_id ? Number(province_id) : null,
                 season_info: [],
-                destinations: [],
+                destinations : []
             });
         }
 
@@ -53,7 +53,7 @@ export const getRecommendations = async (req, res) => {
             month,
             province_id: province_id ? Number(province_id) : null,
             season_info: climateRows.map(shapeSeasonInfo),
-            destinations: [],
+            destinations : []
         })
         }
 
@@ -91,8 +91,8 @@ export const getRecommendations = async (req, res) => {
         if (destError) throw destError;
         return res.json({
             month,
-            season_summary: [...new Set(climateRows.map(r=>r.season))],
             province_id: province_id ? Number(province_id) : null,
+            season_info: climateRows.map(shapeSeasonInfo),
             destinations
         })
     } catch (err) {

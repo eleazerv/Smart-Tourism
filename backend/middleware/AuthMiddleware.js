@@ -33,30 +33,35 @@ export const optionalAuth = async (req, res, next) => {
  
         if (!authHeader) {
             req.user = null;
+            req.db = supabase;
             return next();
         }
- 
+
         const token = authHeader.split(' ')[1];
- 
+
         if (!token) {
             req.user = null;
+            req.db = supabase;
             return next();
         }
- 
+
         const { data, error } = await supabase.auth.getUser(token);
- 
+
         if (error || !data.user) {
             req.user = null;
+            req.db = supabase;
             return next();
         }
- 
+
         req.user = data.user;
         req.accessToken = token;
+        req.db = getUserClient(token);
         next();
     } catch (error) {
         console.error('[Optional Auth Middleware] error', error);
         // tetap lanjut sebagai guest, jangan block route publik gara-gara error auth
         req.user = null;
+        req.db = supabase;
         next();
     }
 };

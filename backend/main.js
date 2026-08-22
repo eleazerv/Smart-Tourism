@@ -10,7 +10,9 @@ import preferencesRouter from './router/preferences.Route.js';
 import destinationsRouter from './router/destinations.Route.js';
 import eventRouter from './router/events.Route.js';
 import reccommendationRouter from './router/recommendations.Route.js';
+import accommodationRouter from './router/accommodation.Route.js';
 const app = express();
+app.set('trust proxy', 1);
 app.use(express.json());
 
 app.use(cors({
@@ -26,10 +28,20 @@ app.use("/api/preferences",preferencesRouter);
 app.use("/api/destinations",destinationsRouter)
 app.use("/api/events",eventRouter)
 app.use("/api/recommendations",reccommendationRouter)
+app.use("/api/accommodations",accommodationRouter)
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from Express backend!' });
+});
+
+app.use((req, res) => {
+  res.status(404).json({ error: 'not_found', message: 'Route not found' });
+});
+
+app.use((err, req, res, next) => {
+  console.error('[Unhandled error]', err);
+  res.status(500).json({ error: 'server_error' });
 });
 
 const PORT = process.env.PORT || 4000;

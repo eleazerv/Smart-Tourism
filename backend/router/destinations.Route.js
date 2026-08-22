@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/AuthMiddleware.js";
 import { moderateLimiter } from "../middleware/RateLimit.js";
 import { handleReviewPhotoUpload } from "../middleware/HandleReviewPhoto.js";
 import { getReviews, createReview, deleteReview, likeReview } from "../controllers/reviews.Controller.js";
+import { getDestinationAccommodations } from "../controllers/accommodations.Controller.js";
 const router = express.Router();
 
 /**
@@ -140,6 +141,36 @@ router.post("/:id/view", globalLimiter, optionalAuth, dedupView, postView);
  */
 router.get('/:id/reviews', globalLimiter, optionalAuth, getReviews);
 router.post('/:id/reviews', authMiddleware, moderateLimiter, handleReviewPhotoUpload, createReview);
+
+
+/**
+ * @swagger
+ * /api/destinations/{id}/accommodations:
+ *   get:
+ *     summary: Daftar akomodasi di sekitar destinasi, diurutkan dari yang terdekat
+ *     description: >
+ *       Mencari akomodasi di kota yang sama dengan destinasi (city_id),
+ *       lalu menghitung distance_km dari koordinat akomodasi ke koordinat
+ *       destinasi memakai formula haversine. Diurutkan dari yang terdekat.
+ *     tags: [Accommodations]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: tier
+ *         schema: { type: string, enum: [budget, mid, luxury] }
+ *         description: Filter berdasarkan tier (opsional)
+ *     responses:
+ *       200:
+ *         description: destination, data (array akomodasi dengan distance_km)
+ *       400:
+ *         description: tier tidak valid
+ *       404:
+ *         description: Destinasi tidak ditemukan
+ */
+router.get('/:id/accommodations', globalLimiter, getDestinationAccommodations);
 
 /**
  * @swagger

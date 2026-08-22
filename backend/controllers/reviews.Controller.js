@@ -12,8 +12,7 @@ const REVIEW_FIELDS = `
     users(id, full_name, avatar_url),
     review_likes(count)
 `;
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
-const BUCKET = 'review-photos'  // upload photo review ke bucket 
+const BUCKET = 'review-photos'; // bucket Supabase Storage untuk foto review
 
 const shapeReview = (row) => ({
     ...row,
@@ -21,14 +20,12 @@ const shapeReview = (row) => ({
     like_count: row.review_likes?.[0]?.count ?? 0
 });
 
-
-
 async function deletePhotoFromStorage(db, path) {
   if (!path) return;
   try {
     await db.storage.from(BUCKET).remove([path]);
   } catch (cleanupErr) {
-    console.error('[createReview] or [deleteReview] deleted photo but failed to cleanup', path, cleanupErr);
+    console.error(`[deletePhotoFromStorage] deleted photo but failed to cleanup`, path, cleanupErr);
   }
 }
 
@@ -62,7 +59,7 @@ export const getReviews = async (req, res) => {
             .select(REVIEW_FIELDS)
             .eq('destination_id', destinationId)
             .order('created_at', { ascending: false })
-            .limit(50);
+            .limit(500);
 
         if (error) throw error;
 
