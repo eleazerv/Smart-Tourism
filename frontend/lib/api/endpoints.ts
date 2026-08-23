@@ -6,6 +6,7 @@
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
   Destination,
+  DestinationDetail,
   EventItem,
   HeatmapEntry,
   Paginated,
@@ -56,8 +57,10 @@ export async function searchDestinations(
   return page ?? { ...EMPTY_PAGE, page: query.page ?? 1 };
 }
 
-export async function getDestination(id: string): Promise<Destination | null> {
-  const result = await apiFetch<{ data: Destination }>(
+export async function getDestination(
+  id: string,
+): Promise<DestinationDetail | null> {
+  const result = await apiFetch<{ data: DestinationDetail }>(
     `/api/destinations/${id}`,
     { nullOn404: true },
   );
