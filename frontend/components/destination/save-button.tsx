@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 /**
@@ -19,7 +19,7 @@ export function SaveButton({ name }: { name: string }) {
       onClick={() => setSaved((v) => !v)}
       className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium underline-offset-4 transition hover:bg-brand-tint/10 hover:underline dark:hover:bg-brand-tint/15"
     >
-      <Heart
+      <Bookmark
         className={cn(
           "h-4 w-4 transition-colors",
           saved && "fill-brand-700 text-brand-700 dark:fill-brand-100 dark:text-brand-100",
