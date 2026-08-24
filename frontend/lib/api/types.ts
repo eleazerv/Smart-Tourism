@@ -39,6 +39,17 @@ export type Destination = {
   cities: CityRef | null;
 };
 
+/**
+ * Shape from `GET /api/destinations/:id` — the same columns as the list, plus
+ * the foreign keys and the destination's tags, which only the detail
+ * controller joins in.
+ */
+export type DestinationDetail = Destination & {
+  province_id: number | null;
+  city_id: number | null;
+  tags: Tag[];
+};
+
 /** `GET /api/destinations/trending` selects a narrower column set. */
 export type TrendingDestination = {
   id: string;
@@ -99,13 +110,22 @@ export type Profile = {
   created_at: string;
 };
 
+/** Author block joined onto every review by `REVIEW_FIELDS` in the controller. */
+export type ReviewAuthor = {
+  id: string;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
 export type Review = {
   id: string;
   destination_id: string;
-  user_id: string;
   rating: number;
   comment: string | null;
   photo_url: string | null;
   created_at: string;
+  /** Flattened by the controller out of a `review_likes(count)` aggregate. */
   like_count: number;
+  /** Null when the author row was removed; the review itself survives. */
+  users: ReviewAuthor | null;
 };

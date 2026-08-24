@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Heart } from "lucide-react";
+import { Bookmark } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function FavoriteButton({
@@ -24,7 +24,7 @@ export function FavoriteButton({
         className,
       )}
     >
-      <Heart
+      <Bookmark
         className={cn(
           "h-4 w-4 transition-colors",
           saved

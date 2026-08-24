@@ -55,6 +55,8 @@ export async function SeasonalRail() {
           <Link
             key={destination.id}
             href={`/destinations/${destination.id}`}
+            // The caption sits over the photo here, so the card *is* the media.
+            data-rail-media
             className="group relative aspect-[3/4] w-[60%] shrink-0 snap-start overflow-hidden rounded-2xl bg-brand-700 sm:w-[40%] lg:aspect-[4/3] lg:w-[calc(25%-0.75rem)]"
           >
             <Image

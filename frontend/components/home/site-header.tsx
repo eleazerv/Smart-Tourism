@@ -8,8 +8,9 @@ import { Logo } from "@/components/home/logo";
 import { cn } from "@/lib/utils";
 
 const navLinks = [
-  { label: "Telusuri", href: "/destinations" },
-  { label: "Ulasan", href: "/reviews" },
+  { label: "Wisata", href: "/destinations" },
+  { label: "Hotel", href: "/hotels" },
+  { label: "Tiket Pesawat", href: "/flights" },
   { label: "Peta Kepadatan", href: "/heatmap" },
 ];
 

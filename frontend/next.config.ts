@@ -1,16 +1,12 @@
 import type { NextConfig } from "next";
+import { REMOTE_IMAGE_PATTERNS } from "./lib/image-hosts";
 
 const nextConfig: NextConfig = {
   cacheComponents: true,
   images: {
-    remotePatterns: [
-      // Fallback photos, used wherever `cover_image_url` is still null.
-      { protocol: "https", hostname: "picsum.photos" },
-      // Seeded profile avatars.
-      { protocol: "https", hostname: "ui-avatars.com" },
-      // Real destination covers and review photos live in Supabase Storage.
-      { protocol: "https", hostname: "*.supabase.co", pathname: "/storage/v1/object/public/**" },
-    ],
+    // Shared with `coverImage()`, which falls back to a placeholder for any
+    // stored URL this list does not cover.
+    remotePatterns: REMOTE_IMAGE_PATTERNS,
   },
 };
 
