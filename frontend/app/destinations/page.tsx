@@ -23,7 +23,7 @@ import { CatalogueSkeleton } from "@/components/destinations/catalogue-skeleton"
 import { CatalogueToolbar } from "@/components/destinations/catalogue-toolbar";
 import { EmptyResults } from "@/components/destinations/empty-results";
 import { FilterGroups } from "@/components/destinations/filter-groups";
-import { Pagination } from "@/components/destinations/pagination";
+import { Pagination } from "@/components/catalogue/pagination";
 import { ResultRow, ResultTile } from "@/components/destinations/result-card";
 import { crowdLevel } from "@/lib/destination-data";
 import {
@@ -33,6 +33,7 @@ import {
   parseSearch,
   provinceFacets,
   sortDestinations,
+  withFilter,
   type RawSearchParams,
   type SearchState,
 } from "@/lib/destinations-search";
@@ -277,7 +278,11 @@ async function Catalogue({ searchParams }: PageProps) {
             )}
           </div>
 
-          <Pagination state={state} totalPages={totalPages} />
+          <Pagination
+            current={page}
+            totalPages={totalPages}
+            hrefFor={(next) => withFilter(state, { page: next })}
+          />
 
           <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
             Tingkat kepadatan pada setiap kartu berasal dari statistik kunjungan

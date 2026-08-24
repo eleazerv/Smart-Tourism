@@ -47,24 +47,40 @@ export function Rail({
 
   // Measured rather than derived from the aspect ratio, because each rail
   // picks its own — and some of them change it at a breakpoint.
+  //
+  // The observer watches the rail itself, not the artwork: a rail whose cards
+  // stream in behind Suspense has no artwork to find on the first pass, and
+  // watching an element that does not exist yet would leave the arrows stuck
+  // at their fallback position for good.
   useEffect(() => {
     const root = rootRef.current;
-    const media = root?.querySelector<HTMLElement>("[data-rail-media]");
-    if (!root || !media) return;
+    if (!root) return;
 
     const measure = () => {
+      const media = root.querySelector<HTMLElement>("[data-rail-media]");
+      if (!media) return;
+
       const mediaBox = media.getBoundingClientRect();
       if (mediaBox.height === 0) return;
+
       setMediaCenter(
         mediaBox.top - root.getBoundingClientRect().top + mediaBox.height / 2,
       );
     };
 
     measure();
+    // A second pass after paint, for the case where the cards are in the DOM
+    // but the browser has not sized their images yet.
+    const frame = requestAnimationFrame(measure);
+
     const observer = new ResizeObserver(measure);
-    observer.observe(media);
-    return () => observer.disconnect();
-  }, []);
+    observer.observe(root);
+
+    return () => {
+      cancelAnimationFrame(frame);
+      observer.disconnect();
+    };
+  }, [children]);
 
   const scrollBy = (dir: 1 | -1) => {
     const el = trackRef.current;

@@ -2,19 +2,22 @@
 
 import { useEffect, useState } from "react";
 import { SlidersHorizontal, X } from "lucide-react";
-import {
-  FilterGroups,
-  type FilterGroupsProps,
-} from "@/components/destinations/filter-groups";
 
 /**
- * Mobile counterpart to the sidebar: the same facets in a bottom sheet.
- * Desktop keeps the column, so this whole control hides above `lg`.
+ * Mobile counterpart to the filter sidebar: the same facets in a bottom sheet.
+ * Desktop keeps the column, so the trigger hides above `lg`.
+ *
+ * The facets are passed in as children from the server, so the sheet closes by
+ * watching for a click on any link inside rather than by handing each row a
+ * callback it could not receive across the server boundary.
  */
 export function FilterDrawer({
   activeCount,
-  ...groups
-}: Omit<FilterGroupsProps, "onPick"> & { activeCount: number }) {
+  children,
+}: {
+  activeCount: number;
+  children: React.ReactNode;
+}) {
   const [open, setOpen] = useState(false);
 
   // A sheet over the results should not let the page scroll behind it, and
@@ -66,23 +69,28 @@ export function FilterDrawer({
             aria-label="Saring hasil"
             className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 pb-8 shadow-pop"
           >
-            <div className="mb-4 flex items-center justify-between">
-              <span
-                aria-hidden="true"
-                className="absolute inset-x-0 top-2 mx-auto h-1 w-10 rounded-full bg-border"
-              />
-              <span className="sr-only">Saring hasil</span>
+            <span
+              aria-hidden="true"
+              className="absolute inset-x-0 top-2 mx-auto h-1 w-10 rounded-full bg-border"
+            />
+            <div className="mb-4 flex items-center justify-end">
               <button
                 type="button"
                 onClick={() => setOpen(false)}
                 aria-label="Tutup filter"
-                className="ml-auto grid h-9 w-9 place-items-center rounded-full transition hover:bg-muted"
+                className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-muted"
               >
                 <X className="h-5 w-5" />
               </button>
             </div>
 
-            <FilterGroups {...groups} onPick={() => setOpen(false)} />
+            <div
+              onClick={(event) => {
+                if ((event.target as HTMLElement).closest("a")) setOpen(false);
+              }}
+            >
+              {children}
+            </div>
           </div>
         </div>
       )}

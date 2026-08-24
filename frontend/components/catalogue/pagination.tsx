@@ -1,14 +1,14 @@
 import Link from "next/link";
 import { ChevronLeft, ChevronRight } from "lucide-react";
-import { withFilter, type SearchState } from "@/lib/destinations-search";
 import { cn } from "@/lib/utils";
 
 /** Page numbers rendered around the current one before the gaps collapse. */
 const WINDOW = 1;
 
 /**
- * Numbered pager. Long catalogues collapse to `1 … 4 5 6 … 13` so the control
- * keeps a fixed width no matter how many pages the filter matched.
+ * Numbered pager shared by every listing page. Long result sets collapse to
+ * `1 … 4 5 6 … 13` so the control keeps a fixed width no matter how many pages
+ * the filters matched.
  */
 function pageList(current: number, total: number): (number | "gap")[] {
   const pages = new Set<number>([1, total]);
@@ -28,15 +28,18 @@ function pageList(current: number, total: number): (number | "gap")[] {
 }
 
 export function Pagination({
-  state,
+  current,
   totalPages,
+  hrefFor,
 }: {
-  state: SearchState;
+  current: number;
   totalPages: number;
+  /** Turns a page number into a URL; each listing owns its own query shape. */
+  hrefFor: (page: number) => string;
 }) {
   if (totalPages <= 1) return null;
 
-  const current = Math.min(state.page, totalPages);
+  const page = Math.min(Math.max(current, 1), totalPages);
 
   return (
     <nav
@@ -44,14 +47,14 @@ export function Pagination({
       className="mt-8 flex flex-wrap items-center justify-center gap-1.5"
     >
       <Step
-        href={withFilter(state, { page: current - 1 })}
-        disabled={current <= 1}
+        href={hrefFor(page - 1)}
+        disabled={page <= 1}
         label="Halaman sebelumnya"
         side="prev"
       />
 
-      {pageList(current, totalPages).map((page, i) =>
-        page === "gap" ? (
+      {pageList(page, totalPages).map((entry, i) =>
+        entry === "gap" ? (
           <span
             key={`gap-${i}`}
             aria-hidden="true"
@@ -61,25 +64,25 @@ export function Pagination({
           </span>
         ) : (
           <Link
-            key={page}
-            href={withFilter(state, { page })}
-            aria-label={`Halaman ${page}`}
-            aria-current={page === current ? "page" : undefined}
+            key={entry}
+            href={hrefFor(entry)}
+            aria-label={`Halaman ${entry}`}
+            aria-current={entry === page ? "page" : undefined}
             className={cn(
               "grid h-9 min-w-9 place-items-center rounded-full px-3 text-sm font-medium tabular-nums transition",
-              page === current
+              entry === page
                 ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
                 : "border border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
             )}
           >
-            {page}
+            {entry}
           </Link>
         ),
       )}
 
       <Step
-        href={withFilter(state, { page: current + 1 })}
-        disabled={current >= totalPages}
+        href={hrefFor(page + 1)}
+        disabled={page >= totalPages}
         label="Halaman berikutnya"
         side="next"
       />

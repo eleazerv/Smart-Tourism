@@ -3,12 +3,13 @@
 import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { CalendarDays, Clock, Map, Mountain, Search } from "lucide-react";
+import { BedDouble, Clock, Map, Mountain, Plane, Search } from "lucide-react";
 import { quickLinks } from "@/lib/home-data";
 
 const icons = {
   destination: Mountain,
-  event: CalendarDays,
+  hotel: BedDouble,
+  flight: Plane,
   crowd: Map,
   time: Clock,
 } as const;

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { LayoutGrid, Rows3, X } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import {
+  SORTS,
   formatRating,
   hasFilters,
   withFilter,
@@ -10,8 +11,9 @@ import {
   type SearchState,
   type ViewMode,
 } from "@/lib/destinations-search";
-import { FilterDrawer } from "@/components/destinations/filter-drawer";
-import { SortSelect } from "@/components/destinations/sort-select";
+import { FilterDrawer } from "@/components/catalogue/filter-drawer";
+import { SortSelect } from "@/components/catalogue/sort-select";
+import { FilterGroups } from "@/components/destinations/filter-groups";
 import { cn } from "@/lib/utils";
 
 export function CatalogueToolbar({
@@ -57,14 +59,18 @@ export function CatalogueToolbar({
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
-          <FilterDrawer
-            state={state}
-            tags={tags}
-            provinces={provinces}
-            activeCount={activeCount}
-          />
+          <FilterDrawer activeCount={activeCount}>
+            <FilterGroups state={state} tags={tags} provinces={provinces} />
+          </FilterDrawer>
           <ViewToggle state={state} />
-          <SortSelect state={state} />
+          <SortSelect
+            value={state.sort}
+            options={SORTS.map((sort) => ({
+              value: sort.key,
+              label: sort.label,
+              href: withFilter(state, { sort: sort.key }),
+            }))}
+          />
         </div>
       </div>
 

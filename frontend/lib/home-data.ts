@@ -30,14 +30,15 @@ export function coverImage(
 
 export type QuickLink = {
   label: string;
-  icon: "destination" | "event" | "crowd" | "time";
+  icon: "destination" | "hotel" | "flight" | "crowd" | "time";
   href: string;
 };
 
 /** Shortcuts under the search field: what to browse, and the two data tools. */
 export const quickLinks: QuickLink[] = [
   { label: "Destinasi", icon: "destination", href: "/destinations" },
-  { label: "Event", icon: "event", href: "/events" },
+  { label: "Hotel", icon: "hotel", href: "/hotels" },
+  { label: "Tiket Pesawat", icon: "flight", href: "/flights" },
   { label: "Peta Kepadatan", icon: "crowd", href: "/heatmap" },
   { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
 ];
@@ -62,6 +63,8 @@ export const footerColumns: {
     title: "Platform",
     links: [
       { label: "Destinasi", href: "/destinations" },
+      { label: "Hotel", href: "/hotels" },
+      { label: "Tiket Pesawat", href: "/flights" },
       { label: "Peta Kepadatan", href: "/heatmap" },
       { label: "Waktu Terbaik", href: "/recommendations" },
     ],
