@@ -12,8 +12,6 @@ import { SeasonalRail } from "@/components/home/seasonal-rail";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { GridSkeleton, RailSkeleton } from "@/components/home/skeletons";
-import { StoryCard } from "@/components/home/story-card";
-import { stories } from "@/lib/home-data";
 
 export default function Home() {
   return (
@@ -42,8 +40,6 @@ export default function Home() {
         <Suspense fallback={<RailSkeleton />}>
           <DestinationRail />
         </Suspense>
-
-        <StoryCard story={stories[0]} />
 
         <InspirationRail />
 
