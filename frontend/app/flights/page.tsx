@@ -20,6 +20,7 @@ import {
   activeFilterCount,
   airlineFacets,
   applyFilters,
+  bookingHref,
   formatDateLabel,
   parseFlightSearch,
   sortFlights,
@@ -175,10 +176,8 @@ async function Board({ searchParams }: PageProps) {
                   key={flight.id}
                   flight={flight}
                   passengers={state.passengers}
-                  // The destinations catalogue is the part of this page with
-                  // real data behind it, so that is where "and then what" goes.
-                  exploreHref={`/destinations?q=${encodeURIComponent(to.city)}`}
-                  exploreLabel={`Jelajahi ${to.city}`}
+                  cabin={state.cabin}
+                  bookHref={bookingHref(state, flight.id)}
                 />
               ))}
             </div>

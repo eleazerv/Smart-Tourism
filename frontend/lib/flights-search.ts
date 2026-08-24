@@ -175,6 +175,26 @@ export function activeFilterCount(state: FlightSearchState): number {
   );
 }
 
+/**
+ * Link to the booking step for one flight.
+ *
+ * Carries the search itself rather than the flight's details: schedules are
+ * regenerated from route, date and cabin, so the booking page rebuilds the same
+ * timetable and looks the flight up by id. Nothing has to be stashed in a
+ * session, and the URL stays shareable.
+ */
+export function bookingHref(state: FlightSearchState, flightId: string): string {
+  const params = new URLSearchParams({
+    from: state.from,
+    to: state.to,
+    date: state.date,
+    cabin: state.cabin,
+    pax: String(state.passengers),
+    flight: flightId,
+  });
+  return `/flights/pesan?${params.toString()}`;
+}
+
 /** Reverses the route, keeping everything else the reader chose. */
 export function swappedHref(state: FlightSearchState, now = new Date()): string {
   return withFilter(state, { from: state.to, to: state.from }, now);

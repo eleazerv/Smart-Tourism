@@ -239,6 +239,30 @@ function pickConnection(
   return hubs.length > 0 ? random.pick(hubs).code : "CGK";
 }
 
+/**
+ * Indonesian air fares are quoted all-in, so `price` already contains tax and
+ * service charges. The booking summary splits them back out rather than adding
+ * anything on top — a total that grew after the reader picked a flight would be
+ * the oldest trick in online travel, and this prototype should not teach it.
+ */
+export const TAX_RATE = 0.11;
+
+export function fareBreakdown(price: number, passengers: number) {
+  // The base fare is quoted round, the way airlines publish it, and the tax
+  // line absorbs the remainder — so the two still add up to the price shown in
+  // the results exactly.
+  const baseEach = roundPrice(price / (1 + TAX_RATE), 1000);
+  const taxEach = price - baseEach;
+
+  return {
+    baseEach,
+    taxEach,
+    base: baseEach * passengers,
+    tax: taxEach * passengers,
+    total: price * passengers,
+  };
+}
+
 /* -------------------------------------------------------- presentation --- */
 
 /** `06:35`, from minutes past midnight. */

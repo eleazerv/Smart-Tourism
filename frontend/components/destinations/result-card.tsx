@@ -35,7 +35,7 @@ export function ResultRow({ destination, crowd, priority }: ResultProps) {
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="group overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 hover:shadow-pop dark:hover:border-brand-100/30 sm:flex">
+    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
         <FavoriteButton label={destination.name} />
         <Link href={href} tabIndex={-1} aria-hidden="true">
@@ -45,7 +45,7 @@ export function ResultRow({ destination, crowd, priority }: ResultProps) {
             fill
             priority={priority}
             sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className="object-cover"
           />
         </Link>
         {destination.category && (
@@ -102,7 +102,7 @@ export function ResultTile({ destination, crowd, priority }: ResultProps) {
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="group flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 hover:shadow-pop dark:hover:border-brand-100/30">
+    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
       <div className="relative aspect-[4/3] overflow-hidden bg-brand-700">
         <FavoriteButton label={destination.name} />
         <Link href={href} tabIndex={-1} aria-hidden="true">
@@ -112,7 +112,7 @@ export function ResultTile({ destination, crowd, priority }: ResultProps) {
             fill
             priority={priority}
             sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 100vw"
-            className="object-cover transition duration-500 group-hover:scale-105"
+            className="object-cover"
           />
         </Link>
         {destination.category && (
