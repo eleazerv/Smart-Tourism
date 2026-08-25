@@ -142,3 +142,45 @@
   outline: none;
   filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 3px #0f172a);
 }
+
+/* Numbered stop pins for the trip planner. Leaflet's `divIcon` ships with a
+   white box and border of its own, so both are cleared before restyling. */
+.crowd-map .leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.crowd-map .crowd-map-pin {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #134e4a;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.dark .crowd-map .crowd-map-pin {
+  border-color: #042f2e;
+  background: #5eead4;
+  color: #042f2e;
+}
+
+/* Pointing at a city in the side panel lights its pin up on the map. */
+.crowd-map .crowd-map-pin--lit {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 4px rgb(19 78 74 / 0.35),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.dark .crowd-map .crowd-map-pin--lit {
+  box-shadow:
+    0 0 0 4px rgb(94 234 212 / 0.35),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}

@@ -3,7 +3,6 @@ import {
   ForYouPrompt,
   ForYouRail,
 } from "@/components/account/for-you-rail";
-import { CrowdMap } from "@/components/home/crowd-map";
 import { DestinationRail } from "@/components/home/destination-rail";
 import { HeroSearch } from "@/components/home/hero-search";
 import { InspirationRail } from "@/components/home/inspiration-rail";
@@ -12,11 +11,7 @@ import { PromoBanner } from "@/components/home/promo-banner";
 import { SeasonalRail } from "@/components/home/seasonal-rail";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
-import {
-  GridSkeleton,
-  MapSkeleton,
-  RailSkeleton,
-} from "@/components/home/skeletons";
+import { GridSkeleton, RailSkeleton } from "@/components/home/skeletons";
 
 export default function Home() {
   return (
@@ -38,12 +33,6 @@ export default function Home() {
 
         <Suspense fallback={<GridSkeleton />}>
           <InterestGrid />
-        </Suspense>
-
-        {/* The crowd map: the quick link in the hero and the footer both
-            anchor to this section rather than a page of its own. */}
-        <Suspense fallback={<MapSkeleton />}>
-          <CrowdMap />
         </Suspense>
 
         <PromoBanner />
