@@ -2,37 +2,11 @@ import express from 'express';
 import { globalLimiter, moderateLimiter } from '../middleware/RateLimit.js';
 import { authMiddleware, optionalAuth } from '../middleware/AuthMiddleware.js';
 import {
-  getDestinationPricing,
   estimateBudget,
   getBudgetHistory,
 } from '../controllers/budget.Controller.js';
 
 const router = express.Router();
-
-/**
- * @swagger
- * /api/destinations/{id}/pricing:
- *   get:
- *     summary: Preview harga 3 tier (budget/mid/luxury) untuk destinasi ini
- *     tags: [Budget]
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *       - in: query
- *         name: origin_city_id
- *         required: true
- *         schema: { type: integer }
- *     responses:
- *       200:
- *         description: destination, flight (range), tiers (accommodation range per tier)
- *       400:
- *         description: origin_city_id tidak diisi
- *       404:
- *         description: Destinasi tidak ditemukan / data penerbangan tidak tersedia
- */
-router.get('/destinations/:id/pricing', globalLimiter, getDestinationPricing);
 
 /**
  * @swagger

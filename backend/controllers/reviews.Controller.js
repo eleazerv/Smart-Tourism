@@ -1,7 +1,7 @@
 import { supabase } from "../lib/supabase.js";
 
 import { randomUUID } from 'node:crypto';
-
+import { ALLOWED_MIME } from "../middleware/HandleReviewPhoto.js";
 const REVIEW_FIELDS = `
     id,
     destination_id,

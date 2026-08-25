@@ -2,7 +2,7 @@ import multer from 'multer'
 
 const storage = multer.memoryStorage();
  
-const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
+export const ALLOWED_MIME = ['image/jpeg', 'image/png', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
  
 

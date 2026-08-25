@@ -7,6 +7,7 @@ import { authMiddleware } from "../middleware/AuthMiddleware.js";
 import { moderateLimiter } from "../middleware/RateLimit.js";
 import { handleReviewPhotoUpload } from "../middleware/HandleReviewPhoto.js";
 import { getReviews, createReview, deleteReview, likeReview } from "../controllers/reviews.Controller.js";
+import { getDestinationPricing } from "../controllers/budget.Controller.js";
 import { getDestinationAccommodations } from "../controllers/accommodations.Controller.js";
 const router = express.Router();
 
@@ -171,6 +172,32 @@ router.post('/:id/reviews', authMiddleware, moderateLimiter, handleReviewPhotoUp
  *         description: Destinasi tidak ditemukan
  */
 router.get('/:id/accommodations', globalLimiter, getDestinationAccommodations);
+
+
+/**
+ * @swagger
+ * /api/destinations/{id}/pricing:
+ *   get:
+ *     summary: Preview harga 3 tier (budget/mid/luxury) untuk destinasi ini
+ *     tags: [Budget]
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *       - in: query
+ *         name: origin_city_id
+ *         required: true
+ *         schema: { type: integer }
+ *     responses:
+ *       200:
+ *         description: destination, flight (range), tiers (accommodation range per tier)
+ *       400:
+ *         description: origin_city_id tidak diisi
+ *       404:
+ *         description: Destinasi tidak ditemukan / data penerbangan tidak tersedia
+ */
+router.get('/:id/pricing', globalLimiter, getDestinationPricing);
 
 /**
  * @swagger
