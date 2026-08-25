@@ -219,7 +219,7 @@ async function Timing({ searchParams }: PageProps) {
 
         {/* The page answers "when"; the map answers "where". */}
         <Link
-          href="/heatmap"
+          href="/peta"
           className="flex flex-col gap-2 rounded-2xl bg-brand-900 p-5 text-brand-50 transition hover:bg-brand-700 sm:flex-row sm:items-center sm:justify-between"
         >
           <span>
