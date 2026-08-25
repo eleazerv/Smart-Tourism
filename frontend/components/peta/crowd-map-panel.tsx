@@ -1,17 +1,17 @@
 "use client";
 
 /**
- * Interactive shell around the map that *is* `/heatmap`.
+ * Interactive shell around the map that *is* `/peta`.
  *
- * The map runs edge to edge and owns the whole screen; the toolbar and the
- * legend float over it, and the trip panel is docked solid down the right.
+ * Crowding and the trip planner share one canvas: the province wash says which
+ * regions are busy, the city dots on top are the stops you string into a route.
+ * Reading the first and acting on the second is one continuous move, so
+ * splitting them across modes only made the reader toggle back and forth.
+ *
+ * The map runs edge to edge and owns the whole screen; the region filter and
+ * the legend float over it, and the panel is docked solid down the right.
  * Below `lg` that inverts — the page scrolls, the map takes a slice of the
  * viewport, and the panel follows underneath.
- *
- * Two modes share one map: `kepadatan` grades provinces by visitor count, and
- * `rencana` turns the same canvas into a trip planner — pick cities in order,
- * the map joins them with a route line, and each stop brings its own
- * recommendations.
  *
  * The map itself is a separate chunk (`crowd-map-view.tsx`) pulled in with
  * `ssr: false`; everything here renders on the server too, so the summary and
@@ -26,11 +26,9 @@ import {
   ArrowRight,
   ChevronDown,
   ChevronUp,
-  Flame,
   MapPin,
   MousePointerClick,
   Plus,
-  Route,
   Search,
   Trash2,
   X,
@@ -50,9 +48,9 @@ import {
 import { formatKm, routeDistanceKm, type CityStop } from "@/lib/trip-data";
 import { Rating } from "@/components/home/rating";
 import { cn } from "@/lib/utils";
-import type { Camera, MapMode } from "@/components/heatmap/crowd-map-view";
+import type { Camera } from "@/components/peta/crowd-map-view";
 
-const CrowdMapView = dynamic(() => import("@/components/heatmap/crowd-map-view"), {
+const CrowdMapView = dynamic(() => import("@/components/peta/crowd-map-view"), {
   ssr: false,
   loading: () => (
     <div className="grid h-full w-full place-items-center bg-muted">
@@ -60,11 +58,6 @@ const CrowdMapView = dynamic(() => import("@/components/heatmap/crowd-map-view")
     </div>
   ),
 });
-
-const MODES: { key: MapMode; label: string; icon: typeof Flame }[] = [
-  { key: "kepadatan", label: "Kepadatan", icon: Flame },
-  { key: "rencana", label: "Rencana Perjalanan", icon: Route },
-];
 
 /** Where a half-built itinerary survives a reload. */
 const TRIP_STORAGE_KEY = "smart-tourism:trip";
@@ -88,7 +81,6 @@ export function CrowdMapPanel({
   points: DensityPoint[];
   stops: CityStop[];
 }) {
-  const [mode, setMode] = useState<MapMode>("kepadatan");
   const [region, setRegion] = useState<Filter>("semua");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   /** City ids, in visiting order. */
@@ -179,18 +171,6 @@ export function CrowdMapPanel({
     }));
   }
 
-  function pickMode(next: MapMode) {
-    if (next === mode) return;
-    setMode(next);
-    setSelectedCode(null);
-    // Land on whatever the new mode is about: the route, or the region.
-    moveCamera(
-      next === "rencana" && routeStops.length > 0
-        ? boundsOfStops(routeStops)
-        : regionBounds(region),
-    );
-  }
-
   function pickRegion(next: Filter) {
     setRegion(next);
     setSelectedCode(null);
@@ -238,7 +218,6 @@ export function CrowdMapPanel({
     <div className="flex min-h-0 flex-col lg:h-full lg:flex-row">
       <div className="relative h-[60vh] min-h-[20rem] shrink-0 lg:h-full lg:min-h-0 lg:flex-1">
         <CrowdMapView
-          mode={mode}
           points={points}
           stops={stops}
           trip={trip}
@@ -255,41 +234,7 @@ export function CrowdMapPanel({
             have to clear it; `pointer-events-none` on the wrappers keeps the
             map draggable everywhere the controls are not. The right edge is
             left free for Leaflet's zoom buttons. */}
-        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1100] flex flex-col items-start gap-2 p-3 pr-14">
-          {/* Mode switch. One map, two jobs: find the regions that are still
-              quiet, then string them into a route. */}
-          <div className="pointer-events-auto flex max-w-full items-center gap-3 rounded-full border border-border bg-background/90 p-1 shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
-            <div role="group" aria-label="Mode peta" className="inline-flex">
-              {MODES.map((entry) => {
-                const Icon = entry.icon;
-                return (
-                  <button
-                    key={entry.key}
-                    type="button"
-                    onClick={() => pickMode(entry.key)}
-                    aria-pressed={mode === entry.key}
-                    className={cn(
-                      "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-semibold transition sm:px-4",
-                      mode === entry.key
-                        ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                        : "text-muted-foreground hover:text-foreground",
-                    )}
-                  >
-                    <Icon className="h-4 w-4" />
-                    {entry.label}
-                  </button>
-                );
-              })}
-            </div>
-
-            {mode === "rencana" && routeStops.length > 0 && (
-              <p className="whitespace-nowrap pr-3 text-xs text-muted-foreground">
-                {routeStops.length} perhentian ·{" "}
-                {formatKm(routeDistanceKm(routeStops))}
-              </p>
-            )}
-          </div>
-
+        <div className="pointer-events-none absolute inset-x-0 top-0 z-[1100] flex flex-wrap items-center gap-2 p-3 pr-14">
           {/* Region filter. Picking one fits the map to that island group and
               re-scopes the panel, so "paling sepi" can be read per region
               rather than only nationally. */}
@@ -311,13 +256,21 @@ export function CrowdMapPanel({
               </button>
             ))}
           </div>
+
+          {routeStops.length > 0 && (
+            <p className="pointer-events-auto whitespace-nowrap rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
+              {routeStops.length} perhentian ·{" "}
+              {formatKm(routeDistanceKm(routeStops))}
+            </p>
+          )}
         </div>
 
+        {/* Legend. Size carries the same information as colour, so the bands
+            stay readable for anyone who cannot separate the hues. The second
+            row explains the layer sitting on top of them. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1100] p-3 pr-24">
-          {mode === "kepadatan" ? (
-            /* Legend. Size carries the same information as colour, so the
-               bands stay readable for anyone who cannot separate the hues. */
-            <div className="pointer-events-auto inline-flex max-w-full flex-wrap items-center gap-x-3 gap-y-1 rounded-2xl border border-border bg-background/90 px-3 py-2 shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <div className="pointer-events-auto inline-flex max-w-full flex-col gap-1 rounded-2xl border border-border bg-background/90 px-3 py-2 shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {DENSITY_LEVELS.map((level) => (
                 <span
                   key={level.label}
@@ -332,50 +285,26 @@ export function CrowdMapPanel({
                 </span>
               ))}
               <span className="text-xs text-muted-foreground">
-                Ukuran titik = jumlah pengunjung
+                Ukuran = jumlah pengunjung provinsi
               </span>
             </div>
-          ) : (
-            <p className="pointer-events-auto inline-flex max-w-full items-start gap-1.5 rounded-2xl border border-border bg-background/90 px-3 py-2 text-xs text-muted-foreground shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
-              <MousePointerClick className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-              Klik kota di peta untuk menambahkannya ke rute, klik lagi untuk
-              menghapus.
+
+            <p className="flex items-center gap-1.5 border-t border-border pt-1 text-xs text-muted-foreground">
+              <span
+                aria-hidden="true"
+                className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-background bg-brand-700 dark:bg-brand-100"
+              />
+              Titik kota — klik untuk menambahkannya ke rute
             </p>
-          )}
+          </div>
         </div>
       </div>
 
       {/* Docked panel. On a wide screen it owns the scroll; below `lg` it just
-          follows the map down the page. */}
-      <aside className="min-h-0 w-full shrink-0 space-y-3 border-border bg-background p-4 lg:h-full lg:w-[22rem] lg:overflow-y-auto lg:border-l">
-        {mode === "rencana" ? (
-          <>
-            <TripCard
-              stops={routeStops}
-              onMove={moveStop}
-              onRemove={toggleStop}
-              onClear={() => setTrip([])}
-              onFit={() => moveCamera(boundsOfStops(routeStops))}
-              onHover={setHovered}
-            />
-            <StopPicker
-              stops={stops}
-              trip={trip}
-              region={region}
-              query={query}
-              onQuery={setQuery}
-              onToggle={(id) => toggleStop(id, true)}
-              onHover={setHovered}
-            />
-            {routeStops.map((stop, index) => (
-              <StopRecommendations
-                key={stop.id}
-                stop={stop}
-                order={index + 1}
-              />
-            ))}
-          </>
-        ) : selected ? (
+          follows the map down the page. Crowding first, because which province
+          is quiet is what decides the stops underneath it. */}
+      <aside className="no-scrollbar min-h-0 w-full shrink-0 space-y-3 border-border bg-background p-4 lg:h-full lg:w-[22rem] lg:overflow-y-auto lg:border-l">
+        {selected ? (
           <ProvinceCard point={selected} total={points.length} />
         ) : (
           <SummaryCard
@@ -386,6 +315,29 @@ export function CrowdMapPanel({
             quietest={quietest}
           />
         )}
+
+        <TripCard
+          stops={routeStops}
+          onMove={moveStop}
+          onRemove={toggleStop}
+          onClear={() => setTrip([])}
+          onFit={() => moveCamera(boundsOfStops(routeStops))}
+          onHover={setHovered}
+        />
+
+        <StopPicker
+          stops={stops}
+          trip={trip}
+          region={region}
+          query={query}
+          onQuery={setQuery}
+          onToggle={(id) => toggleStop(id, true)}
+          onHover={setHovered}
+        />
+
+        {routeStops.map((stop, index) => (
+          <StopRecommendations key={stop.id} stop={stop} order={index + 1} />
+        ))}
       </aside>
     </div>
   );

@@ -6,12 +6,12 @@ import { buildDensityPoints, type DensityPoint } from "@/lib/heatmap-data";
 import { buildCityStops, type CityStop } from "@/lib/trip-data";
 import { LoadError } from "@/components/home/load-error";
 import { SiteHeader } from "@/components/home/site-header";
-import { CrowdMapPanel } from "@/components/heatmap/crowd-map-panel";
-import { MapSkeleton } from "@/components/heatmap/map-skeleton";
+import { CrowdMapPanel } from "@/components/peta/crowd-map-panel";
+import { MapSkeleton } from "@/components/peta/map-skeleton";
 
-const TITLE = "Peta Kepadatan";
+const TITLE = "Peta Wisata";
 const DESCRIPTION =
-  "Sebaran kunjungan wisatawan per provinsi, dan penyusun rute liburan antarkota lengkap dengan rekomendasi tempat di tiap perhentian.";
+  "Kepadatan kunjungan tiap provinsi dan penyusun rute liburan antarkota dalam satu peta, lengkap dengan rekomendasi tempat di tiap perhentian.";
 
 /** The catalogue is 13 pages of 15; the cap only guards against it growing. */
 const CATALOGUE_PAGES = 20;
@@ -69,7 +69,7 @@ async function CrowdMapScreen() {
   } catch {
     return (
       <div className="container-page py-16">
-        <LoadError what="Peta kepadatan" />
+        <LoadError what="Peta wisata" />
       </div>
     );
   }

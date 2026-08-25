@@ -157,7 +157,7 @@
   height: 28px;
   border-radius: 9999px;
   border: 2px solid #ffffff;
-  background: #134e4a;
+  background: #19443c;
   color: #ffffff;
   font-size: 0.75rem;
   font-weight: 700;
@@ -167,7 +167,7 @@
 
 .dark .crowd-map .crowd-map-pin {
   border-color: #042f2e;
-  background: #5eead4;
+  background: #aefffa;
   color: #042f2e;
 }
 
@@ -175,12 +175,12 @@
 .crowd-map .crowd-map-pin--lit {
   transform: scale(1.15);
   box-shadow:
-    0 0 0 4px rgb(19 78 74 / 0.35),
+    0 0 0 4px rgb(25 68 60 / 0.35),
     0 1px 4px rgb(0 0 0 / 0.35);
 }
 
 .dark .crowd-map .crowd-map-pin--lit {
   box-shadow:
-    0 0 0 4px rgb(94 234 212 / 0.35),
+    0 0 0 4px rgb(174 255 250 / 0.35),
     0 1px 4px rgb(0 0 0 / 0.35);
 }

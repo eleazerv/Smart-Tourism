@@ -1,4 +1,4 @@
-/** Placeholder held by the Suspense boundary in `app/heatmap/page.tsx`. */
+/** Placeholder held by the Suspense boundary in `app/peta/page.tsx`. */
 
 function Block({ className }: { className: string }) {
   return <div className={`animate-pulse bg-muted ${className}`} />;
