@@ -49,3 +49,22 @@ export function RailSkeleton({ aspect = "aspect-[4/3]" }: { aspect?: string }) {
     </section>
   );
 }
+
+export function MapSkeleton() {
+  return (
+    <section className="py-8 sm:py-10">
+      <div className="container-page">
+        <Heading />
+        <div className="mb-4 flex gap-2">
+          {Array.from({ length: 5 }, (_, i) => (
+            <Block key={i} className="h-8 w-28 rounded-full" />
+          ))}
+        </div>
+        <div className="grid gap-4 lg:grid-cols-[minmax(0,1fr)_20rem]">
+          <Block className="h-[340px] sm:h-[440px] lg:h-[480px]" />
+          <Block className="h-44" />
+        </div>
+      </div>
+    </section>
+  );
+}
