@@ -23,7 +23,10 @@ export function DestinationCard({
 
   return (
     <article className="w-[calc(75%-0.5rem)] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
-      <div className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-700">
+      <div
+        data-rail-media
+        className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-700"
+      >
         <FavoriteButton label={destination.name} />
         <Link href={`/destinations/${destination.id}`}>
           <Image

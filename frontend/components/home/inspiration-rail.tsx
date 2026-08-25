@@ -14,7 +14,10 @@ export function InspirationRail() {
             key={item.title}
             className="w-[70%] shrink-0 snap-start sm:w-[45%] lg:w-[calc(33.333%-0.667rem)]"
           >
-            <div className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-brand-700">
+            <div
+              data-rail-media
+              className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-brand-700"
+            >
               <FavoriteButton label={item.title} />
               <Image
                 src={photo(item.seed, 700, 440)}

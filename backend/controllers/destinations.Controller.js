@@ -62,19 +62,37 @@ export const getDestinations = async (req,res) => {
 }
 
 
+// Halaman detail butuh nama provinsi/kota dan tag-nya, bukan cuma kolom mentah
+// destinations, jadi relasinya ikut di-join di sini.
+const DETAIL_FIELDS = `
+    id, name, description, category, latitude, longitude,
+    cover_image_url, avg_rating, view_count, province_id, city_id,
+    provinces ( id, code, name ),
+    cities ( id, name ),
+    destination_tags ( tags ( id, name, slug ) )
+`;
+
 export const getDestinationById = async ( req,res) => {     
     const destinationId = req.params.id; 
     try { 
         const { data, error } = await supabase
                                     .from('destinations')
-                                    .select('*')
+                                    .select(DETAIL_FIELDS)
                                     .eq('id', destinationId)
                                     .maybeSingle();
         if (error) throw error;
         if (!data) {
             return res.status(404).json({ error: 'not_found', message: 'Destination not found' });
         }
-        return res.json({ data });
+        // Ratakan tabel pivot jadi array tag biasa supaya client tidak perlu tahu
+        // soal destination_tags.
+        const { destination_tags, ...destination } = data;
+        return res.json({
+            data: {
+                ...destination,
+                tags: (destination_tags ?? []).map(link => link.tags).filter(Boolean),
+            },
+        });
     } catch (err) { 
         console.error('[getDestinationById] error', err);
         return res.status(500).json({ error: 'server_error' });

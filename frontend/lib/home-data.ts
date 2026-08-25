@@ -1,8 +1,9 @@
 /**
  * Editorial copy for the landing page — the parts that have no table behind
- * them yet (stories, inspiration, footer). Everything that the Express API can
+ * them yet (inspiration, footer). Everything that the Express API can
  * answer for (destinations, tags) is fetched through `@/lib/api` instead.
  */
+import { isOptimizableImage } from "@/lib/image-hosts";
 
 /** Deterministic placeholder photo, keyed by seed. */
 export function photo(seed: string, w = 800, h = 600) {
@@ -10,53 +11,36 @@ export function photo(seed: string, w = 800, h = 600) {
 }
 
 /**
- * Destination covers are still null across the seeded database, so fall back to
- * a stable placeholder keyed by the row's own name.
+ * Destination covers are still null across much of the seeded database, so
+ * fall back to a stable placeholder keyed by the row's own name.
+ *
+ * A stored URL is also dropped when its host is not in `remotePatterns`:
+ * `next/image` throws on an unconfigured host, so one stray CMS link in the
+ * data would otherwise break every page that lists that destination.
  */
 export function coverImage(
   item: { name: string; cover_image_url: string | null },
   w = 800,
   h = 600,
 ) {
-  return item.cover_image_url ?? photo(item.name, w, h);
+  const stored = item.cover_image_url;
+  if (stored && isOptimizableImage(stored)) return stored;
+  return photo(item.name, w, h);
 }
 
 export type QuickLink = {
   label: string;
-  icon: "destination" | "event" | "crowd" | "time";
+  icon: "destination" | "hotel" | "flight" | "crowd" | "time";
   href: string;
 };
 
 /** Shortcuts under the search field: what to browse, and the two data tools. */
 export const quickLinks: QuickLink[] = [
   { label: "Destinasi", icon: "destination", href: "/destinations" },
-  { label: "Event", icon: "event", href: "/events" },
+  { label: "Hotel", icon: "hotel", href: "/hotels" },
+  { label: "Tiket Pesawat", icon: "flight", href: "/flights" },
   { label: "Peta Kepadatan", icon: "crowd", href: "/heatmap" },
   { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
-];
-
-export type Story = {
-  title: string;
-  excerpt: string;
-  seed: string;
-  cta: string;
-};
-
-export const stories: Story[] = [
-  {
-    title: "Menghindari puncak keramaian: panduan memilih jam kunjungan",
-    excerpt:
-      "Sebagian besar wisatawan datang pada jam dan tanggal yang sama karena tidak ada informasi pembanding. Dengan melihat prediksi kepadatan sebelum berangkat, Anda menikmati destinasi yang sama dengan antrean yang jauh lebih pendek.",
-    seed: "sunrise-viewpoint-crowd",
-    cta: "Baca panduan",
-  },
-  {
-    title: "Apa itu overtourism dan mengapa kuota kunjungan diperlukan",
-    excerpt:
-      "Lonjakan wisatawan yang tidak terkendali menambah sampah, menekan ekosistem, dan menurunkan kualitas pengalaman berwisata. Kuota harian menjaga destinasi tetap lestari tanpa menutup aksesnya bagi pengunjung.",
-    seed: "eco-trail-forest-path",
-    cta: "Pelajari",
-  },
 ];
 
 export type Inspiration = {
@@ -79,6 +63,8 @@ export const footerColumns: {
     title: "Platform",
     links: [
       { label: "Destinasi", href: "/destinations" },
+      { label: "Hotel", href: "/hotels" },
+      { label: "Tiket Pesawat", href: "/flights" },
       { label: "Peta Kepadatan", href: "/heatmap" },
       { label: "Waktu Terbaik", href: "/recommendations" },
     ],
