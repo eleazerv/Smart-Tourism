@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ArrowRight, Eye, MapPin, Users } from "lucide-react";
-import type { Destination } from "@/lib/api";
+import type { RecommendedDestination } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
 import {
   formatCount,
@@ -13,14 +13,14 @@ import { FavoriteButton } from "@/components/home/favorite-button";
 import { cn } from "@/lib/utils";
 
 export type ResultProps = {
-  destination: Destination;
+  destination: RecommendedDestination;
   /** Province-level crowding for this row; null when the province is unranked. */
   crowd: CrowdLevel | null;
   /** Skips lazy-loading for the covers above the fold. */
   priority?: boolean;
 };
 
-function placeOf(destination: Destination) {
+function placeOf(destination: RecommendedDestination) {
   return [destination.cities?.name, destination.provinces?.name]
     .filter(Boolean)
     .join(", ");
@@ -148,7 +148,7 @@ export function ResultTile({ destination, crowd, priority }: ResultProps) {
 }
 
 /** Score chip in the register booking sites use: label, evidence, then number. */
-function ScoreBlock({ destination }: { destination: Destination }) {
+function ScoreBlock({ destination }: { destination: RecommendedDestination }) {
   // The API reports an unreviewed destination as 0 rather than null, and a
   // "0,0 — Biasa" badge reads as a bad score instead of a missing one.
   const rating =

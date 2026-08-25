@@ -11,7 +11,7 @@ const navLinks = [
   { label: "Wisata", href: "/destinations" },
   { label: "Hotel", href: "/hotels" },
   { label: "Tiket Pesawat", href: "/flights" },
-  { label: "Peta Kepadatan", href: "/#peta-kepadatan" },
+  { label: "Peta Kepadatan", href: "/heatmap" },
 ];
 
 export function SiteHeader() {

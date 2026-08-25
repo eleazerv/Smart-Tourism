@@ -124,6 +124,12 @@ const PROVINCES: ProvincePlace[] = [
 
 const PLACE_BY_CODE = new Map(PROVINCES.map((place) => [place.code, place]));
 
+/** Which island group a BPS province code belongs to. Shared with the trip
+ *  planner, so a city inherits its province's region. */
+export function regionOfProvince(code: string): RegionKey {
+  return PLACE_BY_CODE.get(code)?.region ?? "lainnya";
+}
+
 /* -------------------------------------------------------------- levels --- */
 
 /** Five crowding bands, quiet first. Index doubles as the level value. */

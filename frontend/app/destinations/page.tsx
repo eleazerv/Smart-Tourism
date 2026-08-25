@@ -299,7 +299,7 @@ async function Catalogue({ searchParams }: PageProps) {
 function HeatmapPromo() {
   return (
     <Link
-      href="/#peta-kepadatan"
+      href="/heatmap"
       className="mt-6 hidden rounded-2xl bg-brand-900 p-4 text-brand-50 transition hover:bg-brand-700 lg:block"
     >
       <Map className="h-5 w-5 text-brand-100" />

@@ -3,7 +3,6 @@ import { ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Section({
-  id,
   title,
   subtitle,
   action,
@@ -11,8 +10,6 @@ export function Section({
   className,
   bare = false,
 }: {
-  /** Anchor target, for in-page links such as `/#peta-kepadatan`. */
-  id?: string;
   title: string;
   subtitle?: string;
   action?: { label: string; href: string };
@@ -22,10 +19,7 @@ export function Section({
   bare?: boolean;
 }) {
   return (
-    <section
-      id={id}
-      className={cn(!bare && "py-8 sm:py-10", id && "scroll-mt-20", className)}
-    >
+    <section className={cn(!bare && "py-8 sm:py-10", className)}>
       <div className={cn(!bare && "container-page")}>
         <div className="mb-4 flex items-end justify-between gap-4">
           <div>
