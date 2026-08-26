@@ -71,7 +71,7 @@ export async function createInvoice({externalId,amount,description,payerEmail}) 
 
 
 export async function expireInvoice(invoiceId) {
-  const res = await fetch(`${XENDIT_BASE_URL}/invoices/${invoiceId}/expire!`, {
+  const res = await fetch(`${XENDIT_BASE_URL}/invoices/${invoiceId}/expire`, {
     method: 'POST',
     headers: { Authorization: authHeader() },
   });

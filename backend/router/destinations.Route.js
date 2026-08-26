@@ -9,6 +9,8 @@ import { handleReviewPhotoUpload } from "../middleware/HandleReviewPhoto.js";
 import { getReviews, createReview, deleteReview, likeReview } from "../controllers/reviews.Controller.js";
 import { getDestinationPricing } from "../controllers/budget.Controller.js";
 import { getDestinationAccommodations } from "../controllers/accommodations.Controller.js";
+import { toggleSaveDestination } from "../controllers/savedDestination.Controller.js";
+
 const router = express.Router();
 
 /**
@@ -39,7 +41,7 @@ const router = express.Router();
  *       200:
  *         description: data, page, total, total_pages
  */
-router.get("/", globalLimiter, getDestinations);
+router.get("/", globalLimiter,optionalAuth, getDestinations);
 
 /**
  * @swagger
@@ -57,7 +59,7 @@ router.get("/", globalLimiter, getDestinations);
  *       400:
  *         description: period tidak valid
  */
-router.get("/trending", globalLimiter, getTrendingDestinations);
+router.get("/trending", globalLimiter, optionalAuth, getTrendingDestinations);
 
 /**
  * @swagger
@@ -74,7 +76,7 @@ router.get("/trending", globalLimiter, getTrendingDestinations);
  *       200:
  *         description: data (null kalau tidak ditemukan)
  */
-router.get("/:id", globalLimiter, getDestinationById);
+router.get("/:id", globalLimiter, optionalAuth, getDestinationById);
 
 /**
  * @swagger
@@ -93,6 +95,30 @@ router.get("/:id", globalLimiter, getDestinationById);
  */
 router.post("/:id/view", globalLimiter, optionalAuth, dedupView, postView);
 
+/**
+ * @swagger
+ * /api/destinations/{id}/save:
+ *   post:
+ *     summary: Toggle simpan/batal simpan destinasi
+ *     description: Kalau belum disimpan -> simpan. Kalau sudah -> batal simpan.
+ *     tags: [Destinations]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: "saved: false (baru saja batal simpan)"
+ *       201:
+ *         description: "saved: true (baru saja disimpan)"
+ *       404:
+ *         description: Destinasi tidak ditemukan
+ */
+router.post('/:id/save', authMiddleware, moderateLimiter, toggleSaveDestination);
+ 
 /**
  * @swagger
  * /api/destinations/{id}/reviews:

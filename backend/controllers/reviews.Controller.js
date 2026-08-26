@@ -20,7 +20,7 @@ const shapeReview = (row) => ({
     like_count: row.review_likes?.[0]?.count ?? 0
 });
 
-async function deletePhotoFromStorage(db, path) {
+export async function deletePhotoFromStorage(db, path) {
   if (!path) return;
   try {
     await db.storage.from(BUCKET).remove([path]);
@@ -202,13 +202,15 @@ export const likeReview = async (req, res) => {
     try {
         const reviewId = req.params.id;
         const userId = req.user.id;
-        const { data: existing } = await req.db
+        const { data: existing, error : existingError} = await req.db
         .from('review_likes')
         .select('id')
         .eq('review_id', reviewId)
         .eq('user_id', userId)
         .maybeSingle();
 
+        if (existingError) throw existingError;
+        
         if (existing) {
         await req.db.from('review_likes').delete().eq('id', existing.id);
         return res.json({ liked: false });

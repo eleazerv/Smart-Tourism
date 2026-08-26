@@ -38,7 +38,7 @@ const router = express.Router();
  *       404:
  *         description: Destinasi/penerbangan/akomodasi tidak ditemukan
  */
-router.post('/budget/estimate', optionalAuth, moderateLimiter, estimateBudget);
+router.post('/estimate', optionalAuth, moderateLimiter, estimateBudget);
 
 /**
  * @swagger
@@ -54,6 +54,6 @@ router.post('/budget/estimate', optionalAuth, moderateLimiter, estimateBudget);
  *       401:
  *         description: Tidak ada/invalid token
  */
-router.get('/budget/history', authMiddleware, globalLimiter, getBudgetHistory);
+router.get('/history', authMiddleware, globalLimiter, getBudgetHistory);
 
 export default router;

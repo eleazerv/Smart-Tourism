@@ -1,6 +1,18 @@
 import { supabase } from "../lib/supabase.js";
 const PAGE_SIZE = 15; 
 
+async function getSavedIdSet(db, userId, destinationIds) {
+    if (!userId || destinationIds.length === 0) return new Set();
+ 
+    const { data } = await db
+        .from('saved_destinations')
+        .select('destination_id')
+        .eq('user_id', userId)
+        .in('destination_id', destinationIds);
+ 
+    return new Set((data || []).map(r => r.destination_id));
+}
+
 export const getDestinations = async (req,res) => { 
     try{ 
         const {q,tags,province_id,city_id,page} = req.query;
@@ -27,6 +39,7 @@ export const getDestinations = async (req,res) => {
             return res.status(404).json({ error: 'not_found', message: 'Destinations not found' });
         }
 
+        const saveIds = await getSavedIdSet(req.db, req.user?.id, data.map(row => row.id));
         const destinations = data.map(row => ({
             id: row.id,
             name: row.name,
@@ -37,6 +50,7 @@ export const getDestinations = async (req,res) => {
             cover_image_url: row.cover_image_url,
             avg_rating: row.avg_rating,
             view_count: row.view_count,
+            is_saved: saveIds.has(row.id),
             provinces: {
                 id: row.province_id,
                 code: row.province_code,
@@ -84,6 +98,9 @@ export const getDestinationById = async ( req,res) => {
         if (!data) {
             return res.status(404).json({ error: 'not_found', message: 'Destination not found' });
         }
+
+        const savedIds = await getSavedIdSet(req.db, req.user?.id, [destinationId]);
+
         // Ratakan tabel pivot jadi array tag biasa supaya client tidak perlu tahu
         // soal destination_tags.
         const { destination_tags, ...destination } = data;
@@ -91,6 +108,7 @@ export const getDestinationById = async ( req,res) => {
             data: {
                 ...destination,
                 tags: (destination_tags ?? []).map(link => link.tags).filter(Boolean),
+                is_saved: savedIds.has(destinationId),
             },
         });
     } catch (err) { 
@@ -113,9 +131,13 @@ export const getTrendingDestinations = async (req,res) =>{
                                         .select('id, name, cover_image_url, avg_rating, view_count')
                                         .order('view_count', { ascending: false })
                                         .limit(10); 
-
+            
             if (error) throw error;
-            return res.json({ data, period });
+
+            const savedIds = await getSavedIdSet(req.db, req.user?.id, data.map(d => d.id));
+            const result = data.map(d => ({ ...d, is_saved: savedIds.has(d.id) }));
+
+            return res.json({ data : result, period });
         }
 
         const days = period === '7d' ? 7 : 30;
@@ -133,6 +155,7 @@ export const getTrendingDestinations = async (req,res) =>{
         }
 
         const countMap = {}; 
+
         for (const row of viewRows) {
              countMap[row.destination_id] = (countMap[row.destination_id] || 0) + 1;
         }
@@ -147,11 +170,12 @@ export const getTrendingDestinations = async (req,res) =>{
                                                             .select('id, name, cover_image_url, avg_rating, view_count')
                                                             .in('id',topDestinationIds)
         if (destError) throw destError;
+        const savedIds = await getSavedIdSet(req.db, req.user?.id, topDestinationIds);
+
 
         const destMap = Object.fromEntries(destinations.map(d => [d.id,d]))
-        const result = topDestinationIds
-                        .map(id => destMap[id] ? { ...destMap[id], recent_views: countMap[id] } : null)
-                        .filter(Boolean); 
+        const result = topDestinationIds.map(id => destMap[id] ? { ...destMap[id], recent_views: countMap[id], is_saved: savedIds.has(id) } : null)
+                                        .filter(Boolean);
                     
         return res.json({ data: result, period });            
     }catch (err) { 

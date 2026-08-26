@@ -16,7 +16,7 @@ import flightRouter from './router/flight.Route.js';
 import flightBookingsRouter from './router/flightbooking.Route.js';
 import accommodationBookingsRouter from './router/accomodationBooking.Route.js';
 import webhooksRouter from './router/webhook.Route.js';
-
+import savedDestinationsRouter from './router/saved-destinations.Route.js';
 
 
 const app = express();
@@ -42,6 +42,7 @@ app.use("/api/flights",flightRouter)
 app.use("/api/flight-bookings", flightBookingsRouter);
 app.use("/api/accommodation-bookings", accommodationBookingsRouter);
 app.use("/api/webhooks", webhooksRouter);
+app.use("/api/saved-destinations", savedDestinationsRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
