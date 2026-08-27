@@ -161,6 +161,19 @@ export async function getProfile(auth: Auth): Promise<Profile | null> {
   return result?.user ?? null;
 }
 
+/** Only the display name is editable today; the API ignores anything else. */
+export async function updateProfile(
+  input: { full_name: string },
+  auth: Auth,
+): Promise<Profile> {
+  const { user } = await apiFetch<{ user: Profile }>("/api/auth/me", {
+    ...auth,
+    method: "PATCH",
+    body: input,
+  });
+  return user;
+}
+
 export async function getPreferences(auth: Auth): Promise<Tag[]> {
   const { data } = await apiFetch<{ data: Tag[] }>("/api/preferences", auth);
   return data;

@@ -83,19 +83,39 @@ export type HeatmapEntry = {
   visitor_count: number;
 };
 
+/**
+ * Both recommendation routes select a narrower column set than the catalogue
+ * does — no `latitude`/`longitude`. Spelled out so callers cannot reach for
+ * coordinates that never arrive.
+ */
+export type RecommendedDestination = Omit<
+  Destination,
+  "latitude" | "longitude"
+>;
+
+/** One province's climate pattern for the requested month. */
+export type SeasonInfo = {
+  province: ProvinceRef;
+  /** `"kemarau"` or `"hujan"` in the seeded data. */
+  season: string;
+  /** Free-text activity slugs, e.g. `["diving", "snorkeling"]`. */
+  recommended_activities: string[];
+};
+
 export type SeasonalRecommendations = {
   month: number;
-  /** Absent when no climate pattern matches the month. */
-  season_summary?: string[];
+  /** One entry per province whose climate pattern covers the month; empty
+   *  when none does. Keyed `season_info` by the controller, not `season_summary`. */
+  season_info: SeasonInfo[];
   province_id: number | null;
-  destinations: Destination[];
+  destinations: RecommendedDestination[];
 };
 
 export type PersonalRecommendations = {
   preference_tags: Tag[];
   /** Set by the controller when the user has no preferences saved yet. */
   message?: string;
-  destinations: (Destination & {
+  destinations: (RecommendedDestination & {
     match_score: number;
     matched_tags: Tag[];
   })[];

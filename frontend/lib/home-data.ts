@@ -39,7 +39,7 @@ export const quickLinks: QuickLink[] = [
   { label: "Destinasi", icon: "destination", href: "/destinations" },
   { label: "Hotel", icon: "hotel", href: "/hotels" },
   { label: "Tiket Pesawat", icon: "flight", href: "/flights" },
-  { label: "Peta Kepadatan", icon: "crowd", href: "/heatmap" },
+  { label: "Peta Wisata", icon: "crowd", href: "/peta" },
   { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
 ];
 
@@ -65,7 +65,7 @@ export const footerColumns: {
       { label: "Destinasi", href: "/destinations" },
       { label: "Hotel", href: "/hotels" },
       { label: "Tiket Pesawat", href: "/flights" },
-      { label: "Peta Kepadatan", href: "/heatmap" },
+      { label: "Peta Wisata", href: "/peta" },
       { label: "Waktu Terbaik", href: "/recommendations" },
     ],
   },

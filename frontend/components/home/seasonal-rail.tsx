@@ -6,14 +6,10 @@ import {
   type SeasonalRecommendations,
 } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
+import { dominantSeason, monthName } from "@/lib/recommendations-data";
 import { LoadError } from "@/components/home/load-error";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
-
-const MONTHS = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-];
 
 async function loadSeasonal() {
   "use cache";
@@ -34,23 +30,25 @@ export async function SeasonalRail() {
     );
   }
 
-  const { month, season_summary, destinations } = recommendations;
+  const { month, season_info, destinations } = recommendations;
   if (destinations.length === 0) return null;
 
-  const monthName = MONTHS[month - 1] ?? "bulan ini";
-  const season = season_summary?.join(" dan ") ?? "";
+  const name = monthName(month);
+  // Nationally the months split across two seasons, so the honest summary is
+  // the one most provinces are in — not a list of every season on the map.
+  const season = dominantSeason(season_info);
 
   return (
     <Section
-      title={`Cocok dikunjungi di ${monthName}`}
+      title={`Cocok dikunjungi di ${name}`}
       subtitle={
         season
-          ? `Destinasi yang sedang memasuki musim ${season}`
+          ? `Sebagian besar provinsi sedang musim ${season}`
           : undefined
       }
       action={{ label: "Lihat semua", href: "/recommendations" }}
     >
-      <Rail label={`Rekomendasi ${monthName}`}>
+      <Rail label={`Rekomendasi ${name}`}>
         {destinations.map((destination) => (
           <Link
             key={destination.id}

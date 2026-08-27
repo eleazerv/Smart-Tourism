@@ -238,7 +238,7 @@ async function Catalogue({ searchParams }: PageProps) {
       <div className="container-page grid items-start gap-8 py-8 lg:grid-cols-[16rem_1fr]">
         <aside className="hidden lg:sticky lg:top-32 lg:block">
           <FilterGroups state={state} tags={tags} provinces={provinces} />
-          <HeatmapPromo />
+          <MapPromo />
         </aside>
 
         <div className="min-w-0">
@@ -296,15 +296,15 @@ async function Catalogue({ searchParams }: PageProps) {
 }
 
 /** Cross-link to the tool that answers the question this list raises next. */
-function HeatmapPromo() {
+function MapPromo() {
   return (
     <Link
-      href="/heatmap"
+      href="/peta"
       className="mt-6 hidden rounded-2xl bg-brand-900 p-4 text-brand-50 transition hover:bg-brand-700 lg:block"
     >
       <Map className="h-5 w-5 text-brand-100" />
       <p className="mt-2 font-display text-sm font-bold leading-snug">
-        Lihat peta kepadatan seluruh provinsi
+        Lihat peta kepadatan dan rute antarkota
       </p>
       <p className="mt-1 text-xs leading-relaxed text-brand-100/85">
         Bandingkan jumlah kunjungan antarprovinsi sebelum menentukan tujuan.
