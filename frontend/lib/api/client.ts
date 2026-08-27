@@ -32,7 +32,7 @@ export type ApiFetchOptions = {
   token?: string | null;
   /** Resolve to `null` instead of throwing when the API answers 404. */
   nullOn404?: boolean;
-  method?: "GET" | "POST" | "PUT" | "DELETE";
+  method?: "GET" | "POST" | "PUT" | "PATCH" | "DELETE";
   body?: unknown;
   signal?: AbortSignal;
 };
