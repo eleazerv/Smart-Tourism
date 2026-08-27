@@ -16,9 +16,6 @@ export function SiteFooter() {
               Platform pengelolaan kunjungan wisata berbasis data untuk mencegah
               overtourism di destinasi Indonesia.
             </p>
-            <span className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-100 px-3 py-1 text-xs font-semibold text-brand-900">
-              Mendukung SDG 8 &amp; 11
-            </span>
           </div>
 
           <div className="grid grid-cols-2 gap-8 md:col-span-5 md:col-start-8">
