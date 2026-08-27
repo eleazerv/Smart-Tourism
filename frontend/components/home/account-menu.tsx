@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Heart, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, Heart, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   DropdownMenu,
@@ -123,6 +123,12 @@ export function AccountMenu({ className }: { className?: string }) {
             <Link href="/akun">
               <UserRound />
               Akun saya
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className={ITEM}>
+            <Link href="/akun/pesanan">
+              <Ticket />
+              Pesanan saya
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className={ITEM}>

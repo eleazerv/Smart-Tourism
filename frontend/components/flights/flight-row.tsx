@@ -1,15 +1,12 @@
 import Link from "next/link";
-import { Briefcase, ChevronDown, Plane } from "lucide-react";
+import { ChevronDown, Plane } from "lucide-react";
 import {
   airport,
-  arrivalDayOffset,
-  arrivalMinutes,
-  fareBreakdown,
-  formatClock,
+  clockOf,
   formatDuration,
-  type Cabin,
-  type Flight,
-} from "@/lib/flight-data";
+  type Airport,
+} from "@/lib/airports";
+import { type FlightView } from "@/lib/flights-search";
 import { formatIDR } from "@/lib/seeded-random";
 
 /**
@@ -21,18 +18,18 @@ import { formatIDR } from "@/lib/seeded-random";
  * server-rendered and expands without any JavaScript.
  */
 export function FlightRow({
-  flight,
-  passengers,
-  cabin,
+  view,
+  fromCode,
+  toCode,
   bookHref,
 }: {
-  flight: Flight;
-  passengers: number;
-  cabin: Cabin;
+  view: FlightView;
+  fromCode: string;
+  toCode: string;
   bookHref: string;
 }) {
-  const fare = fareBreakdown(flight.price, passengers);
-  const dayOffset = arrivalDayOffset(flight);
+  const { flight } = view;
+  const soldOut = flight.available_seats <= 0;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
@@ -43,65 +40,53 @@ export function FlightRow({
               aria-hidden="true"
               className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-900 dark:bg-brand-700/50 dark:text-brand-50"
             >
-              {flight.airlineCode}
+              {carrierCode(flight.flight_number, flight.airline)}
             </span>
             <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {flight.airlineName}
-              </p>
+              <p className="truncate text-sm font-semibold">{flight.airline}</p>
               <p className="text-xs text-muted-foreground">
-                {flight.flightNo} &middot; {flight.aircraft}
+                {flight.flight_number}
               </p>
             </div>
           </div>
 
           <div className="mt-3 flex items-center gap-3">
-            <Endpoint
-              time={formatClock(flight.departMinutes)}
-              code={flight.from}
-            />
+            <Endpoint time={clockOf(flight.departure_time)} code={fromCode} />
 
             <div className="min-w-0 flex-1">
               <p className="text-center text-[11px] text-muted-foreground">
-                {formatDuration(flight.durationMin)}
+                {formatDuration(view.durationMin)}
               </p>
               <div className="relative my-1 h-px bg-border">
                 <Plane
                   aria-hidden="true"
                   className="absolute -top-[7px] right-0 h-3.5 w-3.5 text-muted-foreground"
                 />
-                {flight.stops === 1 && (
-                  <span
-                    aria-hidden="true"
-                    className="absolute -top-[3px] left-1/2 h-1.5 w-1.5 -translate-x-1/2 rounded-full bg-amber-500"
-                  />
-                )}
               </div>
-              <p className="text-center text-[11px] font-medium">
-                {flight.stops === 0 ? (
-                  <span className="text-emerald-700 dark:text-emerald-400">
-                    Langsung
-                  </span>
-                ) : (
-                  <span className="text-amber-700 dark:text-amber-400">
-                    1 transit &middot; {flight.via}
-                  </span>
-                )}
+              <p className="text-center text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+                Langsung
               </p>
             </div>
 
             <Endpoint
-              time={formatClock(arrivalMinutes(flight))}
-              code={flight.to}
-              dayOffset={dayOffset}
+              time={clockOf(flight.arrival_time)}
+              code={toCode}
+              dayOffset={view.dayOffset}
             />
           </div>
 
-          <p className="mt-2.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <Briefcase className="h-3.5 w-3.5 shrink-0" />
-            {flight.baggageKg > 0
-              ? `Bagasi ${flight.baggageKg} kg termasuk`
-              : "Hanya bagasi kabin"}
+          <p className="mt-2.5 text-xs text-muted-foreground">
+            {soldOut ? (
+              <span className="font-medium text-destructive">
+                Kursi habis untuk penerbangan ini
+              </span>
+            ) : flight.available_seats <= 5 ? (
+              <span className="font-medium text-amber-700 dark:text-amber-400">
+                Tinggal {flight.available_seats} kursi
+              </span>
+            ) : (
+              `${flight.available_seats} kursi tersedia`
+            )}
           </p>
         </div>
 
@@ -109,17 +94,19 @@ export function FlightRow({
           <p className="text-lg font-bold tabular-nums">
             {formatIDR(flight.price)}
           </p>
-          <p className="text-xs text-muted-foreground">
-            {passengers > 1
-              ? `${formatIDR(fare.total)} / ${passengers} org`
-              : "per orang"}
-          </p>
-          <Link
-            href={bookHref}
-            className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
-          >
-            Pilih
-          </Link>
+          <p className="text-xs text-muted-foreground">per penumpang</p>
+          {soldOut ? (
+            <span className="mt-2 inline-flex w-full cursor-not-allowed items-center justify-center rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-muted-foreground">
+              Habis
+            </span>
+          ) : (
+            <Link
+              href={bookHref}
+              className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+            >
+              Pilih
+            </Link>
+          )}
         </div>
       </div>
 
@@ -133,19 +120,45 @@ export function FlightRow({
         </summary>
 
         <div className="grid gap-6 border-t border-border bg-muted/40 p-4 sm:grid-cols-2">
-          <Itinerary flight={flight} cabin={cabin} />
-          <FareTable flight={flight} passengers={passengers} />
+          <Itinerary view={view} from={airport(fromCode)} to={airport(toCode)} />
+
+          <div>
+            <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
+              Harga
+            </h4>
+            <dl className="mt-2.5 space-y-1.5 text-xs">
+              <Row
+                label="Tarif per penumpang"
+                value={formatIDR(flight.price)}
+              />
+              <Row label="Mata uang" value={flight.currency} />
+              <Row
+                label="Kursi tersisa"
+                value={String(flight.available_seats)}
+              />
+            </dl>
+            <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
+              Satu pemesanan berlaku untuk satu penumpang. Kursi ditahan begitu
+              pesanan dibuat, sebelum pembayaran.
+            </p>
+          </div>
         </div>
       </details>
     </article>
   );
 }
 
-/** Departure, connection and arrival as a vertical timeline. */
-function Itinerary({ flight, cabin }: { flight: Flight; cabin: Cabin }) {
-  const from = airport(flight.from);
-  const to = airport(flight.to);
-  const via = flight.via ? airport(flight.via) : null;
+/** Departure and arrival as a vertical timeline. */
+function Itinerary({
+  view,
+  from,
+  to,
+}: {
+  view: FlightView;
+  from: Airport | null;
+  to: Airport | null;
+}) {
+  const { flight } = view;
 
   return (
     <div>
@@ -154,74 +167,32 @@ function Itinerary({ flight, cabin }: { flight: Flight; cabin: Cabin }) {
       </h4>
       <ol className="mt-2.5 space-y-3">
         <Stop
-          time={formatClock(flight.departMinutes)}
-          code={flight.from}
-          name={from ? `${from.name}, ${from.city}` : flight.from}
+          time={clockOf(flight.departure_time)}
+          code={from?.code ?? "—"}
+          name={from ? `${from.name}, ${from.city}` : "Bandara asal"}
         />
-        {via && (
-          <Stop
-            time={null}
-            code={via.code}
-            name={`Transit di ${via.name}, ${via.city}`}
-            muted
-          />
-        )}
         <Stop
-          time={formatClock(arrivalMinutes(flight))}
-          code={flight.to}
-          name={to ? `${to.name}, ${to.city}` : flight.to}
-          dayOffset={arrivalDayOffset(flight)}
+          time={clockOf(flight.arrival_time)}
+          code={to?.code ?? "—"}
+          name={to ? `${to.name}, ${to.city}` : "Bandara tujuan"}
+          dayOffset={view.dayOffset}
         />
       </ol>
 
       <dl className="mt-4 space-y-1 text-xs">
-        <Detail label="Pesawat" value={flight.aircraft} />
-        <Detail label="Kelas" value={cabin === "bisnis" ? "Bisnis" : "Ekonomi"} />
-        <Detail
-          label="Bagasi"
-          value={
-            flight.baggageKg > 0
-              ? `${flight.baggageKg} kg + 7 kg kabin`
-              : "7 kg kabin saja"
-          }
-        />
-        <Detail label="Durasi" value={formatDuration(flight.durationMin)} />
+        <Detail label="Maskapai" value={flight.airline} />
+        <Detail label="Nomor penerbangan" value={flight.flight_number} />
+        <Detail label="Durasi" value={formatDuration(view.durationMin)} />
       </dl>
     </div>
   );
 }
 
-function FareTable({
-  flight,
-  passengers,
-}: {
-  flight: Flight;
-  passengers: number;
-}) {
-  const fare = fareBreakdown(flight.price, passengers);
-
-  return (
-    <div>
-      <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-        Rincian harga
-      </h4>
-      <dl className="mt-2.5 space-y-1.5 text-xs">
-        <Row
-          label={`Tarif penumpang (${passengers}x)`}
-          value={formatIDR(fare.base)}
-        />
-        <Row label="Pajak & biaya layanan" value={formatIDR(fare.tax)} />
-        <div className="flex items-center justify-between border-t border-border pt-2 text-sm font-bold">
-          <dt>Total</dt>
-          <dd className="tabular-nums">{formatIDR(fare.total)}</dd>
-        </div>
-      </dl>
-      <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-        Harga sudah termasuk pajak. Tidak ada biaya tambahan di langkah
-        berikutnya.
-      </p>
-    </div>
-  );
+/** `GA 402` carries the carrier prefix; a name is the fallback. */
+function carrierCode(flightNumber: string, airline: string): string {
+  const prefix = flightNumber.trim().match(/^[A-Z0-9]{2}/i)?.[0];
+  if (prefix) return prefix.toUpperCase();
+  return airline.slice(0, 2).toUpperCase();
 }
 
 function Stop({
@@ -229,18 +200,16 @@ function Stop({
   code,
   name,
   dayOffset = 0,
-  muted = false,
 }: {
-  time: string | null;
+  time: string;
   code: string;
   name: string;
   dayOffset?: number;
-  muted?: boolean;
 }) {
   return (
     <li className="flex gap-3">
       <span className="w-12 shrink-0 text-right text-xs font-bold tabular-nums">
-        {time ?? ""}
+        {time}
         {dayOffset > 0 && (
           <sup className="ml-0.5 text-[9px] text-muted-foreground">
             +{dayOffset}
@@ -249,7 +218,7 @@ function Stop({
       </span>
       <span
         aria-hidden="true"
-        className={`mt-1 h-2 w-2 shrink-0 rounded-full ${muted ? "bg-amber-500" : "bg-brand-700 dark:bg-brand-100"}`}
+        className="mt-1 h-2 w-2 shrink-0 rounded-full bg-brand-700 dark:bg-brand-100"
       />
       <span className="min-w-0">
         <span className="block text-xs font-semibold">{code}</span>

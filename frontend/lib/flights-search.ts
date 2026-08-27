@@ -1,12 +1,17 @@
 /**
  * URL state for `/flights`, following the same link-driven pattern as the
  * destination and hotel searches.
+ *
+ * The board is served by `GET /api/flights`, which answers one route on one
+ * date. Airline, departure window, and seat availability are narrowed here
+ * rather than in the query, because the API returns the whole day in one go.
  */
 import {
-  arrivalMinutes,
-  type Cabin,
-  type Flight,
-} from "@/lib/flight-data";
+  arrivalDayOffset,
+  durationMinutes,
+  minutesOfDay,
+} from "@/lib/airports";
+import type { FlightOption } from "@/lib/api";
 
 export const PAGE_SIZE = 10;
 
@@ -37,12 +42,11 @@ export type FlightSearchState = {
   to: string;
   /** `YYYY-MM-DD`. */
   date: string;
-  passengers: number;
-  cabin: Cabin;
+  /** Airline names exactly as `flight_options.airline` stores them. */
   airlines: string[];
-  /** `null` means any; 0 direct only; 1 allows one connection. */
-  maxStops: number | null;
   windows: TimeWindowKey[];
+  /** Hides flights whose seats have run out. */
+  availableOnly: boolean;
   sort: SortKey;
   page: number;
 };
@@ -86,11 +90,8 @@ export function parseFlightSearch(
   now = new Date(),
 ): FlightSearchState {
   const rawDate = firstValue(params.date);
-  const passengers = Number(firstValue(params.pax));
   const page = Number(firstValue(params.page));
-  const stops = firstValue(params.stops);
   const sort = firstValue(params.sort) as SortKey;
-  const cabin = firstValue(params.cabin);
 
   const from = firstValue(params.from).toUpperCase() || DEFAULT_ROUTE.from;
   const to = firstValue(params.to).toUpperCase() || DEFAULT_ROUTE.to;
@@ -99,18 +100,18 @@ export function parseFlightSearch(
     from,
     // Flying somewhere to itself has no schedule; fall back rather than
     // rendering an empty board with no explanation.
-    to: to === from ? DEFAULT_ROUTE.to === from ? DEFAULT_ROUTE.from : DEFAULT_ROUTE.to : to,
+    to:
+      to === from
+        ? DEFAULT_ROUTE.to === from
+          ? DEFAULT_ROUTE.from
+          : DEFAULT_ROUTE.to
+        : to,
     date: ISO_DATE.test(rawDate) ? rawDate : defaultDate(now),
-    passengers:
-      Number.isFinite(passengers) && passengers >= 1
-        ? Math.min(Math.floor(passengers), 9)
-        : 1,
-    cabin: cabin === "bisnis" ? "bisnis" : "ekonomi",
-    airlines: parseList(params.airline).map((code) => code.toUpperCase()),
-    maxStops: stops === "0" ? 0 : stops === "1" ? 1 : null,
+    airlines: parseList(params.airline),
     windows: parseList(params.time).filter((entry): entry is TimeWindowKey =>
       (WINDOW_KEYS as readonly string[]).includes(entry),
     ),
+    availableOnly: firstValue(params.seats) === "ada",
     sort: SORT_KEYS.includes(sort) ? sort : "termurah",
     page: Number.isFinite(page) && page > 1 ? Math.floor(page) : 1,
   };
@@ -122,11 +123,9 @@ export function toHref(state: FlightSearchState, now = new Date()): string {
   if (state.from !== DEFAULT_ROUTE.from) params.set("from", state.from);
   if (state.to !== DEFAULT_ROUTE.to) params.set("to", state.to);
   if (state.date !== defaultDate(now)) params.set("date", state.date);
-  if (state.passengers !== 1) params.set("pax", String(state.passengers));
-  if (state.cabin !== "ekonomi") params.set("cabin", state.cabin);
   if (state.airlines.length) params.set("airline", state.airlines.join(","));
-  if (state.maxStops !== null) params.set("stops", String(state.maxStops));
   if (state.windows.length) params.set("time", state.windows.join(","));
+  if (state.availableOnly) params.set("seats", "ada");
   if (state.sort !== "termurah") params.set("sort", state.sort);
   if (state.page > 1) params.set("page", String(state.page));
 
@@ -153,10 +152,10 @@ function toggle<T>(list: T[], value: T): T[] {
 
 export function withAirlineToggled(
   state: FlightSearchState,
-  code: string,
+  airline: string,
   now = new Date(),
 ) {
-  return withFilter(state, { airlines: toggle(state.airlines, code) }, now);
+  return withFilter(state, { airlines: toggle(state.airlines, airline) }, now);
 }
 
 export function withWindowToggled(
@@ -169,30 +168,13 @@ export function withWindowToggled(
 
 export function activeFilterCount(state: FlightSearchState): number {
   return (
-    state.airlines.length +
-    state.windows.length +
-    (state.maxStops !== null ? 1 : 0)
+    state.airlines.length + state.windows.length + (state.availableOnly ? 1 : 0)
   );
 }
 
-/**
- * Link to the booking step for one flight.
- *
- * Carries the search itself rather than the flight's details: schedules are
- * regenerated from route, date and cabin, so the booking page rebuilds the same
- * timetable and looks the flight up by id. Nothing has to be stashed in a
- * session, and the URL stays shareable.
- */
-export function bookingHref(state: FlightSearchState, flightId: string): string {
-  const params = new URLSearchParams({
-    from: state.from,
-    to: state.to,
-    date: state.date,
-    cabin: state.cabin,
-    pax: String(state.passengers),
-    flight: flightId,
-  });
-  return `/flights/pesan?${params.toString()}`;
+/** Link to the booking step. The flight is a real row, so its id is enough. */
+export function bookingHref(flightId: string): string {
+  return `/flights/pesan?flight=${encodeURIComponent(flightId)}`;
 }
 
 /** Reverses the route, keeping everything else the reader chose. */
@@ -202,10 +184,43 @@ export function swappedHref(state: FlightSearchState, now = new Date()): string 
 
 /* ------------------------------------------------------- result shaping --- */
 
-function inWindow(flight: Flight, key: TimeWindowKey): boolean {
+/**
+ * A flight with the clock arithmetic already done, so filtering, sorting, and
+ * the row itself all read the same numbers.
+ */
+export type FlightView = {
+  flight: FlightOption;
+  /** Minutes past midnight, local at the origin. */
+  departMinutes: number;
+  /**
+   * Minutes past midnight on the arrival clock, plus a day per calendar day
+   * crossed — so a value over 1440 means it lands tomorrow.
+   */
+  arriveMinutes: number;
+  durationMin: number;
+  dayOffset: number;
+};
+
+export function toView(flight: FlightOption): FlightView {
+  const dayOffset = arrivalDayOffset(flight);
+  return {
+    flight,
+    departMinutes: minutesOfDay(flight.departure_time),
+    arriveMinutes: minutesOfDay(flight.arrival_time) + dayOffset * 1440,
+    durationMin: durationMinutes(flight),
+    dayOffset,
+  };
+}
+
+/** Decorates a whole board. */
+export function toViews(flights: FlightOption[]): FlightView[] {
+  return flights.map(toView);
+}
+
+function inWindow(view: FlightView, key: TimeWindowKey): boolean {
   const window = TIME_WINDOWS.find((entry) => entry.key === key);
   if (!window) return true;
-  const minutes = flight.departMinutes;
+  const minutes = view.departMinutes;
   // The evening window wraps past midnight, so it is tested on both sides.
   return window.to > 1440
     ? minutes >= window.from || minutes < window.to - 1440
@@ -213,24 +228,24 @@ function inWindow(flight: Flight, key: TimeWindowKey): boolean {
 }
 
 export function applyFilters(
-  flights: Flight[],
+  views: FlightView[],
   state: FlightSearchState,
-): Flight[] {
-  return flights.filter((flight) => {
-    if (state.maxStops !== null && flight.stops > state.maxStops) return false;
-    if (state.airlines.length && !state.airlines.includes(flight.airlineCode))
+): FlightView[] {
+  return views.filter((view) => {
+    if (state.availableOnly && view.flight.available_seats <= 0) return false;
+    if (state.airlines.length && !state.airlines.includes(view.flight.airline))
       return false;
     if (
       state.windows.length &&
-      !state.windows.some((key) => inWindow(flight, key))
+      !state.windows.some((key) => inWindow(view, key))
     )
       return false;
     return true;
   });
 }
 
-export function sortFlights(flights: Flight[], sort: SortKey): Flight[] {
-  const sorted = [...flights];
+export function sortFlights(views: FlightView[], sort: SortKey): FlightView[] {
+  const sorted = [...views];
   switch (sort) {
     case "tercepat":
       return sorted.sort((a, b) => a.durationMin - b.durationMin);
@@ -239,37 +254,36 @@ export function sortFlights(flights: Flight[], sort: SortKey): Flight[] {
     case "malam":
       return sorted.sort((a, b) => b.departMinutes - a.departMinutes);
     case "tiba":
-      return sorted.sort((a, b) => arrivalMinutes(a) - arrivalMinutes(b));
+      return sorted.sort((a, b) => a.arriveMinutes - b.arriveMinutes);
     default:
-      return sorted.sort((a, b) => a.price - b.price || a.durationMin - b.durationMin);
+      return sorted.sort(
+        (a, b) =>
+          a.flight.price - b.flight.price || a.durationMin - b.durationMin,
+      );
   }
 }
 
-export function airlineFacets(flights: Flight[]): Map<string, number> {
+export function airlineFacets(views: FlightView[]): Map<string, number> {
   const counts = new Map<string, number>();
-  for (const flight of flights) {
-    counts.set(flight.airlineCode, (counts.get(flight.airlineCode) ?? 0) + 1);
+  for (const view of views) {
+    counts.set(view.flight.airline, (counts.get(view.flight.airline) ?? 0) + 1);
   }
-  return counts;
+  return new Map([...counts].sort((a, b) => a[0].localeCompare(b[0], "id")));
 }
 
-export function windowFacets(flights: Flight[]): Map<TimeWindowKey, number> {
+export function windowFacets(views: FlightView[]): Map<TimeWindowKey, number> {
   const counts = new Map<TimeWindowKey, number>();
   for (const window of TIME_WINDOWS) {
     counts.set(
       window.key,
-      flights.filter((flight) => inWindow(flight, window.key)).length,
+      views.filter((view) => inWindow(view, window.key)).length,
     );
   }
   return counts;
 }
 
-export function stopFacets(flights: Flight[]): Map<number, number> {
-  const counts = new Map<number, number>();
-  for (const flight of flights) {
-    counts.set(flight.stops, (counts.get(flight.stops) ?? 0) + 1);
-  }
-  return counts;
+export function availableCount(views: FlightView[]): number {
+  return views.filter((view) => view.flight.available_seats > 0).length;
 }
 
 /** "Sab, 30 Agu 2026" */

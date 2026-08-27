@@ -1,35 +1,30 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeft, Briefcase, Plane } from "lucide-react";
+import { ArrowLeft, LogIn, Plane } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
-import { SampleDataNotice } from "@/components/catalogue/search-hero";
 import { Breadcrumb } from "@/components/destination/breadcrumb";
-import { BookingForm } from "@/components/flights/booking-form";
+import { BookButton } from "@/components/flights/book-button";
 import {
-  airport,
-  arrivalDayOffset,
-  arrivalMinutes,
-  fareBreakdown,
-  flightsFor,
-  formatClock,
+  airportByCityId,
+  clockOf,
+  dateOf,
+  durationMinutes,
   formatDuration,
-  type Flight,
-} from "@/lib/flight-data";
+  arrivalDayOffset,
+} from "@/lib/airports";
+import { getFlight, type FlightDetail } from "@/lib/api";
+import { getAccessToken } from "@/lib/api/session";
 import { formatIDR } from "@/lib/seeded-random";
-import {
-  formatDateLabel,
-  parseFlightSearch,
-  type RawSearchParams,
-} from "@/lib/flights-search";
+import { formatDateLabel, type RawSearchParams } from "@/lib/flights-search";
 
 type PageProps = { searchParams: Promise<RawSearchParams> };
 
 export const metadata: Metadata = {
   title: "Detail Pemesanan",
   description:
-    "Periksa jadwal, rincian harga, dan data penumpang sebelum melanjutkan pemesanan tiket pesawat.",
+    "Periksa jadwal dan harga penerbangan sebelum melanjutkan ke pembayaran.",
   // A half-finished booking is not something search engines should surface.
   robots: { index: false, follow: false },
 };
@@ -50,26 +45,34 @@ export default function BookingPage({ searchParams }: PageProps) {
 
 async function Booking({ searchParams }: PageProps) {
   const params = await searchParams;
-  const state = parseFlightSearch(params);
+  const flightId = (
+    Array.isArray(params.flight) ? params.flight[0] : (params.flight ?? "")
+  ).trim();
 
-  const flightId = Array.isArray(params.flight)
-    ? params.flight[0]
-    : (params.flight ?? "");
+  if (!flightId) return <Missing />;
 
-  // The schedule is regenerated from the same seed the search used, so the
-  // flight is found by id rather than carried across in a session.
-  const flight =
-    flightsFor(state.from, state.to, state.date, state.cabin).find(
-      (entry) => entry.id === flightId,
-    ) ?? null;
+  let flight: FlightDetail | null = null;
+  try {
+    flight = await getFlight(flightId);
+  } catch {
+    // A dead API and a deleted flight look the same to the reader here.
+    return <Missing />;
+  }
+  if (!flight) return <Missing />;
 
-  const from = airport(state.from);
-  const to = airport(state.to);
+  const token = await getAccessToken();
 
-  if (!flight || !from || !to) return <Expired />;
+  const from = flight.origin ? airportByCityId(flight.origin.id) : null;
+  const to = flight.destination ? airportByCityId(flight.destination.id) : null;
+  const fromLabel = from?.code ?? flight.origin?.name ?? "Asal";
+  const toLabel = to?.code ?? flight.destination?.name ?? "Tujuan";
 
-  const fare = fareBreakdown(flight.price, state.passengers);
-  const backHref = `/flights?from=${state.from}&to=${state.to}&date=${state.date}&cabin=${state.cabin}&pax=${state.passengers}`;
+  const date = dateOf(flight.departure_time);
+  const backHref =
+    from?.code && to?.code
+      ? `/flights?from=${from.code}&to=${to.code}&date=${date}`
+      : "/flights";
+  const bookHref = `/flights/pesan?flight=${encodeURIComponent(flight.id)}`;
 
   return (
     <div className="container-page py-6">
@@ -77,7 +80,7 @@ async function Booking({ searchParams }: PageProps) {
         items={[
           { label: "Beranda", href: "/" },
           { label: "Tiket Pesawat", href: "/flights" },
-          { label: `${from.code} – ${to.code}`, href: backHref },
+          { label: `${fromLabel} – ${toLabel}`, href: backHref },
           { label: "Pemesanan" },
         ]}
       />
@@ -88,8 +91,9 @@ async function Booking({ searchParams }: PageProps) {
             Lengkapi pemesanan
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {from.city} ke {to.city} &middot; {formatDateLabel(state.date)}{" "}
-            &middot; {state.passengers} penumpang
+            {flight.origin?.name ?? fromLabel} ke{" "}
+            {flight.destination?.name ?? toLabel} &middot;{" "}
+            {formatDateLabel(date)} &middot; 1 penumpang
           </p>
         </div>
         <Link
@@ -103,15 +107,29 @@ async function Booking({ searchParams }: PageProps) {
 
       <div className="mt-6 grid items-start gap-8 lg:grid-cols-[1fr_22rem]">
         <div className="min-w-0 space-y-6">
-          <SampleDataNotice what="Jadwal dan harga" />
-          <ItineraryCard flight={flight} date={state.date} cabin={state.cabin} />
-          <BookingForm
-            passengers={state.passengers}
-            total={fare.total}
-            route={`${from.code} – ${to.code}`}
-            exploreHref={`/destinations?q=${encodeURIComponent(to.city)}`}
-            exploreLabel={`Jelajahi ${to.city}`}
+          <ItineraryCard
+            flight={flight}
+            fromLabel={fromLabel}
+            toLabel={toLabel}
           />
+
+          <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
+            <h2 className="font-display text-base font-bold tracking-tight">
+              Penumpang
+            </h2>
+            <p className="mt-1.5 text-sm text-muted-foreground">
+              Satu pemesanan berlaku untuk satu penumpang dan diterbitkan atas
+              nama akun yang sedang masuk. E-tiket dan status pembayaran dapat
+              dilihat di{" "}
+              <Link
+                href="/akun/pesanan"
+                className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-100"
+              >
+                Pesanan saya
+              </Link>
+              .
+            </p>
+          </section>
         </div>
 
         <aside className="lg:sticky lg:top-24">
@@ -122,25 +140,22 @@ async function Booking({ searchParams }: PageProps) {
 
             <dl className="mt-3 space-y-2 text-sm">
               <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">
-                  Tarif penumpang ({state.passengers}x)
-                </dt>
-                <dd className="tabular-nums">{formatIDR(fare.base)}</dd>
-              </div>
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Pajak &amp; biaya layanan</dt>
-                <dd className="tabular-nums">{formatIDR(fare.tax)}</dd>
+                <dt className="text-muted-foreground">Tarif (1 penumpang)</dt>
+                <dd className="tabular-nums">{formatIDR(flight.price)}</dd>
               </div>
               <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5 text-base font-bold">
                 <dt>Total</dt>
-                <dd className="tabular-nums">{formatIDR(fare.total)}</dd>
+                <dd className="tabular-nums">{formatIDR(flight.price)}</dd>
               </div>
             </dl>
 
-            <p className="mt-3 text-[11px] leading-snug text-muted-foreground">
-              Harga sudah termasuk pajak dan biaya layanan. Tidak ada biaya
-              tambahan di langkah berikutnya.
-            </p>
+            <div className="mt-4">
+              {token ? (
+                <BookButton flightId={flight.id} price={flight.price} />
+              ) : (
+                <SignInFirst nextHref={bookHref} />
+              )}
+            </div>
           </div>
 
           <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -148,14 +163,12 @@ async function Booking({ searchParams }: PageProps) {
               Ketentuan
             </h2>
             <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
+              <li>Sisa kursi saat ini: {flight.available_seats}.</li>
+              <li>Pembayaran diproses oleh Xendit di halaman terpisah.</li>
               <li>
-                Bagasi:{" "}
-                {flight.baggageKg > 0
-                  ? `${flight.baggageKg} kg tercatat + 7 kg kabin`
-                  : "7 kg kabin saja"}
+                Pesanan yang belum dibayar dapat dibatalkan dari halaman
+                pesanan.
               </li>
-              <li>Check-in bandara ditutup 45 menit sebelum keberangkatan.</li>
-              <li>Nama penumpang tidak dapat diubah setelah diterbitkan.</li>
             </ul>
           </div>
         </aside>
@@ -166,15 +179,15 @@ async function Booking({ searchParams }: PageProps) {
 
 function ItineraryCard({
   flight,
-  date,
-  cabin,
+  fromLabel,
+  toLabel,
 }: {
-  flight: Flight;
-  date: string;
-  cabin: string;
+  flight: FlightDetail;
+  fromLabel: string;
+  toLabel: string;
 }) {
-  const from = airport(flight.from);
-  const to = airport(flight.to);
+  const from = flight.origin ? airportByCityId(flight.origin.id) : null;
+  const to = flight.destination ? airportByCityId(flight.destination.id) : null;
   const dayOffset = arrivalDayOffset(flight);
 
   return (
@@ -184,38 +197,28 @@ function ItineraryCard({
           Penerbangan berangkat
         </h2>
         <span className="text-xs text-muted-foreground">
-          {formatDateLabel(date)}
+          {formatDateLabel(dateOf(flight.departure_time))}
         </span>
       </div>
 
-      <div className="mt-3 flex items-center gap-2">
-        <span
-          aria-hidden="true"
-          className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-900 dark:bg-brand-700/50 dark:text-brand-50"
-        >
-          {flight.airlineCode}
-        </span>
-        <div className="min-w-0">
-          <p className="truncate text-sm font-semibold">{flight.airlineName}</p>
-          <p className="text-xs text-muted-foreground">
-            {flight.flightNo} &middot; {flight.aircraft} &middot; kelas {cabin}
-          </p>
-        </div>
+      <div className="mt-3">
+        <p className="text-sm font-semibold">{flight.airline}</p>
+        <p className="text-xs text-muted-foreground">{flight.flight_number}</p>
       </div>
 
       <div className="mt-4 flex items-center gap-4">
         <div className="shrink-0">
           <p className="text-xl font-bold leading-none tabular-nums">
-            {formatClock(flight.departMinutes)}
+            {clockOf(flight.departure_time)}
           </p>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {flight.from}
+            {fromLabel}
           </p>
         </div>
 
         <div className="min-w-0 flex-1">
           <p className="text-center text-[11px] text-muted-foreground">
-            {formatDuration(flight.durationMin)}
+            {formatDuration(durationMinutes(flight))}
           </p>
           <div className="relative my-1 h-px bg-border">
             <Plane
@@ -223,22 +226,14 @@ function ItineraryCard({
               className="absolute -top-[7px] right-0 h-3.5 w-3.5 text-muted-foreground"
             />
           </div>
-          <p className="text-center text-[11px] font-medium">
-            {flight.stops === 0 ? (
-              <span className="text-emerald-700 dark:text-emerald-400">
-                Langsung
-              </span>
-            ) : (
-              <span className="text-amber-700 dark:text-amber-400">
-                1 transit &middot; {flight.via}
-              </span>
-            )}
+          <p className="text-center text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+            Langsung
           </p>
         </div>
 
         <div className="shrink-0 text-right">
           <p className="text-xl font-bold leading-none tabular-nums">
-            {formatClock(arrivalMinutes(flight))}
+            {clockOf(flight.arrival_time)}
             {dayOffset > 0 && (
               <sup className="ml-0.5 text-[10px] font-semibold text-muted-foreground">
                 +{dayOffset}
@@ -246,29 +241,55 @@ function ItineraryCard({
             )}
           </p>
           <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {flight.to}
+            {toLabel}
           </p>
         </div>
       </div>
 
       <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-        {from?.name}, {from?.city} &rarr; {to?.name}, {to?.city}
+        {placeLabel(from?.name, flight.origin?.name ?? fromLabel, flight.origin?.provinces?.name)}{" "}
+        &rarr;{" "}
+        {placeLabel(to?.name, flight.destination?.name ?? toLabel, flight.destination?.provinces?.name)}
       </p>
-      <p className="mt-1.5 flex items-center gap-1.5 text-xs text-muted-foreground">
-        <Briefcase className="h-3.5 w-3.5 shrink-0" />
-        {flight.baggageKg > 0
-          ? `Bagasi ${flight.baggageKg} kg termasuk`
-          : "Hanya bagasi kabin"}
+      <p className="mt-1.5 text-xs text-muted-foreground">
+        Jam yang tertera mengikuti jadwal yang diterbitkan maskapai.
       </p>
     </section>
   );
 }
 
+/** "Soekarno-Hatta, Jakarta, DKI Jakarta" out of whichever parts exist. */
+function placeLabel(
+  airportName: string | undefined,
+  city: string,
+  province: string | undefined,
+): string {
+  return [airportName, city, province].filter(Boolean).join(", ");
+}
+
+function SignInFirst({ nextHref }: { nextHref: string }) {
+  return (
+    <div className="space-y-3">
+      <Link
+        href={`/auth/login?next=${encodeURIComponent(nextHref)}`}
+        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+      >
+        <LogIn className="h-4 w-4" />
+        Masuk untuk memesan
+      </Link>
+      <p className="text-xs leading-snug text-muted-foreground">
+        Pemesanan tercatat pada akun Anda, jadi tiket dan status pembayarannya
+        bisa dibuka kembali kapan saja.
+      </p>
+    </div>
+  );
+}
+
 /**
  * Reached when the link no longer resolves to a flight — a hand-edited id, or
- * a bookmark from a search whose date has rolled past.
+ * a bookmark whose schedule has since been removed.
  */
-function Expired() {
+function Missing() {
   return (
     <div className="container-page py-20 text-center">
       <h1 className="font-display text-2xl font-bold tracking-tight">
@@ -294,7 +315,7 @@ function BookingSkeleton() {
       <div className="space-y-4">
         <div className="h-8 w-72 animate-pulse rounded-md bg-muted" />
         <div className="h-40 animate-pulse rounded-2xl bg-muted" />
-        <div className="h-56 animate-pulse rounded-2xl bg-muted" />
+        <div className="h-28 animate-pulse rounded-2xl bg-muted" />
       </div>
       <div className="h-52 animate-pulse rounded-2xl bg-muted" />
     </div>
