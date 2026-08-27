@@ -1,5 +1,6 @@
 import Link from "next/link";
 import type { FlightCalendarDay } from "@/lib/api";
+import { shortIDR } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
 
 const DAYS_SHOWN = 7;
@@ -112,13 +113,4 @@ function weekday(iso: string): string {
 
 function dayOfMonth(iso: string): string {
   return String(Number(iso.slice(8, 10)));
-}
-
-/** `1,2 jt` / `850 rb` — a full rupiah figure would not fit the cell. */
-function shortIDR(price: number): string {
-  if (price >= 1_000_000) {
-    const millions = price / 1_000_000;
-    return `${millions.toFixed(millions >= 10 ? 0 : 1).replace(".", ",")} jt`;
-  }
-  return `${Math.round(price / 1000)} rb`;
 }

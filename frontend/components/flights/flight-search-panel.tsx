@@ -2,14 +2,9 @@
 
 import { useState } from "react";
 import { useRouter } from "next/navigation";
-import {
-  ArrowLeftRight,
-  CalendarDays,
-  PlaneLanding,
-  PlaneTakeoff,
-  Search,
-} from "lucide-react";
-import type { Airport } from "@/lib/airports";
+import { ArrowLeftRight, PlaneLanding, PlaneTakeoff, Search } from "lucide-react";
+import { airport, type Airport } from "@/lib/airports";
+import { DatePicker } from "@/components/flights/date-picker";
 import { withFilter, type FlightSearchState } from "@/lib/flights-search";
 
 /**
@@ -78,14 +73,12 @@ export function FlightSearchPanel({
           />
         </Field>
 
-        <Field label="Tanggal berangkat" icon={CalendarDays}>
-          <input
-            type="date"
-            value={date}
-            onChange={(event) => setDate(event.target.value)}
-            className="w-full bg-transparent text-sm font-semibold outline-none"
-          />
-        </Field>
+        <DatePicker
+          value={date}
+          onChange={setDate}
+          originCityId={airport(from)?.cityId ?? null}
+          destinationCityId={airport(to)?.cityId ?? null}
+        />
 
         <button
           type="submit"
