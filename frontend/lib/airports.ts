@@ -54,6 +54,12 @@ export const ROUTE_AIRPORTS: Airport[] = AIRPORTS.filter(
   (entry): entry is Airport & { cityId: number } => entry.cityId !== null,
 );
 
+/**
+ * Shown first in the airport picker, before the reader types anything — the
+ * routes the catalogue actually leans on.
+ */
+export const POPULAR_CODES = ["CGK", "DPS", "JOG", "SUB", "UPG", "KNO"];
+
 export function airportByCityId(cityId: number): Airport | null {
   return AIRPORTS.find((entry) => entry.cityId === cityId) ?? null;
 }

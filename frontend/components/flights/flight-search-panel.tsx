@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { ArrowLeftRight, PlaneLanding, PlaneTakeoff, Search } from "lucide-react";
 import { airport, type Airport } from "@/lib/airports";
+import { AirportPicker } from "@/components/flights/airport-picker";
 import { DatePicker } from "@/components/flights/date-picker";
 import { withFilter, type FlightSearchState } from "@/lib/flights-search";
 
@@ -32,6 +33,18 @@ export function FlightSearchPanel({
     setTo(from);
   }
 
+  // Choosing the other end of the route as this one swaps the pair, rather
+  // than leaving a flight from a city to itself on screen.
+  function chooseFrom(code: string) {
+    if (code === to) setTo(from);
+    setFrom(code);
+  }
+
+  function chooseTo(code: string) {
+    if (code === from) setFrom(to);
+    setTo(code);
+  }
+
   function submit(event: React.FormEvent) {
     event.preventDefault();
     if (from === to) return;
@@ -44,14 +57,14 @@ export function FlightSearchPanel({
       className="rounded-2xl border border-border bg-card p-2 shadow-pop sm:p-2.5"
     >
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-[1fr_auto_1fr_1fr_auto]">
-        <Field label="Dari" icon={PlaneTakeoff}>
-          <AirportSelect
-            value={from}
-            onChange={setFrom}
-            airports={airports}
-            label="Bandara asal"
-          />
-        </Field>
+        <AirportPicker
+          value={from}
+          onChange={chooseFrom}
+          airports={airports}
+          label="Dari"
+          icon={PlaneTakeoff}
+          counterpart={to}
+        />
 
         <div className="hidden items-center justify-center lg:flex">
           <button
@@ -64,14 +77,14 @@ export function FlightSearchPanel({
           </button>
         </div>
 
-        <Field label="Ke" icon={PlaneLanding}>
-          <AirportSelect
-            value={to}
-            onChange={setTo}
-            airports={airports}
-            label="Bandara tujuan"
-          />
-        </Field>
+        <AirportPicker
+          value={to}
+          onChange={chooseTo}
+          airports={airports}
+          label="Ke"
+          icon={PlaneLanding}
+          counterpart={from}
+        />
 
         <DatePicker
           value={date}
@@ -98,54 +111,5 @@ export function FlightSearchPanel({
         </p>
       )}
     </form>
-  );
-}
-
-function AirportSelect({
-  value,
-  onChange,
-  airports,
-  label,
-}: {
-  value: string;
-  onChange: (code: string) => void;
-  airports: Airport[];
-  label: string;
-}) {
-  return (
-    <select
-      aria-label={label}
-      value={value}
-      onChange={(event) => onChange(event.target.value)}
-      className="w-full cursor-pointer bg-transparent text-sm font-semibold outline-none"
-    >
-      {airports.map((entry) => (
-        <option key={entry.code} value={entry.code}>
-          {entry.city} ({entry.code})
-        </option>
-      ))}
-    </select>
-  );
-}
-
-function Field({
-  label,
-  icon: Icon,
-  children,
-}: {
-  label: string;
-  icon: typeof PlaneTakeoff;
-  children: React.ReactNode;
-}) {
-  return (
-    <label className="flex min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 transition focus-within:bg-brand-tint/10 hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15">
-      <Icon className="h-4 w-4 shrink-0 text-muted-foreground" />
-      <span className="min-w-0 flex-1">
-        <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-          {label}
-        </span>
-        {children}
-      </span>
-    </label>
   );
 }

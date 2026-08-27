@@ -1,9 +1,12 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { createPortal } from "react-dom";
 import { CalendarDays, ChevronLeft, ChevronRight, Loader2 } from "lucide-react";
 import type { FlightCalendarDay } from "@/lib/api";
+import {
+  AnchoredPanel,
+  useAnchoredPanel,
+} from "@/components/ui/anchored-panel";
 import { shortIDR } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
 
@@ -45,13 +48,6 @@ export function DatePicker({
   const [prices, setPrices] = useState<Map<string, number | null>>(new Map());
   const [loading, setLoading] = useState(false);
 
-  const triggerRef = useRef<HTMLButtonElement>(null);
-  const panelRef = useRef<HTMLDivElement>(null);
-  const [anchor, setAnchor] = useState<{
-    top: number;
-    left: number;
-    width: number;
-  } | null>(null);
   // Keyed by route + month, so switching months twice hits the API once.
   const cache = useRef(new Map<string, FlightCalendarDay[]>());
 
@@ -98,63 +94,13 @@ export function DatePicker({
   // A route change invalidates what is on screen straight away.
   useEffect(() => setPrices(new Map()), [routeKey]);
 
-  const place = useCallback(() => {
-    const trigger = triggerRef.current;
-    if (!trigger) return;
-
-    const rect = trigger.getBoundingClientRect();
-    const width = Math.min(PANEL_WIDTH, window.innerWidth - 16);
-    const below = window.innerHeight - rect.bottom;
-
-    setAnchor({
-      // Flips above the field when the space under it cannot hold the month.
-      top:
-        below < PANEL_HEIGHT && rect.top > below
-          ? Math.max(rect.top - PANEL_HEIGHT - 8, 8)
-          : rect.bottom + 8,
-      left: Math.min(Math.max(rect.left, 8), window.innerWidth - width - 8),
-      width,
-    });
-  }, []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    place();
-    window.addEventListener("resize", place);
-    // Capture phase: the field can sit inside its own scrolling ancestor.
-    window.addEventListener("scroll", place, true);
-    return () => {
-      window.removeEventListener("resize", place);
-      window.removeEventListener("scroll", place, true);
-    };
-  }, [open, place]);
-
   const close = useCallback(() => setOpen(false), []);
-
-  useEffect(() => {
-    if (!open) return;
-
-    const onPointerDown = (event: PointerEvent) => {
-      const target = event.target as Node;
-      if (
-        !triggerRef.current?.contains(target) &&
-        !panelRef.current?.contains(target)
-      ) {
-        close();
-      }
-    };
-    const onKeyDown = (event: KeyboardEvent) => {
-      if (event.key === "Escape") close();
-    };
-
-    document.addEventListener("pointerdown", onPointerDown);
-    document.addEventListener("keydown", onKeyDown);
-    return () => {
-      document.removeEventListener("pointerdown", onPointerDown);
-      document.removeEventListener("keydown", onKeyDown);
-    };
-  }, [open, close]);
+  const { triggerRef, panelRef, anchor } = useAnchoredPanel({
+    open,
+    onClose: close,
+    width: PANEL_WIDTH,
+    height: PANEL_HEIGHT,
+  });
 
   const today = todayISO();
   const cells = monthCells(month);
@@ -167,7 +113,7 @@ export function DatePicker({
   const gating = priced.length > 0;
 
   return (
-    <div>
+    <div className="flex min-w-0">
       <button
         ref={triggerRef}
         type="button"
@@ -182,124 +128,122 @@ export function DatePicker({
             Tanggal berangkat
           </span>
           <span className="block truncate text-sm font-semibold">
-            {longDate(value)}
+            {shortDate(value)}
+          </span>
+          <span className="block truncate text-[11px] text-muted-foreground">
+            {weekdayName(value)}
           </span>
         </span>
       </button>
 
-      {open &&
-        anchor !== null &&
-        createPortal(
-          <div
-            ref={panelRef}
-            role="dialog"
-            aria-label="Pilih tanggal berangkat"
-            style={{ top: anchor.top, left: anchor.left, width: anchor.width }}
-            className="fixed z-50 rounded-2xl border border-border bg-card p-3 text-foreground shadow-pop"
-          >
-            <div className="flex items-center justify-between gap-2">
-              <MonthButton
-                label="Bulan sebelumnya"
-                disabled={month <= today.slice(0, 7)}
-                onClick={() => setMonth(shiftMonth(month, -1))}
+      {open && (
+        <AnchoredPanel
+          anchor={anchor}
+          panelRef={panelRef}
+          label="Pilih tanggal berangkat"
+        >
+          <div className="flex items-center justify-between gap-2">
+            <MonthButton
+              label="Bulan sebelumnya"
+              disabled={month <= today.slice(0, 7)}
+              onClick={() => setMonth(shiftMonth(month, -1))}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </MonthButton>
+
+            <p className="flex items-center gap-2 text-sm font-semibold">
+              {monthLabel(month)}
+              {loading && (
+                <Loader2
+                  aria-hidden="true"
+                  className="h-3.5 w-3.5 animate-spin text-muted-foreground"
+                />
+              )}
+            </p>
+
+            <MonthButton
+              label="Bulan berikutnya"
+              onClick={() => setMonth(shiftMonth(month, 1))}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </MonthButton>
+          </div>
+
+          <div className="mt-3 grid grid-cols-7 gap-1">
+            {WEEKDAYS.map((day) => (
+              <span
+                key={day}
+                className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
               >
-                <ChevronLeft className="h-4 w-4" />
-              </MonthButton>
+                {day}
+              </span>
+            ))}
 
-              <p className="flex items-center gap-2 text-sm font-semibold">
-                {monthLabel(month)}
-                {loading && (
-                  <Loader2
-                    aria-hidden="true"
-                    className="h-3.5 w-3.5 animate-spin text-muted-foreground"
-                  />
-                )}
-              </p>
+            {cells.map((date, index) => {
+              if (date === null) {
+                return <span key={`blank-${index}`} aria-hidden="true" />;
+              }
 
-              <MonthButton
-                label="Bulan berikutnya"
-                onClick={() => setMonth(shiftMonth(month, 1))}
-              >
-                <ChevronRight className="h-4 w-4" />
-              </MonthButton>
-            </div>
+              const price = prices.get(date) ?? null;
+              const past = date < today;
+              const disabled = past || (gating && price === null);
+              const selected = date === value;
 
-            <div className="mt-3 grid grid-cols-7 gap-1">
-              {WEEKDAYS.map((day) => (
-                <span
-                  key={day}
-                  className="pb-1 text-center text-[10px] font-semibold uppercase tracking-wide text-muted-foreground"
+              return (
+                <button
+                  key={date}
+                  type="button"
+                  disabled={disabled}
+                  onClick={() => {
+                    onChange(date);
+                    close();
+                  }}
+                  aria-label={
+                    price === null
+                      ? longDate(date)
+                      : `${longDate(date)}, mulai ${shortIDR(price)}`
+                  }
+                  aria-current={selected ? "date" : undefined}
+                  className={cn(
+                    "flex h-12 flex-col items-center justify-center rounded-lg border text-center transition",
+                    selected
+                      ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                      : disabled
+                        ? "cursor-not-allowed border-transparent text-muted-foreground/50"
+                        : "border-transparent hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                  )}
                 >
-                  {day}
-                </span>
-              ))}
-
-              {cells.map((date, index) => {
-                if (date === null) {
-                  return <span key={`blank-${index}`} aria-hidden="true" />;
-                }
-
-                const price = prices.get(date) ?? null;
-                const past = date < today;
-                const disabled = past || (gating && price === null);
-                const selected = date === value;
-
-                return (
-                  <button
-                    key={date}
-                    type="button"
-                    disabled={disabled}
-                    onClick={() => {
-                      onChange(date);
-                      close();
-                    }}
-                    aria-label={
-                      price === null
-                        ? longDate(date)
-                        : `${longDate(date)}, mulai ${shortIDR(price)}`
-                    }
-                    aria-current={selected ? "date" : undefined}
+                  <span className="text-sm font-semibold tabular-nums leading-none">
+                    {Number(date.slice(8, 10))}
+                  </span>
+                  <span
                     className={cn(
-                      "flex h-12 flex-col items-center justify-center rounded-lg border text-center transition",
+                      "mt-1 text-[10px] leading-none tabular-nums",
                       selected
-                        ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-                        : disabled
-                          ? "cursor-not-allowed border-transparent text-muted-foreground/50"
-                          : "border-transparent hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                        ? "text-current"
+                        : price !== null && price === cheapest
+                          ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                          : "text-muted-foreground",
                     )}
                   >
-                    <span className="text-sm font-semibold tabular-nums leading-none">
-                      {Number(date.slice(8, 10))}
-                    </span>
-                    <span
-                      className={cn(
-                        "mt-1 text-[10px] leading-none tabular-nums",
-                        selected
-                          ? "text-current"
-                          : price !== null && price === cheapest
-                            ? "font-semibold text-emerald-700 dark:text-emerald-400"
-                            : "text-muted-foreground",
-                      )}
-                    >
-                      {price === null ? "—" : shortIDR(price)}
-                    </span>
-                  </button>
-                );
-              })}
-            </div>
+                    {price === null ? "—" : shortIDR(price)}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
 
-            <p className="mt-2.5 border-t border-border pt-2.5 text-[11px] leading-snug text-muted-foreground">
-              {routeKey === null
-                ? "Pilih rute yang dilayani untuk melihat harga per tanggal."
-                : priced.length > 0
-                  ? "Harga termurah per tanggal untuk rute yang dipilih. Tanggal tanpa harga tidak ada penerbangannya."
-                  : loading
-                    ? "Memuat harga..."
-                    : "Harga per tanggal belum tersedia untuk rute ini."}
-              </p>
-            </div>,
-          document.body,
-        )}
+          <p className="mt-2.5 border-t border-border pt-2.5 text-[11px] leading-snug text-muted-foreground">
+            {routeKey === null
+              ? "Pilih rute yang dilayani untuk melihat harga per tanggal."
+              : priced.length > 0
+                ? "Harga termurah per tanggal untuk rute yang dipilih. Tanggal tanpa harga tidak ada penerbangannya."
+                : loading
+                  ? "Memuat harga..."
+                  : "Harga per tanggal belum tersedia untuk rute ini."}
+            </p>
+        </AnchoredPanel>
+      )}
     </div>
   );
 }
@@ -370,6 +314,24 @@ function monthLabel(month: string): string {
     month: "long",
     year: "numeric",
   });
+}
+
+/** `3 Sep 2026` — the field's headline line. */
+function shortDate(iso: string): string {
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return iso;
+  return date.toLocaleDateString("id-ID", {
+    day: "numeric",
+    month: "short",
+    year: "numeric",
+  });
+}
+
+/** `Kamis` — the supporting line, matching the airport fields' second line. */
+function weekdayName(iso: string): string {
+  const date = new Date(`${iso}T00:00:00`);
+  if (Number.isNaN(date.getTime())) return "";
+  return date.toLocaleDateString("id-ID", { weekday: "long" });
 }
 
 function longDate(iso: string): string {
