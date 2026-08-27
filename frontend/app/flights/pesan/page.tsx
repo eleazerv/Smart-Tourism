@@ -151,7 +151,21 @@ async function Booking({ searchParams }: PageProps) {
 
             <div className="mt-4">
               {token ? (
-                <BookButton flightId={flight.id} price={flight.price} />
+                <BookButton
+                  flight={{
+                    id: flight.id,
+                    airline: flight.airline,
+                    flightNumber: flight.flight_number,
+                    departureTime: flight.departure_time,
+                    arrivalTime: flight.arrival_time,
+                    durationMin: durationMinutes(flight),
+                    fromLabel,
+                    toLabel,
+                    dateLabel: formatDateLabel(date),
+                    price: flight.price,
+                    seatsLeft: flight.available_seats,
+                  }}
+                />
               ) : (
                 <SignInFirst nextHref={bookHref} />
               )}

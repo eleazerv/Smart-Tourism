@@ -81,6 +81,7 @@ export function BookingActions({ bookingId }: { bookingId: string }) {
 
       <ConfirmDialog
         open={confirming}
+        icon={<XCircle className="h-5 w-5" />}
         title="Batalkan pesanan ini?"
         description="Kursi yang ditahan akan dilepas kembali dan tautan pembayarannya dimatikan. Tindakan ini tidak bisa dibatalkan."
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}

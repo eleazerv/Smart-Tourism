@@ -152,6 +152,7 @@ export function AccountMenu({ className }: { className?: string }) {
 
       <ConfirmDialog
         open={confirming}
+        icon={<LogOut className="h-5 w-5" />}
         title="Keluar dari akun?"
         description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
         confirmLabel={signingOut ? "Keluar..." : "Keluar"}
