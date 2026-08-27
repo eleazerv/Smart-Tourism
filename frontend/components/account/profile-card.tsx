@@ -1,6 +1,7 @@
 import Image from "next/image";
 import type { Profile } from "@/lib/api";
 import { initialsOf } from "@/components/account/initials";
+import { NameEditor } from "@/components/account/name-editor";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -49,25 +50,23 @@ export function ProfileCard({
               {initialsOf(name)}
             </span>
           )}
-          <div className="min-w-0">
-            <p className="truncate font-display text-lg font-bold tracking-tight">
-              {name}
-            </p>
+          <div className="min-w-0 flex-1">
+            <NameEditor name={name} />
             <p className="truncate text-sm text-muted-foreground">{email}</p>
           </div>
         </div>
 
         <dl>
-          {profile?.role && <Row label="Peran" value={profile.role} />}
           {joined && <Row label="Anggota sejak" value={joined} />}
         </dl>
       </div>
 
       {!profile && (
+        // The API detail (a missing `users` row behind a 404) stays in the logs;
+        // the visitor only needs to know the extra fields are unavailable.
         <p className="text-sm text-muted-foreground">
-          Detail profil belum tersedia — baris untuk akun ini belum ada di tabel{" "}
-          <code className="font-mono">users</code>, jadi{" "}
-          <code className="font-mono">/api/auth/me</code> membalas 404.
+          Sebagian detail profil belum tersedia. Coba muat ulang halaman ini
+          nanti.
         </p>
       )}
     </div>

@@ -11,7 +11,7 @@ import {
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
-export function LoginForm() {
+export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -30,9 +30,9 @@ export function LoginForm() {
         password,
       });
       if (error) throw error;
-      router.push("/akun");
-      // The account area is server-rendered from the session cookie, so the
-      // router cache has to be dropped for the new session to be picked up.
+      router.push(redirectTo ?? "/");
+      // The pages are server-rendered from the session cookie, so the router
+      // cache has to be dropped for the new session to be picked up.
       router.refresh();
     } catch (error: unknown) {
       setError(

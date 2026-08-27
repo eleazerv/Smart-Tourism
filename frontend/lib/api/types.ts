@@ -83,19 +83,39 @@ export type HeatmapEntry = {
   visitor_count: number;
 };
 
+/**
+ * Both recommendation routes select a narrower column set than the catalogue
+ * does — no `latitude`/`longitude`. Spelled out so callers cannot reach for
+ * coordinates that never arrive.
+ */
+export type RecommendedDestination = Omit<
+  Destination,
+  "latitude" | "longitude"
+>;
+
+/** One province's climate pattern for the requested month. */
+export type SeasonInfo = {
+  province: ProvinceRef;
+  /** `"kemarau"` or `"hujan"` in the seeded data. */
+  season: string;
+  /** Free-text activity slugs, e.g. `["diving", "snorkeling"]`. */
+  recommended_activities: string[];
+};
+
 export type SeasonalRecommendations = {
   month: number;
-  /** Absent when no climate pattern matches the month. */
-  season_summary?: string[];
+  /** One entry per province whose climate pattern covers the month; empty
+   *  when none does. Keyed `season_info` by the controller, not `season_summary`. */
+  season_info: SeasonInfo[];
   province_id: number | null;
-  destinations: Destination[];
+  destinations: RecommendedDestination[];
 };
 
 export type PersonalRecommendations = {
   preference_tags: Tag[];
   /** Set by the controller when the user has no preferences saved yet. */
   message?: string;
-  destinations: (Destination & {
+  destinations: (RecommendedDestination & {
     match_score: number;
     matched_tags: Tag[];
   })[];
@@ -128,4 +148,89 @@ export type Review = {
   like_count: number;
   /** Null when the author row was removed; the review itself survives. */
   users: ReviewAuthor | null;
+};
+
+/* ------------------------------------------------------------- flights --- */
+
+/**
+ * A row of `flight_options`. Both timestamps are naive (`YYYY-MM-DDTHH:mm:ss`)
+ * and read as local time at their own airport, the way a timetable is printed —
+ * `lib/airports.ts` holds the UTC offsets needed to turn the pair into a
+ * duration.
+ */
+export type FlightOption = {
+  id: string;
+  origin_city_id: number;
+  destination_city_id: number;
+  airline: string;
+  flight_number: string;
+  departure_time: string;
+  arrival_time: string;
+  price: number;
+  available_seats: number;
+  currency: string;
+};
+
+/** `GET /api/flights/:id` joins the two cities that the list only keys by id. */
+export type FlightDetail = Omit<
+  FlightOption,
+  "origin_city_id" | "destination_city_id"
+> & {
+  origin: FlightCity | null;
+  destination: FlightCity | null;
+};
+
+export type FlightCity = CityRef & { provinces: ProvinceRef | null };
+
+/** One day of the price calendar. `price` is null when nothing flies that day. */
+export type FlightCalendarDay = {
+  date: string;
+  price: number | null;
+};
+
+/* ------------------------------------------------------------ bookings --- */
+
+export type PaymentStatus = "pending" | "paid" | "expired" | "cancelled";
+
+export type FlightBookingItem = {
+  id: string;
+  flight_type: "outbound" | "return";
+  price: number;
+  flight_options: {
+    id: string;
+    airline: string;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    origin: { id: number; name: string } | null;
+    destination: { id: number; name: string } | null;
+  } | null;
+};
+
+/** The list endpoint returns only these columns, without the items. */
+export type FlightBookingSummary = {
+  id: string;
+  booking_code: string;
+  total_price: number;
+  payment_status: PaymentStatus;
+  created_at: string;
+  paid_at: string | null;
+};
+
+export type FlightBooking = FlightBookingSummary & {
+  payment_method: string | null;
+  invoice_url: string | null;
+  invoice_expires_at: string | null;
+  flight_booking_items: FlightBookingItem[];
+};
+
+/** What `POST /:id/pay` hands back — `invoice_url` is hosted by Xendit. */
+export type PaymentIntent = {
+  booking_id: string;
+  booking_code: string;
+  amount: number;
+  invoice_url: string;
+  expires_at: string;
+  /** True when an unexpired invoice already existed and was handed back. */
+  reused: boolean;
 };

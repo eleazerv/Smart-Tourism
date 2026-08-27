@@ -75,10 +75,12 @@ async function loadBestMonths(destinationId: string, provinceId: number | null) 
 
   results.forEach((result, i) => {
     if (result.status !== "fulfilled") return;
-    const { destinations, season_summary } = result.value;
+    const { destinations, season_info } = result.value;
     if (!destinations.some((item) => item.id === destinationId)) return;
     months.push(i + 1);
-    for (const season of season_summary ?? []) seasons.add(season);
+    // The call is scoped to this destination's province, so every entry here
+    // describes that province's climate in the matched month.
+    for (const entry of season_info) seasons.add(entry.season);
   });
 
   return { months, seasons: [...seasons] };

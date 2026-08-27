@@ -1,13 +1,16 @@
 "use client";
 
 import Link from "next/link";
+import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, KeyRound, LogOut, UserRound } from "lucide-react";
+import { Heart, KeyRound, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/akun", label: "Profil", icon: UserRound },
+  { href: "/akun/pesanan", label: "Pesanan saya", icon: Ticket },
   { href: "/akun/minat", label: "Minat perjalanan", icon: Heart },
   { href: "/akun/kata-sandi", label: "Ubah kata sandi", icon: KeyRound },
 ] as const;
@@ -19,8 +22,11 @@ const ITEMS = [
 export function AccountNav() {
   const pathname = usePathname();
   const router = useRouter();
+  const [confirming, setConfirming] = useState(false);
+  const [signingOut, setSigningOut] = useState(false);
 
   const signOut = async () => {
+    setSigningOut(true);
     await createClient().auth.signOut();
     router.push("/");
     router.refresh();
@@ -59,12 +65,24 @@ export function AccountNav() {
 
       <button
         type="button"
-        onClick={signOut}
+        onClick={() => setConfirming(true)}
         className="mt-2 hidden w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700 md:flex dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
       >
         <LogOut className="h-4 w-4 shrink-0" />
         Keluar
       </button>
+
+      <ConfirmDialog
+        open={confirming}
+        icon={<LogOut className="h-5 w-5" />}
+        title="Keluar dari akun?"
+        description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
+        confirmLabel={signingOut ? "Keluar..." : "Keluar"}
+        destructive
+        pending={signingOut}
+        onConfirm={signOut}
+        onCancel={() => setConfirming(false)}
+      />
     </nav>
   );
 }

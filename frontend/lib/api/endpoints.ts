@@ -8,7 +8,13 @@ import type {
   Destination,
   DestinationDetail,
   EventItem,
+  FlightBooking,
+  FlightBookingSummary,
+  FlightCalendarDay,
+  FlightDetail,
+  FlightOption,
   HeatmapEntry,
+  PaymentIntent,
   Paginated,
   PersonalRecommendations,
   Profile,
@@ -161,6 +167,19 @@ export async function getProfile(auth: Auth): Promise<Profile | null> {
   return result?.user ?? null;
 }
 
+/** Only the display name is editable today; the API ignores anything else. */
+export async function updateProfile(
+  input: { full_name: string },
+  auth: Auth,
+): Promise<Profile> {
+  const { user } = await apiFetch<{ user: Profile }>("/api/auth/me", {
+    ...auth,
+    method: "PATCH",
+    body: input,
+  });
+  return user;
+}
+
 export async function getPreferences(auth: Auth): Promise<Tag[]> {
   const { data } = await apiFetch<{ data: Tag[] }>("/api/preferences", auth);
   return data;
@@ -224,4 +243,110 @@ export async function likeReview(reviewId: string, auth: Auth) {
     `/api/destinations/reviews/${reviewId}/like`,
     { ...auth, method: "POST" },
   );
+}
+
+/* ------------------------------------------------------------- flights --- */
+
+export type FlightQuery = {
+  origin_city_id: number;
+  destination_city_id: number;
+  /** `YYYY-MM-DD`. */
+  date: string;
+  sort?: "price" | "departure_time";
+};
+
+/** A route with nothing scheduled answers 404, which is an empty day here. */
+export async function searchFlights(query: FlightQuery): Promise<FlightOption[]> {
+  const result = await apiFetch<{ data: FlightOption[] }>("/api/flights", {
+    query,
+    nullOn404: true,
+  });
+  return result?.data ?? [];
+}
+
+/**
+ * Cheapest fare per day across one month, for the date strip above the results.
+ * Days with no flight come back with a null price.
+ */
+export async function getFlightsCalendar(query: {
+  origin_city_id: number;
+  destination_city_id: number;
+  /** `YYYY-MM`. Defaults to the current month on the API side. */
+  month?: string;
+}): Promise<FlightCalendarDay[]> {
+  const result = await apiFetch<{ data: FlightCalendarDay[] }>(
+    "/api/flights/calendar",
+    { query, nullOn404: true },
+  );
+  return result?.data ?? [];
+}
+
+export async function getFlight(id: string): Promise<FlightDetail | null> {
+  const result = await apiFetch<{ data: FlightDetail }>(`/api/flights/${id}`, {
+    nullOn404: true,
+  });
+  return result?.data ?? null;
+}
+
+/* ------------------------------------------------------ flight bookings --- */
+
+export type FlightBookingItemInput = {
+  flight_option_id: string;
+  flight_type: "outbound" | "return";
+};
+
+/**
+ * One booking covers one passenger and one or two flights. Seats are held the
+ * moment this succeeds, before any payment — see the route's Swagger note.
+ */
+export async function createFlightBooking(
+  items: FlightBookingItemInput[],
+  auth: Auth,
+): Promise<FlightBooking> {
+  const { data } = await apiFetch<{ data: FlightBooking }>(
+    "/api/flight-bookings",
+    { ...auth, method: "POST", body: { items } },
+  );
+  return data;
+}
+
+export async function listFlightBookings(
+  auth: Auth,
+): Promise<FlightBookingSummary[]> {
+  const { data } = await apiFetch<{ data: FlightBookingSummary[] }>(
+    "/api/flight-bookings",
+    auth,
+  );
+  return data;
+}
+
+export async function getFlightBooking(
+  id: string,
+  auth: Auth,
+): Promise<FlightBooking | null> {
+  const result = await apiFetch<{ data: FlightBooking }>(
+    `/api/flight-bookings/${id}`,
+    { ...auth, nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+/** Opens (or re-opens) a Xendit invoice. Send the reader to `invoice_url`. */
+export async function payFlightBooking(
+  id: string,
+  auth: Auth,
+): Promise<PaymentIntent> {
+  const { data } = await apiFetch<{ data: PaymentIntent }>(
+    `/api/flight-bookings/${id}/pay`,
+    { ...auth, method: "POST" },
+  );
+  return data;
+}
+
+/** Releases the held seats. Only works while the booking is still unpaid. */
+export async function cancelFlightBooking(id: string, auth: Auth) {
+  await apiFetch(`/api/flight-bookings/${id}/cancel`, {
+    ...auth,
+    method: "POST",
+  });
 }

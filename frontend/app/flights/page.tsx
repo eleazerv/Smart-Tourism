@@ -1,18 +1,20 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { ArrowLeftRight, PlaneTakeoff } from "lucide-react";
+import { ArrowLeftRight, PlaneTakeoff, ServerCrash } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { FilterDrawer } from "@/components/catalogue/filter-drawer";
 import { ListingSkeleton } from "@/components/catalogue/listing-skeleton";
 import { Pagination } from "@/components/catalogue/pagination";
-import { SampleDataNotice, SearchHero } from "@/components/catalogue/search-hero";
+import { SearchHero } from "@/components/catalogue/search-hero";
 import { SortSelect } from "@/components/catalogue/sort-select";
 import { FlightFilters } from "@/components/flights/flight-filters";
 import { FlightRow } from "@/components/flights/flight-row";
 import { FlightSearchPanel } from "@/components/flights/flight-search-panel";
-import { AIRPORTS, airport, flightsFor } from "@/lib/flight-data";
+import { PriceCalendar } from "@/components/flights/price-calendar";
+import { ROUTE_AIRPORTS, airport } from "@/lib/airports";
+import { getFlightsCalendar, searchFlights, type FlightCalendarDay } from "@/lib/api";
 import { formatIDR } from "@/lib/seeded-random";
 import {
   PAGE_SIZE,
@@ -20,12 +22,13 @@ import {
   activeFilterCount,
   airlineFacets,
   applyFilters,
+  availableCount,
   bookingHref,
   formatDateLabel,
   parseFlightSearch,
   sortFlights,
-  stopFacets,
   swappedHref,
+  toViews,
   windowFacets,
   withFilter,
   type FlightSearchState,
@@ -37,7 +40,7 @@ type PageProps = { searchParams: Promise<RawSearchParams> };
 export const metadata: Metadata = {
   title: "Tiket Pesawat",
   description:
-    "Bandingkan jadwal dan harga penerbangan domestik antarkota di Indonesia — durasi, transit, maskapai, dan bagasi dalam satu daftar.",
+    "Bandingkan jadwal dan harga penerbangan domestik antarkota di Indonesia — waktu berangkat, durasi, maskapai, dan sisa kursi dalam satu daftar.",
   openGraph: {
     title: "Tiket Pesawat",
     description:
@@ -68,10 +71,30 @@ async function Board({ searchParams }: PageProps) {
   const from = airport(state.from);
   const to = airport(state.to);
 
-  // An unknown airport code in the URL is a bad request, not an empty day.
-  if (!from || !to) return <UnknownRoute state={state} />;
+  // The API keys routes by city, so a code without one cannot be searched.
+  if (!from?.cityId || !to?.cityId) return <UnknownRoute state={state} />;
 
-  const pool = flightsFor(state.from, state.to, state.date, state.cabin);
+  const route = {
+    origin_city_id: from.cityId,
+    destination_city_id: to.cityId,
+  };
+
+  let flights;
+  let calendar: FlightCalendarDay[] = [];
+  try {
+    [flights, calendar] = await Promise.all([
+      searchFlights({ ...route, date: state.date }),
+      // The price strip is a bonus row; a failure there must not take the
+      // board down with it.
+      getFlightsCalendar({ ...route, month: state.date.slice(0, 7) }).catch(
+        () => [],
+      ),
+    ]);
+  } catch {
+    return <ApiDown state={state} />;
+  }
+
+  const pool = toViews(flights);
   const matched = applyFilters(pool, state);
 
   const totalPages = Math.max(Math.ceil(matched.length / PAGE_SIZE), 1);
@@ -82,7 +105,8 @@ async function Board({ searchParams }: PageProps) {
   );
 
   const cheapest = matched.reduce<number | null>(
-    (low, flight) => (low === null || flight.price < low ? flight.price : low),
+    (low, view) =>
+      low === null || view.flight.price < low ? view.flight.price : low,
     null,
   );
 
@@ -92,11 +116,11 @@ async function Board({ searchParams }: PageProps) {
       resetHref={withFilter(state, {
         airlines: [],
         windows: [],
-        maxStops: null,
+        availableOnly: false,
       })}
       airlineCounts={airlineFacets(pool)}
       windowCounts={windowFacets(pool)}
-      stopCounts={stopFacets(pool)}
+      availableCount={availableCount(pool)}
     />
   );
 
@@ -104,7 +128,7 @@ async function Board({ searchParams }: PageProps) {
     <>
       <SearchHero
         title={`Tiket pesawat ${from.city} ke ${to.city}`}
-        subtitle={`${formatDateLabel(state.date)} · ${state.passengers} penumpang · kelas ${state.cabin}. Bandingkan jadwal, durasi, dan bagasi sebelum memilih.`}
+        subtitle={`${formatDateLabel(state.date)}. Bandingkan jam berangkat, durasi, dan sisa kursi sebelum memilih.`}
         seed={`flight-${from.code}-${to.code}`}
         crumbs={[
           { label: "Beranda", href: "/" },
@@ -112,14 +136,18 @@ async function Board({ searchParams }: PageProps) {
           { label: `${from.code} – ${to.code}` },
         ]}
       >
-        <FlightSearchPanel state={state} airports={AIRPORTS} />
+        <FlightSearchPanel state={state} airports={ROUTE_AIRPORTS} />
       </SearchHero>
 
       <div className="container-page grid items-start gap-8 py-8 lg:grid-cols-[16rem_1fr]">
         <aside className="hidden lg:sticky lg:top-24 lg:block">{filters}</aside>
 
         <div className="min-w-0 space-y-5">
-          <SampleDataNotice what="Jadwal, harga, dan ketersediaan kursi" />
+          <PriceCalendar
+            days={calendar}
+            selected={state.date}
+            hrefFor={(date) => withFilter(state, { date })}
+          />
 
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-muted-foreground" aria-live="polite">
@@ -168,16 +196,16 @@ async function Board({ searchParams }: PageProps) {
           </div>
 
           {results.length === 0 ? (
-            <NoFlights state={state} />
+            <NoFlights state={state} filtered={pool.length > 0} />
           ) : (
             <div className="space-y-3">
-              {results.map((flight) => (
+              {results.map((view) => (
                 <FlightRow
-                  key={flight.id}
-                  flight={flight}
-                  passengers={state.passengers}
-                  cabin={state.cabin}
-                  bookHref={bookingHref(state, flight.id)}
+                  key={view.flight.id}
+                  view={view}
+                  fromCode={from.code}
+                  toCode={to.code}
+                  bookHref={bookingHref(view.flight.id)}
                 />
               ))}
             </div>
@@ -190,8 +218,8 @@ async function Board({ searchParams }: PageProps) {
           />
 
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Durasi dan estimasi harga dihitung dari jarak sebenarnya antara{" "}
-            {from.name} ({from.code}) dan {to.name} ({to.code}).
+            Jadwal, harga, dan sisa kursi berasal langsung dari data
+            penerbangan {from.name} ({from.code}) ke {to.name} ({to.code}).
           </p>
         </div>
       </div>
@@ -199,7 +227,13 @@ async function Board({ searchParams }: PageProps) {
   );
 }
 
-function NoFlights({ state }: { state: FlightSearchState }) {
+function NoFlights({
+  state,
+  filtered,
+}: {
+  state: FlightSearchState;
+  filtered: boolean;
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
@@ -209,18 +243,27 @@ function NoFlights({ state }: { state: FlightSearchState }) {
         <PlaneTakeoff className="h-6 w-6" />
       </span>
       <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-        Tidak ada penerbangan yang cocok
+        {filtered
+          ? "Tidak ada penerbangan yang cocok"
+          : "Belum ada jadwal untuk tanggal ini"}
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        Coba longgarkan filter waktu berangkat atau izinkan penerbangan dengan
-        transit.
+        {filtered
+          ? "Coba longgarkan filter waktu berangkat atau maskapai."
+          : "Coba tanggal lain pada rute yang sama — strip harga di atas menunjukkan hari yang ada penerbangannya."}
       </p>
-      <Link
-        href={withFilter(state, { airlines: [], windows: [], maxStops: null })}
-        className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
-      >
-        Hapus semua filter
-      </Link>
+      {filtered && (
+        <Link
+          href={withFilter(state, {
+            airlines: [],
+            windows: [],
+            availableOnly: false,
+          })}
+          className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        >
+          Hapus semua filter
+        </Link>
+      )}
     </div>
   );
 }
@@ -232,14 +275,41 @@ function UnknownRoute({ state }: { state: FlightSearchState }) {
         Rute tidak dikenal
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Kode bandara {state.from} atau {state.to} tidak ada dalam daftar yang
-        dilayani halaman ini.
+        Bandara {state.from} atau {state.to} belum terhubung ke kota mana pun di
+        data penerbangan, jadi rutenya tidak bisa dicari.
       </p>
       <Link
         href="/flights"
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
       >
         Mulai pencarian baru
+      </Link>
+    </div>
+  );
+}
+
+/** The board has no local fallback: without the API there is nothing to show. */
+function ApiDown({ state }: { state: FlightSearchState }) {
+  return (
+    <div className="container-page py-20 text-center">
+      <span
+        aria-hidden="true"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-muted text-muted-foreground"
+      >
+        <ServerCrash className="h-6 w-6" />
+      </span>
+      <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
+        Jadwal penerbangan tidak dapat dimuat
+      </h1>
+      <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
+        Layanan penerbangan sedang tidak dapat dihubungi. Coba muat ulang
+        beberapa saat lagi.
+      </p>
+      <Link
+        href={withFilter(state, {})}
+        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+      >
+        Coba lagi
       </Link>
     </div>
   );

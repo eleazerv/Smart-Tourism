@@ -1,7 +1,7 @@
 import Image from "next/image";
 import Link from "next/link";
 import { Award } from "lucide-react";
-import type { Destination } from "@/lib/api";
+import type { RecommendedDestination } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
 import { FavoriteButton } from "@/components/home/favorite-button";
 import { Rating } from "@/components/home/rating";
@@ -13,7 +13,7 @@ export function DestinationCard({
   destination,
   note,
 }: {
-  destination: Destination;
+  destination: RecommendedDestination;
   /** Extra line under the card — e.g. why it was recommended. */
   note?: string;
 }) {

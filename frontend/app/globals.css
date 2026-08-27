@@ -89,3 +89,98 @@
     display: none;
   }
 }
+
+/* Leaflet chrome for the crowd map on the landing page. Scoped to
+   `.crowd-map` — the class `MapContainer` renders — so the library's own
+   defaults stay untouched anywhere else it might be used later. */
+.crowd-map {
+  font: inherit;
+  background: hsl(var(--muted));
+}
+
+.crowd-map .leaflet-tooltip {
+  border: 1px solid hsl(var(--border));
+  border-radius: calc(var(--radius) - 4px);
+  background: hsl(var(--popover));
+  color: hsl(var(--popover-foreground));
+  box-shadow: 0 2px 6px hsl(var(--brand-900) / 0.16);
+  font-size: 0.75rem;
+  line-height: 1.35;
+  padding: 0.375rem 0.5rem;
+  white-space: nowrap;
+}
+
+.crowd-map .leaflet-tooltip-top::before {
+  border-top-color: hsl(var(--border));
+}
+
+.crowd-map .leaflet-bar a,
+.crowd-map .leaflet-control-attribution {
+  background: hsl(var(--card));
+  color: hsl(var(--card-foreground));
+}
+
+.crowd-map .leaflet-bar a:hover {
+  background: hsl(var(--secondary));
+}
+
+.crowd-map .leaflet-bar,
+.crowd-map .leaflet-control-attribution {
+  border-color: hsl(var(--border));
+}
+
+.crowd-map .leaflet-control-attribution a {
+  color: hsl(var(--muted-foreground));
+}
+
+/* Circle markers are the interactive elements; give them a visible focus ring
+   for keyboard users, alongside the ranked list that duplicates the map.
+   A halo rather than an `outline`, which would draw a square around a dot. */
+.crowd-map path.leaflet-interactive:focus {
+  /* Chrome draws its ring on plain `:focus` for SVG, and an `outline` on a
+     dot is a square — so replace it with a halo that follows the circle. */
+  outline: none;
+  filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 3px #0f172a);
+}
+
+/* Numbered stop pins for the trip planner. Leaflet's `divIcon` ships with a
+   white box and border of its own, so both are cleared before restyling. */
+.crowd-map .leaflet-div-icon {
+  background: transparent;
+  border: none;
+}
+
+.crowd-map .crowd-map-pin {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9999px;
+  border: 2px solid #ffffff;
+  background: #19443c;
+  color: #ffffff;
+  font-size: 0.75rem;
+  font-weight: 700;
+  line-height: 1;
+  box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.dark .crowd-map .crowd-map-pin {
+  border-color: #042f2e;
+  background: #aefffa;
+  color: #042f2e;
+}
+
+/* Pointing at a city in the side panel lights its pin up on the map. */
+.crowd-map .crowd-map-pin--lit {
+  transform: scale(1.15);
+  box-shadow:
+    0 0 0 4px rgb(25 68 60 / 0.35),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+.dark .crowd-map .crowd-map-pin--lit {
+  box-shadow:
+    0 0 0 4px rgb(174 255 250 / 0.35),
+    0 1px 4px rgb(0 0 0 / 0.35);
+}
