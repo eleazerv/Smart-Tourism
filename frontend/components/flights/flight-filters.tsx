@@ -1,6 +1,5 @@
 import Link from "next/link";
 import { RotateCcw } from "lucide-react";
-import { AIRLINES } from "@/lib/flight-data";
 import {
   TIME_WINDOWS,
   activeFilterCount,
@@ -13,23 +12,24 @@ import {
 import { CheckRow } from "@/components/catalogue/check-row";
 import { FilterGroup } from "@/components/catalogue/filter-group";
 
-/** Facet column for the flight board. */
+/**
+ * Facet column for the flight board. The airline list is built from the day
+ * that came back, not from a fixed roster — whoever flies the route is whoever
+ * the API returned.
+ */
 export function FlightFilters({
   state,
   resetHref,
   airlineCounts,
   windowCounts,
-  stopCounts,
+  availableCount,
 }: {
   state: FlightSearchState;
   resetHref: string;
   airlineCounts: Map<string, number>;
   windowCounts: Map<TimeWindowKey, number>;
-  stopCounts: Map<number, number>;
+  availableCount: number;
 }) {
-  const direct = stopCounts.get(0) ?? 0;
-  const oneStop = stopCounts.get(1) ?? 0;
-
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -47,20 +47,12 @@ export function FlightFilters({
         )}
       </div>
 
-      <FilterGroup title="Transit">
+      <FilterGroup title="Ketersediaan">
         <CheckRow
-          shape="radio"
-          href={withFilter(state, { maxStops: state.maxStops === 0 ? null : 0 })}
-          label="Langsung"
-          hint={String(direct)}
-          checked={state.maxStops === 0}
-        />
-        <CheckRow
-          shape="radio"
-          href={withFilter(state, { maxStops: state.maxStops === 1 ? null : 1 })}
-          label="Maksimal 1 transit"
-          hint={String(direct + oneStop)}
-          checked={state.maxStops === 1}
+          href={withFilter(state, { availableOnly: !state.availableOnly })}
+          label="Masih ada kursi"
+          hint={String(availableCount)}
+          checked={state.availableOnly}
         />
       </FilterGroup>
 
@@ -83,19 +75,19 @@ export function FlightFilters({
         ))}
       </FilterGroup>
 
-      <FilterGroup title="Maskapai">
-        {AIRLINES.filter(
-          (airline) => (airlineCounts.get(airline.code) ?? 0) > 0,
-        ).map((airline) => (
-          <CheckRow
-            key={airline.code}
-            href={withAirlineToggled(state, airline.code)}
-            label={airline.name}
-            hint={String(airlineCounts.get(airline.code) ?? 0)}
-            checked={state.airlines.includes(airline.code)}
-          />
-        ))}
-      </FilterGroup>
+      {airlineCounts.size > 0 && (
+        <FilterGroup title="Maskapai">
+          {[...airlineCounts].map(([airline, count]) => (
+            <CheckRow
+              key={airline}
+              href={withAirlineToggled(state, airline)}
+              label={airline}
+              hint={String(count)}
+              checked={state.airlines.includes(airline)}
+            />
+          ))}
+        </FilterGroup>
+      )}
     </div>
   );
 }

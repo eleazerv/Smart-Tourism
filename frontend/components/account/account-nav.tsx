@@ -3,13 +3,14 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, KeyRound, LogOut, UserRound } from "lucide-react";
+import { Heart, KeyRound, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
 
 const ITEMS = [
   { href: "/akun", label: "Profil", icon: UserRound },
+  { href: "/akun/pesanan", label: "Pesanan saya", icon: Ticket },
   { href: "/akun/minat", label: "Minat perjalanan", icon: Heart },
   { href: "/akun/kata-sandi", label: "Ubah kata sandi", icon: KeyRound },
 ] as const;
@@ -73,6 +74,7 @@ export function AccountNav() {
 
       <ConfirmDialog
         open={confirming}
+        icon={<LogOut className="h-5 w-5" />}
         title="Keluar dari akun?"
         description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
         confirmLabel={signingOut ? "Keluar..." : "Keluar"}

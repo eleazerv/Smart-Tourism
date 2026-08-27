@@ -4,7 +4,7 @@ import Link from "next/link";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import type { User } from "@supabase/supabase-js";
-import { ChevronDown, Heart, LogOut, UserRound } from "lucide-react";
+import { ChevronDown, Heart, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import {
   DropdownMenu,
@@ -126,6 +126,12 @@ export function AccountMenu({ className }: { className?: string }) {
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className={ITEM}>
+            <Link href="/akun/pesanan">
+              <Ticket />
+              Pesanan saya
+            </Link>
+          </DropdownMenuItem>
+          <DropdownMenuItem asChild className={ITEM}>
             <Link href="/akun/minat">
               <Heart />
               Minat perjalanan
@@ -146,6 +152,7 @@ export function AccountMenu({ className }: { className?: string }) {
 
       <ConfirmDialog
         open={confirming}
+        icon={<LogOut className="h-5 w-5" />}
         title="Keluar dari akun?"
         description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
         confirmLabel={signingOut ? "Keluar..." : "Keluar"}
