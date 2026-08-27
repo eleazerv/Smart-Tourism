@@ -17,14 +17,16 @@ import flightBookingsRouter from './router/flightbooking.Route.js';
 import accommodationBookingsRouter from './router/accomodationBooking.Route.js';
 import webhooksRouter from './router/webhook.Route.js';
 import savedDestinationsRouter from './router/saved-destinations.Route.js';
-
+import chatRouter from './router/chat.Route.js';
+import cityRouter from './router/cities.Route.js';
+import tripRouter from './router/trip.Route.js';
 
 const app = express();
 app.set('trust proxy', 1);
 app.use(express.json());
 
 app.use(cors({
-  origin: "[https:/localhost:3000]",
+  origin: "*",
   credentials: true,
   allowedHeaders: ["Content-Type", "Authorization"]
 }));
@@ -43,6 +45,9 @@ app.use("/api/flight-bookings", flightBookingsRouter);
 app.use("/api/accommodation-bookings", accommodationBookingsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/saved-destinations", savedDestinationsRouter);
+app.use("/api/chat", chatRouter);
+app.use("/api/cities", cityRouter);
+app.use("/api/trips", tripRouter);
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
