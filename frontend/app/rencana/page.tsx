@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { SiteHeader } from "@/components/home/site-header";
 import { PlannerWorkspace } from "@/components/planner/planner-workspace";
 import { requireAccessToken } from "@/lib/api/session";
 
@@ -9,13 +10,22 @@ export const metadata: Metadata = {
     "Susun rencana perjalanan bersama asisten AI: cari destinasi, pilih penginapan dan penerbangan, lalu pesan sekaligus.",
 };
 
+/**
+ * Kerangka halaman mengikuti /peta, bukan halaman katalog: ruang kerja ini
+ * mengisi tinggi layar dan menggulir di dalam panelnya sendiri, jadi footer
+ * ditiadakan dan halaman berhenti menggulir di layar besar.
+ */
 export default function PlannerPage() {
   return (
-    <main className="mx-auto w-full max-w-7xl px-4 py-4">
-      <Suspense fallback={<Skeleton />}>
-        <Gate />
-      </Suspense>
-    </main>
+    <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
+      <SiteHeader />
+      <main className="min-h-0 flex-1">
+        <h1 className="sr-only">Rencana perjalanan bersama asisten AI</h1>
+        <Suspense fallback={<Skeleton />}>
+          <Gate />
+        </Suspense>
+      </main>
+    </div>
   );
 }
 
@@ -30,7 +40,5 @@ async function Gate() {
 }
 
 function Skeleton() {
-  return (
-    <div className="h-[calc(100dvh-4rem)] animate-pulse rounded-2xl border border-border bg-card" />
-  );
+  return <div className="h-full animate-pulse bg-muted/40" />;
 }

@@ -90,6 +90,47 @@ function buildInteractiveBlocks(toolTrace, answer) {
   return blocks;
 }
 
+/**
+ * Menempelkan foto sampul ke kartu destinasi.
+ *
+ * Sengaja dilakukan SETELAH model selesai menjawab, bukan dengan menambah
+ * kolom cover_image_url di hasil tool. Alasannya dua: url gambar memakan
+ * banyak token di setiap putaran tool padahal model tidak pernah butuh
+ * melihatnya, dan model yang melihat url cenderung ikut menempelkannya ke
+ * teks jawaban. Jadi gambarnya diambil terpisah, tepat sebelum blok dikirim
+ * ke layar.
+ *
+ * Kegagalan di sini tidak fatal: kartunya tetap tampil, hanya tanpa foto.
+ */
+async function attachCoverImages(blocks) {
+  const ids = blocks
+    .filter((b) => b.type === 'destination')
+    .flatMap((b) => b.options.map((o) => o.id));
+
+  if (!ids.length) return blocks;
+
+  try {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('id, cover_image_url')
+      .in('id', [...new Set(ids)]);
+
+    if (error) throw error;
+
+    const coverById = new Map((data || []).map((d) => [d.id, d.cover_image_url]));
+    for (const block of blocks) {
+      if (block.type !== 'destination') continue;
+      for (const option of block.options) {
+        option.cover_image_url = coverById.get(option.id) ?? null;
+      }
+    }
+  } catch (err) {
+    console.error('[attachCoverImages] gagal memuat sampul destinasi', err);
+  }
+
+  return blocks;
+}
+
 async function loadCanvas(db, tripId) {
   const [tripRes, itemsRes, flightsRes] = await Promise.all([
     db.from('trips')
@@ -538,7 +579,7 @@ export const sendMessage = async (req, res) => {
       if (traceError) console.error('[sendMessage] gagal menyimpan jejak tool', traceError);
     }
 
-    const interactive = buildInteractiveBlocks(toolTrace, answer);
+    const interactive = await attachCoverImages(buildInteractiveBlocks(toolTrace, answer));
 
     const { error: answerError } = await req.db.from('chat_messages').insert({
       room_id: room.id,

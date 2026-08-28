@@ -285,12 +285,12 @@ export function PlannerWorkspace() {
   }
 
   return (
-    <div className="flex h-[calc(100dvh-4rem)] overflow-hidden rounded-2xl border border-border bg-background">
-      <aside className="hidden w-56 shrink-0 flex-col border-r border-border md:flex">
+    <div className="flex h-full min-h-0 bg-background">
+      <aside className="hidden w-60 shrink-0 flex-col border-r border-border md:flex">
         <div className="p-3">
           <Button
             variant="outline"
-            className="w-full justify-start"
+            className="w-full justify-start rounded-full"
             disabled={busy}
             onClick={newRoom}
           >
@@ -313,10 +313,10 @@ export function PlannerWorkspace() {
               type="button"
               onClick={() => openRoom(room.id)}
               aria-current={room.id === roomId ? "true" : undefined}
-              className={`w-full truncate rounded-lg px-2.5 py-2 text-left text-xs transition ${
+              className={`w-full truncate rounded-full px-3 py-2 text-left text-xs transition ${
                 room.id === roomId
-                  ? "bg-brand-50 font-medium text-brand-700 dark:bg-brand-700/40 dark:text-brand-50"
-                  : "text-muted-foreground hover:bg-muted"
+                  ? "bg-brand-tint/10 font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100"
+                  : "text-muted-foreground hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
               }`}
             >
               {room.title}

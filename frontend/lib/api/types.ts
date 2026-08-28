@@ -269,7 +269,10 @@ export type DestinationOption = {
   rating: number | null;
   latitude: number | null;
   longitude: number | null;
+  /** Satu kalimat kenapa tempat ini cocok, dari katalog. */
   note?: string | null;
+  /** Ditempelkan backend sesudah model menjawab, jadi bisa null. */
+  cover_image_url?: string | null;
 };
 
 export type AccommodationOption = {

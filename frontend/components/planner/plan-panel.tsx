@@ -96,7 +96,7 @@ export function PlanPanel({
   return (
     <div className="flex h-full flex-col">
       <div className="border-b border-border px-4 py-3">
-        <p className="text-sm font-semibold">
+        <p className="font-display text-base font-bold tracking-tight">
           {trip.name ?? "Rencana tanpa nama"}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
@@ -123,7 +123,7 @@ export function PlanPanel({
                       {f.flight_type === "outbound" ? "Berangkat" : "Pulang"}
                     </span>
                     {f.booked_at ? (
-                      <span className="rounded-full bg-brand-50 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-700/40 dark:text-brand-50">
+                      <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100">
                         dipesan
                       </span>
                     ) : (
@@ -145,7 +145,7 @@ export function PlanPanel({
                     <Button
                       size="sm"
                       variant="ghost"
-                      className="mt-1 h-7 px-2 text-xs text-destructive hover:text-destructive"
+                      className="mt-1 h-7 rounded-full px-2 text-xs text-destructive hover:text-destructive"
                       disabled={busy}
                       onClick={() => onDropFlight(f.flight_type)}
                     >
@@ -178,7 +178,7 @@ export function PlanPanel({
         </section>
 
         {gaps.length > 0 && (
-          <div className="rounded-xl border border-amber-300/60 bg-amber-50 p-3 text-xs leading-relaxed text-amber-900 dark:border-amber-500/30 dark:bg-amber-500/10 dark:text-amber-200">
+          <div className="rounded-2xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
             <p className="mb-1 font-semibold">Belum siap dipesan</p>
             <ul className="space-y-0.5">
               {gaps.slice(0, 6).map((gap) => (
@@ -192,7 +192,7 @@ export function PlanPanel({
 
       <div className="border-t border-border p-4">
         <Button
-          className="w-full"
+          className="w-full rounded-full"
           disabled={!ready || busy}
           onClick={onCheckout}
         >
@@ -296,7 +296,7 @@ function ItemCard({
             <Button
               size="sm"
               variant={item.status === "confirmed" ? "outline" : "default"}
-              className="h-7 flex-1 text-xs"
+              className="h-7 flex-1 rounded-full text-xs"
               disabled={busy || pending}
               onClick={() =>
                 run(() =>
@@ -322,7 +322,7 @@ function ItemCard({
             <Button
               size="sm"
               variant="ghost"
-              className="h-7 px-2 text-destructive hover:text-destructive"
+              className="h-7 rounded-full px-2 text-destructive hover:text-destructive"
               aria-label={`Hapus ${item.destinations?.name ?? "destinasi"} dari rencana`}
               disabled={busy || pending}
               onClick={() => run(() => onRemove(item.id))}
