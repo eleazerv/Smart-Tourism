@@ -72,31 +72,45 @@ function shortDate(value: string | null) {
 }
 
 /**
- * Apa saja yang masih kurang, disebut per destinasi.
+ * Apa yang akan terjadi kalau tombol checkout ditekan sekarang.
  *
- * Dulu daftar ini menyatukan segalanya jadi satu tumpukan "belum siap", yang
- * menyesatkan: penerbangan yang kosong tidak pernah menghalangi checkout, tapi
- * disebut berdampingan dengan yang menghalangi. Sekarang dipisah — pengguna
- * bisa tahu mana yang harus dikerjakan dan mana yang sekadar saran.
+ * Dulu bagian ini berupa daftar "belum siap dipesan" yang menyebut tiap
+ * destinasi tanpa penginapan sebagai kekurangan. Itu keliru dan bikin buntu:
+ * backend tidak pernah mewajibkan penginapan atau penerbangan — ia memesan
+ * yang sudah lengkap dan melewati sisanya tanpa mengeluh. Rencana berisi
+ * delapan destinasi tanpa satu pun hotel tetap rencana yang sah.
+ *
+ * Jadi yang ditampilkan sekarang bukan kekurangan, melainkan ringkasan:
+ * ini yang akan dipesan, ini yang tidak ikut, dan tidak ikut itu bukan
+ * masalah. Syaratnya disalin persis dari `checkoutTrip` di backend supaya
+ * ringkasan ini tidak pernah menjanjikan sesuatu yang berbeda.
  */
-function findGaps(canvas: TripCanvas) {
-  const blocking: string[] = [];
+const MAX_FLIGHT_LEGS = 2;
 
-  for (const item of canvas.items) {
-    if (item.status === "booked") continue;
-    const name = item.destinations?.name ?? "Destinasi";
-    if (item.status !== "confirmed") blocking.push(`${name} belum dikonfirmasi`);
-    else if (!item.accommodations) blocking.push(`${name} belum punya penginapan`);
-    else if (!item.check_in || !item.check_out)
-      blocking.push(`${name} belum punya tanggal menginap`);
-  }
+function bookingPlan(canvas: TripCanvas) {
+  const stays = canvas.items.filter(
+    (item) =>
+      item.status === "confirmed" &&
+      item.accommodations &&
+      item.check_in &&
+      item.check_out,
+  );
+  const flights = canvas.flights.filter((flight) => !flight.booked_at);
 
-  const advisory =
-    canvas.items.length > 0 && canvas.flights.length === 0
-      ? "Belum ada penerbangan dipilih. Cari lewat tombol di bagian Penerbangan, atau minta AI mencarikannya — checkout tetap bisa jalan tanpa ini."
-      : null;
+  const skipped = canvas.items.filter(
+    (item) => item.status !== "booked" && !stays.includes(item),
+  );
 
-  return { blocking, advisory };
+  return {
+    stays,
+    flights,
+    skipped,
+    /** Backend menolak lebih dari dua kaki penerbangan dalam satu pemesanan. */
+    tooManyFlights: flights.length > MAX_FLIGHT_LEGS,
+    alreadyBooked:
+      canvas.items.some((item) => item.status === "booked") ||
+      canvas.flights.some((flight) => Boolean(flight.booked_at)),
+  };
 }
 
 export function PlanPanel({
@@ -117,15 +131,8 @@ export function PlanPanel({
   }
 
   const { trip, items, flights } = canvas;
-  const gaps = findGaps(canvas);
-
-  // Sama seperti backend: yang bisa dipesan adalah destinasi terkonfirmasi
-  // yang lengkap, atau penerbangan yang sudah dipilih tapi belum dipesan.
-  const ready =
-    items.some(
-      (i) =>
-        i.status === "confirmed" && i.accommodations && i.check_in && i.check_out,
-    ) || flights.some((f) => !f.booked_at);
+  const plan = bookingPlan(canvas);
+  const ready = plan.stays.length > 0 || plan.flights.length > 0;
 
   return (
     <div className="flex h-full flex-col">
@@ -143,7 +150,10 @@ export function PlanPanel({
         <section>
           <SectionTitle>Penerbangan</SectionTitle>
           {flights.length === 0 ? (
-            <Empty>Belum ada penerbangan dipilih.</Empty>
+            <Empty>
+              Belum ada penerbangan dipilih. Opsional — rencana tetap tersimpan
+              tanpa tiket.
+            </Empty>
           ) : (
             <ul className="space-y-2">
               {flights.map((f) => (
@@ -197,7 +207,10 @@ export function PlanPanel({
         <section>
           <SectionTitle>Destinasi</SectionTitle>
           {items.length === 0 ? (
-            <Empty>Belum ada. Ceritakan maumu lewat chat.</Empty>
+            <Empty>
+              Belum ada destinasi. Ceritakan maumu lewat chat, atau tambahkan dari
+              kartu yang ditawarkan AI.
+            </Empty>
           ) : (
             <ul className="space-y-2">
               {items.map((item) => (
@@ -213,32 +226,15 @@ export function PlanPanel({
           )}
         </section>
 
-        {gaps.blocking.length > 0 && (
+        {plan.tooManyFlights && (
           <div className="rounded-2xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-            <p className="mb-1 font-semibold">
-              {ready ? "Sebagian belum lengkap" : "Belum siap dipesan"}
-            </p>
-            <p className="mb-1.5 opacity-90">
-              Isi lewat tombol di kartu destinasinya masing-masing.
-            </p>
-            <ul className="space-y-0.5">
-              {gaps.blocking.slice(0, 6).map((gap) => (
-                <li key={gap}>· {gap}</li>
-              ))}
-              {gaps.blocking.length > 6 && (
-                <li className="opacity-75">
-                  dan {gaps.blocking.length - 6} lagi
-                </li>
-              )}
-            </ul>
+            Rencana ini punya {plan.flights.length} penerbangan, sementara satu
+            pemesanan cuma memuat dua (berangkat dan pulang). Lepaskan dulu yang
+            berlebih sebelum checkout.
           </div>
         )}
 
-        {gaps.advisory && (
-          <p className="rounded-2xl border border-border p-3 text-xs leading-relaxed text-muted-foreground">
-            {gaps.advisory}
-          </p>
-        )}
+        <BookingSummary plan={plan} />
       </div>
 
       <div className="border-t border-border p-4">
@@ -248,7 +244,11 @@ export function PlanPanel({
           onClick={onCheckout}
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          {ready ? "Checkout rencana ini" : "Belum ada yang siap dipesan"}
+          {ready
+            ? `Pesan ${summarise(plan)}`
+            : plan.alreadyBooked
+              ? "Semuanya sudah dipesan"
+              : "Belum ada yang bisa dipesan"}
         </Button>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
           Semua pesanan lahir berstatus pending sampai dibayar.
@@ -268,6 +268,64 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 
 function Empty({ children }: { children: React.ReactNode }) {
   return <p className="text-xs text-muted-foreground">{children}</p>;
+}
+
+/** Label tombol checkout: menyebut apa yang akan dipesan, bukan "checkout". */
+function summarise(plan: ReturnType<typeof bookingPlan>) {
+  const parts: string[] = [];
+  if (plan.stays.length) parts.push(`${plan.stays.length} penginapan`);
+  if (plan.flights.length) parts.push(`${plan.flights.length} penerbangan`);
+  return parts.join(" & ");
+}
+
+/**
+ * Ringkasan apa yang akan dan tidak akan dipesan.
+ *
+ * Nadanya sengaja netral, bukan peringatan: destinasi tanpa penginapan itu
+ * pilihan yang sah, bukan kesalahan yang perlu diperbaiki. Menyebutnya di sini
+ * cuma supaya tidak ada kejutan setelah tombolnya ditekan.
+ */
+function BookingSummary({ plan }: { plan: ReturnType<typeof bookingPlan> }) {
+  const bookable = plan.stays.length > 0 || plan.flights.length > 0;
+
+  if (!bookable) {
+    return (
+      <p className="rounded-2xl border border-border p-3 text-xs leading-relaxed text-muted-foreground">
+        {plan.alreadyBooked
+          ? "Semua yang siap dipesan di rencana ini sudah dipesan. Lanjutkan pembayarannya di halaman Pesanan."
+          : "Rencana ini tersimpan apa adanya. Penginapan dan penerbangan sifatnya opsional — isi salah satunya kalau kamu memang mau memesan lewat sini."}
+      </p>
+    );
+  }
+
+  return (
+    <div className="rounded-2xl border border-border p-3 text-xs leading-relaxed">
+      <p className="mb-1.5 font-semibold">Yang akan dipesan</p>
+      <ul className="space-y-1 text-muted-foreground">
+        {plan.flights.map((flight) => (
+          <li key={flight.flight_type}>
+            · Penerbangan{" "}
+            {flight.flight_type === "outbound" ? "berangkat" : "pulang"} —{" "}
+            {flight.flight_options?.airline}{" "}
+            {flight.flight_options?.flight_number}
+          </li>
+        ))}
+        {plan.stays.map((item) => (
+          <li key={item.id}>
+            · {item.accommodations?.name} di {item.destinations?.name}
+          </li>
+        ))}
+      </ul>
+
+      {plan.skipped.length > 0 && (
+        <p className="mt-2 text-muted-foreground">
+          {plan.skipped.length} destinasi lain tidak ikut dipesan karena belum
+          punya penginapan atau tanggal. Itu tidak apa-apa — rencananya tetap
+          tersimpan.
+        </p>
+      )}
+    </div>
+  );
 }
 
 function ItemCard({
@@ -322,7 +380,7 @@ function ItemCard({
             {formatIDR(stay.price_per_night)}/malam
           </>
         ) : (
-          "Belum pilih penginapan."
+          "Belum pilih penginapan — opsional, hanya perlu kalau mau dipesan lewat sini."
         )}
       </p>
 
