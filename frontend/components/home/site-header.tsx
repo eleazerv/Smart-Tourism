@@ -12,6 +12,7 @@ const navLinks = [
   { label: "Hotel", href: "/hotels" },
   { label: "Tiket Pesawat", href: "/flights" },
   { label: "Peta Wisata", href: "/peta" },
+  { label: "Rencana AI", href: "/rencana" },
 ];
 
 export function SiteHeader() {
