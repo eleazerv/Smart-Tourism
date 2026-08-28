@@ -35,3 +35,12 @@ export const strictLimiter = rateLimit({
   handler: rateLimitResponse,
 });
 
+
+export const chatLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 5,                  
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
+  handler: rateLimitResponse,
+})
