@@ -250,6 +250,33 @@ export type PaymentIntent = {
 /** Kelas penginapan di katalog. */
 export type AccommodationTier = "budget" | "mid" | "luxury";
 
+/** Kota yang punya penerbangan di katalog, untuk dropdown rute. */
+export type City = {
+  id: number;
+  name: string;
+  is_major_hub: boolean;
+  provinces: ProvinceRef | null;
+};
+
+/**
+ * Penginapan di sekitar sebuah destinasi. `distance_km` dihitung backend dari
+ * koordinat destinasinya, dan hasilnya sudah terurut dari yang terdekat.
+ */
+export type NearbyAccommodation = {
+  id: string;
+  name: string;
+  tier: AccommodationTier;
+  price_per_night: number;
+  max_guests: number | null;
+  partner_name: string | null;
+  external_url: string | null;
+  cover_image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Null kalau salah satu titiknya tidak punya koordinat. */
+  distance_km: number | null;
+};
+
 
 /**
  * Kartu pilihan yang menempel di bawah satu balasan AI.

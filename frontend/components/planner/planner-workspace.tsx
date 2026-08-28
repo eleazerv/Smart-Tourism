@@ -222,6 +222,7 @@ export function PlannerWorkspace() {
       itemId: string,
       patch: {
         status?: "suggested" | "confirmed";
+        accommodation_id?: string | null;
         check_in?: string | null;
         check_out?: string | null;
       },
@@ -361,6 +362,7 @@ export function PlannerWorkspace() {
           onPatchItem={patchItem}
           onRemoveItem={dropItem}
           onDropFlight={dropFlight}
+          onPickFlight={pickFlight}
           onCheckout={checkout}
         />
       </aside>

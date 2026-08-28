@@ -5,10 +5,12 @@
  */
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
+  AccommodationTier,
   ChatMessage,
   ChatRoom,
   ChatTurn,
   CheckoutResult,
+  City,
   Destination,
   DestinationDetail,
   EventItem,
@@ -18,6 +20,7 @@ import type {
   FlightDetail,
   FlightOption,
   HeatmapEntry,
+  NearbyAccommodation,
   PaymentIntent,
   Paginated,
   PersonalRecommendations,
@@ -413,6 +416,28 @@ export async function checkoutTrip(
     { ...auth, method: "POST" },
   );
   return data;
+}
+
+/** Daftar kota, urut abjad. Dipakai pemilih rute penerbangan di panel rencana. */
+export async function listCities(): Promise<City[]> {
+  const { data } = await apiFetch<{ data: City[] }>("/api/cities");
+  return data ?? [];
+}
+
+/**
+ * Penginapan di kota destinasi ini, terdekat lebih dulu. Dipakai panel rencana
+ * untuk memilih penginapan tanpa harus lewat percakapan.
+ */
+export async function getDestinationAccommodations(
+  destinationId: string,
+  options: { tier?: AccommodationTier } & Auth = {},
+): Promise<NearbyAccommodation[]> {
+  const { tier, ...auth } = options;
+  const { data } = await apiFetch<{ data: NearbyAccommodation[] }>(
+    `/api/destinations/${destinationId}/accommodations`,
+    { query: { tier }, ...auth },
+  );
+  return data ?? [];
 }
 
 export async function getTripCanvas(

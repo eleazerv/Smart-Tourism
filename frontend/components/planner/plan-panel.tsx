@@ -10,10 +10,32 @@
  */
 
 import { useState } from "react";
-import { Loader2, Plane, Trash2, Check, X } from "lucide-react";
+import {
+  BedDouble,
+  Check,
+  ChevronDown,
+  Loader2,
+  Plane,
+  Trash2,
+  X,
+} from "lucide-react";
 import { Button } from "@/components/ui/button";
+import { FlightPicker } from "@/components/planner/flight-picker";
 import { formatIDR } from "@/lib/seeded-random";
-import type { TripCanvas, TripItem } from "@/lib/api";
+import { cn } from "@/lib/utils";
+import {
+  getDestinationAccommodations,
+  type FlightOption,
+  type NearbyAccommodation,
+  type TripCanvas,
+  type TripItem,
+} from "@/lib/api";
+
+const TIER_LABEL: Record<string, string> = {
+  budget: "Hemat",
+  mid: "Menengah",
+  luxury: "Mewah",
+};
 
 type Props = {
   canvas: TripCanvas | null;
@@ -22,12 +44,18 @@ type Props = {
     itemId: string,
     patch: {
       status?: "suggested" | "confirmed";
+      accommodation_id?: string | null;
       check_in?: string | null;
       check_out?: string | null;
     },
   ) => Promise<void>;
   onRemoveItem: (itemId: string) => Promise<void>;
   onDropFlight: (type: "outbound" | "return") => Promise<void>;
+  /** Sama dengan yang dipakai kartu pilihan di chat — satu jalur, satu perilaku. */
+  onPickFlight: (
+    option: FlightOption,
+    type: "outbound" | "return",
+  ) => Promise<void>;
   onCheckout: () => Promise<void>;
 };
 
@@ -44,26 +72,31 @@ function shortDate(value: string | null) {
 }
 
 /**
- * Apa saja yang masih kurang sebelum rencana bisa dipesan, disebut per
- * destinasi. Tanpa daftar ini, tombol checkout yang mati tidak memberi tahu
- * bagian mana yang bolong dan pengguna harus menebak sendiri.
+ * Apa saja yang masih kurang, disebut per destinasi.
+ *
+ * Dulu daftar ini menyatukan segalanya jadi satu tumpukan "belum siap", yang
+ * menyesatkan: penerbangan yang kosong tidak pernah menghalangi checkout, tapi
+ * disebut berdampingan dengan yang menghalangi. Sekarang dipisah — pengguna
+ * bisa tahu mana yang harus dikerjakan dan mana yang sekadar saran.
  */
-function findGaps(canvas: TripCanvas): string[] {
-  const gaps: string[] = [];
+function findGaps(canvas: TripCanvas) {
+  const blocking: string[] = [];
 
   for (const item of canvas.items) {
     if (item.status === "booked") continue;
     const name = item.destinations?.name ?? "Destinasi";
-    if (item.status !== "confirmed") gaps.push(`${name} belum dikonfirmasi`);
-    else if (!item.accommodations) gaps.push(`${name} belum punya penginapan`);
+    if (item.status !== "confirmed") blocking.push(`${name} belum dikonfirmasi`);
+    else if (!item.accommodations) blocking.push(`${name} belum punya penginapan`);
     else if (!item.check_in || !item.check_out)
-      gaps.push(`${name} belum punya tanggal menginap`);
+      blocking.push(`${name} belum punya tanggal menginap`);
   }
 
-  if (canvas.items.length > 0 && canvas.flights.length === 0) {
-    gaps.push("Belum ada penerbangan dipilih");
-  }
-  return gaps;
+  const advisory =
+    canvas.items.length > 0 && canvas.flights.length === 0
+      ? "Belum ada penerbangan dipilih. Cari lewat tombol di bagian Penerbangan, atau minta AI mencarikannya — checkout tetap bisa jalan tanpa ini."
+      : null;
+
+  return { blocking, advisory };
 }
 
 export function PlanPanel({
@@ -72,6 +105,7 @@ export function PlanPanel({
   onPatchItem,
   onRemoveItem,
   onDropFlight,
+  onPickFlight,
   onCheckout,
 }: Props) {
   if (!canvas?.trip) {
@@ -109,7 +143,7 @@ export function PlanPanel({
         <section>
           <SectionTitle>Penerbangan</SectionTitle>
           {flights.length === 0 ? (
-            <Empty>Belum ada. Minta dicarikan lewat chat.</Empty>
+            <Empty>Belum ada penerbangan dipilih.</Empty>
           ) : (
             <ul className="space-y-2">
               {flights.map((f) => (
@@ -156,6 +190,8 @@ export function PlanPanel({
               ))}
             </ul>
           )}
+
+          <FlightPicker canvas={canvas} disabled={busy} onPick={onPickFlight} />
         </section>
 
         <section>
@@ -177,16 +213,31 @@ export function PlanPanel({
           )}
         </section>
 
-        {gaps.length > 0 && (
+        {gaps.blocking.length > 0 && (
           <div className="rounded-2xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-            <p className="mb-1 font-semibold">Belum siap dipesan</p>
+            <p className="mb-1 font-semibold">
+              {ready ? "Sebagian belum lengkap" : "Belum siap dipesan"}
+            </p>
+            <p className="mb-1.5 opacity-90">
+              Isi lewat tombol di kartu destinasinya masing-masing.
+            </p>
             <ul className="space-y-0.5">
-              {gaps.slice(0, 6).map((gap) => (
+              {gaps.blocking.slice(0, 6).map((gap) => (
                 <li key={gap}>· {gap}</li>
               ))}
-              {gaps.length > 6 && <li className="opacity-75">dan {gaps.length - 6} lagi</li>}
+              {gaps.blocking.length > 6 && (
+                <li className="opacity-75">
+                  dan {gaps.blocking.length - 6} lagi
+                </li>
+              )}
             </ul>
           </div>
+        )}
+
+        {gaps.advisory && (
+          <p className="rounded-2xl border border-border p-3 text-xs leading-relaxed text-muted-foreground">
+            {gaps.advisory}
+          </p>
         )}
       </div>
 
@@ -271,12 +322,22 @@ function ItemCard({
             {formatIDR(stay.price_per_night)}/malam
           </>
         ) : (
-          "Belum pilih penginapan — minta AI carikan lewat chat."
+          "Belum pilih penginapan."
         )}
       </p>
 
       {!locked && (
         <>
+          <StayPicker
+            destinationId={item.destinations?.id ?? null}
+            destinationName={item.destinations?.name ?? "destinasi ini"}
+            selectedId={stay?.id ?? null}
+            disabled={busy || pending}
+            onPick={(accommodationId) =>
+              run(() => onPatch(item.id, { accommodation_id: accommodationId }))
+            }
+          />
+
           <div className="mt-2 flex gap-2">
             <DateInput
               label="Check-in"
@@ -333,6 +394,133 @@ function ItemCard({
         </>
       )}
     </li>
+  );
+}
+
+/**
+ * Pemilih penginapan langsung di panel.
+ *
+ * Tanpa ini, satu-satunya jalan mengisi penginapan adalah meminta AI
+ * mencarikannya — dan daftar "belum siap dipesan" jadi buntu: ia menyebut apa
+ * yang kurang tapi tidak memberi cara memperbaikinya. Daftarnya diambil dari
+ * endpoint yang sama dengan yang dipakai AI, sudah terurut dari yang terdekat
+ * ke destinasi, jadi pilihan lewat panel dan lewat chat selalu sama isinya.
+ *
+ * Dimuat saat dibuka, bukan saat kartunya dirender: rencana berisi delapan
+ * destinasi akan menembak delapan permintaan sekaligus untuk daftar yang
+ * mungkin tidak satu pun dibuka.
+ */
+function StayPicker({
+  destinationId,
+  destinationName,
+  selectedId,
+  disabled,
+  onPick,
+}: {
+  destinationId: string | null;
+  destinationName: string;
+  selectedId: string | null;
+  disabled: boolean;
+  onPick: (accommodationId: string) => void;
+}) {
+  const [open, setOpen] = useState(false);
+  const [options, setOptions] = useState<NearbyAccommodation[] | null>(null);
+  const [failed, setFailed] = useState(false);
+
+  async function toggle() {
+    const next = !open;
+    setOpen(next);
+    if (!next || options || !destinationId) return;
+
+    try {
+      setFailed(false);
+      setOptions(await getDestinationAccommodations(destinationId));
+    } catch {
+      setFailed(true);
+    }
+  }
+
+  if (!destinationId) return null;
+
+  return (
+    <div className="mt-2">
+      <Button
+        size="sm"
+        variant="outline"
+        className="h-7 w-full rounded-full text-xs"
+        disabled={disabled}
+        onClick={toggle}
+        aria-expanded={open}
+      >
+        <BedDouble className="h-3.5 w-3.5" />
+        {selectedId ? "Ganti penginapan" : "Pilih penginapan"}
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition", open && "rotate-180")}
+        />
+      </Button>
+
+      {open && (
+        <div className="mt-1.5 max-h-56 overflow-y-auto rounded-xl border border-border">
+          {options === null && !failed && (
+            <p className="flex items-center gap-1.5 px-3 py-4 text-xs text-muted-foreground">
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              Memuat penginapan…
+            </p>
+          )}
+
+          {failed && (
+            <p className="px-3 py-4 text-xs text-muted-foreground">
+              Daftar penginapan belum bisa dimuat. Coba lagi sebentar lagi.
+            </p>
+          )}
+
+          {options?.length === 0 && (
+            <p className="px-3 py-4 text-xs leading-relaxed text-muted-foreground">
+              Belum ada penginapan terdaftar di kota {destinationName}.
+            </p>
+          )}
+
+          <ul className="divide-y divide-border">
+            {options?.map((option) => {
+              const picked = option.id === selectedId;
+              return (
+                <li key={option.id}>
+                  <button
+                    type="button"
+                    disabled={disabled || picked}
+                    onClick={() => {
+                      onPick(option.id);
+                      setOpen(false);
+                    }}
+                    className={cn(
+                      "flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition",
+                      picked
+                        ? "bg-brand-tint/10 dark:bg-brand-tint/15"
+                        : "hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                    )}
+                  >
+                    <span className="min-w-0">
+                      <span className="block truncate text-xs font-medium">
+                        {option.name}
+                      </span>
+                      <span className="block truncate text-[11px] text-muted-foreground">
+                        {TIER_LABEL[option.tier] ?? option.tier} ·{" "}
+                        {formatIDR(option.price_per_night)}/malam
+                        {option.distance_km != null &&
+                          ` · ${option.distance_km} km`}
+                      </span>
+                    </span>
+                    {picked && (
+                      <Check className="h-3.5 w-3.5 shrink-0 text-brand-700 dark:text-brand-100" />
+                    )}
+                  </button>
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      )}
+    </div>
   );
 }
 
