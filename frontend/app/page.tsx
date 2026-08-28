@@ -7,6 +7,7 @@ import { DestinationRail } from "@/components/home/destination-rail";
 import { HeroSearch } from "@/components/home/hero-search";
 import { InspirationRail } from "@/components/home/inspiration-rail";
 import { InterestGrid } from "@/components/home/interest-grid";
+import { PlannerPromo } from "@/components/home/planner-promo";
 import { PromoBanner } from "@/components/home/promo-banner";
 import { SeasonalRail } from "@/components/home/seasonal-rail";
 import { SiteFooter } from "@/components/home/site-footer";
@@ -34,6 +35,12 @@ export default function Home() {
         <Suspense fallback={<GridSkeleton />}>
           <InterestGrid />
         </Suspense>
+
+        {/* Ditaruh setelah InterestGrid, bukan di puncak halaman: pembaca yang
+            sudah tahu mau ke mana dilayani lebih dulu oleh pencarian dan
+            kategori di atas, dan tawaran "biar disusunkan" justru paling
+            mengena tepat setelah menelusuri kategori tanpa menemukan yang pas. */}
+        <PlannerPromo />
 
         <PromoBanner />
 

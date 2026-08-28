@@ -212,7 +212,8 @@ export const likeReview = async (req, res) => {
         if (existingError) throw existingError;
         
         if (existing) {
-        await req.db.from('review_likes').delete().eq('id', existing.id);
+        const { delError } = await req.db.from('review_likes').delete().eq('id', existing.id);
+        if (delError) throw error;
         return res.json({ liked: false });
         }
 

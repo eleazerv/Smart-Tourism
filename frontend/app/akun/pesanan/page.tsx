@@ -3,7 +3,7 @@ import { Suspense } from "react";
 import Link from "next/link";
 import { ChevronRight, Ticket } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
-import { BookingStatus } from "@/components/account/booking-status";
+import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import { listFlightBookings, type FlightBookingSummary } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
 import { formatDateTime } from "@/lib/format-date";
@@ -65,7 +65,13 @@ async function BookingList() {
             </div>
 
             <div className="shrink-0 text-right">
-              <p className="text-sm font-bold tabular-nums">
+              <p
+                className={
+                  isClosed(booking.payment_status)
+                    ? "text-sm font-bold tabular-nums text-muted-foreground line-through decoration-1"
+                    : "text-sm font-bold tabular-nums"
+                }
+              >
                 {formatIDR(booking.total_price)}
               </p>
               <BookingStatus status={booking.payment_status} className="mt-1" />

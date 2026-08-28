@@ -1,0 +1,1728 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Rencana &middot; AI Trip Planner</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600&family=Inter:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+<script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+
+<style>
+/* ============================================================
+   TOKEN SISTEM
+   ------------------------------------------------------------
+   Ide dasar: aplikasi ini bukan brosur, ini manifes pelayaran.
+   Warna berangkat dari laut & pelabuhan malam (bukan cream+terracotta
+   yang jadi default AI), aksen teal untuk tindakan hidup, gold pudar
+   untuk status "terkonfirmasi/dipesan". Kartu destinasi dibentuk
+   seperti tiket sobek, karena kontennya memang urutan perjalanan.
+============================================================ */
+:root {
+  --ink: #14202E;
+  --ink-soft: #445064;
+  --paper: #FFFFFF;
+  --bg: #EEF1F3;
+  --bg-rail: #101A26;
+  --line: #DCE1E6;
+  --line-soft: #E9ECEF;
+  --accent: #0E7C6B;
+  --accent-deep: #0A5D50;
+  --accent-tint: #E4F3F0;
+  --gold: #C08A2E;
+  --gold-tint: #FBF1DD;
+  --danger: #B23A2E;
+  --danger-tint: #FBEAE7;
+  --violet: #6B5B95;
+  --violet-tint: #EFEBF7;
+  --radius: 14px;
+  --shadow-card: 0 1px 2px rgba(20,32,46,.04), 0 6px 20px -8px rgba(20,32,46,.12);
+  --font-display: 'Fraunces', serif;
+  --font-body: 'Inter', system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+* { box-sizing: border-box; }
+html, body { height: 100%; }
+body {
+  margin: 0; background: var(--bg); color: var(--ink);
+  font-family: var(--font-body); font-size: 14px; line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+}
+button { font-family: inherit; }
+input, select, textarea { font-family: inherit; }
+::selection { background: var(--accent-tint); color: var(--accent-deep); }
+
+*:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+
+/* ---------- App shell ---------- */
+#root { height: 100vh; display: flex; flex-direction: column; }
+
+.topbar {
+  height: 52px; flex-shrink: 0; background: var(--bg-rail); color: #fff;
+  display: flex; align-items: center; gap: 10px; padding: 0 16px;
+  font-size: 13px; z-index: 5;
+}
+.topbar .brand {
+  font-family: var(--font-display); font-size: 17px; font-weight: 500;
+  letter-spacing: .2px; margin-right: 8px; white-space: nowrap;
+}
+.topbar .brand em { color: var(--accent); font-style: normal; }
+.topbar input {
+  background: rgba(255,255,255,.08); border: 1px solid rgba(255,255,255,.14);
+  color: #fff; padding: 6px 10px; border-radius: 8px; font-size: 12.5px;
+}
+.topbar input::placeholder { color: rgba(255,255,255,.4); }
+.topbar input#apiBase { width: 170px; }
+.topbar input.auth { width: 140px; }
+.topbar button.login {
+  background: var(--accent); color: #fff; border: 0; padding: 7px 14px;
+  border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 12.5px;
+}
+.topbar button.login:disabled { opacity: .5; cursor: not-allowed; }
+.topbar .status { margin-left: auto; display: flex; align-items: center; gap: 7px; font-size: 12.5px; color: rgba(255,255,255,.75); }
+.pip { width: 7px; height: 7px; border-radius: 50%; background: #4B5A6B; flex-shrink: 0; }
+.pip.on { background: #37C99B; box-shadow: 0 0 0 3px rgba(55,201,155,.2); }
+
+.shell { flex: 1; display: flex; overflow: hidden; }
+
+/* ---------- Rail ---------- */
+.rail {
+  width: 210px; flex-shrink: 0; background: var(--bg-rail); color: #DDE3E9;
+  display: flex; flex-direction: column; border-right: 1px solid rgba(255,255,255,.06);
+}
+.rail-head { padding: 14px 14px 8px; }
+.rail-head .eyebrow { font-size: 10.5px; letter-spacing: .08em; text-transform: uppercase; color: #6B7A8C; margin-bottom: 10px; }
+.rail button.new {
+  width: 100%; padding: 9px; border-radius: 9px; border: 1px dashed rgba(255,255,255,.22);
+  background: transparent; color: #DDE3E9; cursor: pointer; font-size: 12.5px; font-weight: 500;
+  transition: border-color .15s, background .15s;
+}
+.rail button.new:hover:not(:disabled) { border-color: var(--accent); background: rgba(14,124,107,.15); }
+.rail button.new:disabled { opacity: .4; cursor: not-allowed; }
+.rail-list { flex: 1; overflow-y: auto; padding: 4px 8px 12px; }
+.rail-item {
+  padding: 10px 10px; border-radius: 9px; cursor: pointer; margin-bottom: 2px;
+  font-size: 12.5px; line-height: 1.4; color: #B6C0CC; border: 1px solid transparent;
+}
+.rail-item:hover { background: rgba(255,255,255,.05); }
+.rail-item.active { background: rgba(14,124,107,.18); border-color: rgba(14,124,107,.4); color: #fff; }
+.rail-empty { padding: 14px 12px; font-size: 12px; color: #5A6779; }
+
+/* ---------- Chat column ---------- */
+.chatcol { flex: 1; min-width: 0; display: flex; flex-direction: column; background: var(--bg); }
+.chatlog { flex: 1; overflow-y: auto; padding: 22px 24px 8px; }
+.chatlog-inner { max-width: 680px; margin: 0 auto; }
+
+.chat-empty {
+  max-width: 460px; margin: 60px auto 0; text-align: center; color: var(--ink-soft);
+}
+.chat-empty h2 { font-family: var(--font-display); font-size: 22px; font-weight: 500; color: var(--ink); margin: 0 0 8px; }
+.chat-empty p { font-size: 13px; line-height: 1.6; margin: 0; }
+
+.row { display: flex; margin-bottom: 4px; }
+.row.user { justify-content: flex-end; }
+.row.assistant { justify-content: flex-start; }
+
+.bubble {
+  max-width: 78%; padding: 11px 15px; border-radius: 16px; font-size: 13.5px; line-height: 1.6;
+  white-space: pre-wrap; word-wrap: break-word;
+}
+.row.user .bubble { background: var(--ink); color: #fff; border-bottom-right-radius: 4px; }
+.row.assistant .bubble { background: var(--paper); border: 1px solid var(--line-soft); border-bottom-left-radius: 4px; box-shadow: var(--shadow-card); }
+.row.assistant .bubble b, .row.assistant .bubble strong { font-weight: 600; }
+
+.bubble.typing { display: flex; align-items: center; gap: 4px; padding: 13px 16px; }
+.dot3 { width: 6px; height: 6px; border-radius: 50%; background: var(--ink-soft); opacity: .35; animation: bounce 1.1s infinite ease-in-out; }
+.dot3:nth-child(2) { animation-delay: .15s; }
+.dot3:nth-child(3) { animation-delay: .3s; }
+@keyframes bounce { 0%,80%,100% { transform: translateY(0); opacity:.35; } 40% { transform: translateY(-3px); opacity:.9; } }
+
+.toolstrip { display: flex; flex-wrap: wrap; gap: 4px; margin: 5px 2px 14px; align-items: center; }
+.toolchip {
+  font-family: var(--font-mono); font-size: 10px; background: var(--violet-tint); color: var(--violet);
+  padding: 2px 7px; border-radius: 5px; letter-spacing: .01em;
+}
+.toolstrip .meta { font-size: 10.5px; color: #9AA5B1; margin-left: 2px; }
+
+.composer {
+  border-top: 1px solid var(--line); background: var(--paper); padding: 12px 24px 16px; flex-shrink: 0;
+}
+.composer-inner { max-width: 680px; margin: 0 auto; display: flex; gap: 8px; align-items: flex-end; }
+.composer textarea {
+  flex: 1; resize: none; border: 1px solid var(--line); border-radius: 12px; padding: 11px 13px;
+  font-size: 13.5px; line-height: 1.5; max-height: 120px; background: #FCFCFD;
+}
+.composer textarea:focus { border-color: var(--accent); }
+.composer button.send {
+  background: var(--ink); color: #fff; border: 0; width: 42px; height: 42px; border-radius: 12px;
+  cursor: pointer; display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+.composer button.send:disabled { opacity: .35; cursor: not-allowed; }
+.composer-hint { max-width: 680px; margin: 6px auto 0; font-size: 11px; color: #9AA5B1; }
+
+/* ---------- Panel kanan ---------- */
+.panel {
+  width: 400px; flex-shrink: 0; background: var(--paper); border-left: 1px solid var(--line);
+  display: flex; flex-direction: column;
+}
+.tabs { display: flex; border-bottom: 1px solid var(--line); flex-shrink: 0; }
+.tabs button {
+  flex: 1; background: none; border: 0; padding: 12px 4px; font-size: 12.5px; font-weight: 500;
+  color: #8A94A0; cursor: pointer; border-bottom: 2px solid transparent; position: relative;
+}
+.tabs button.active { color: var(--ink); border-bottom-color: var(--accent); }
+.tab-bump {
+  display: inline-block; width: 6px; height: 6px; border-radius: 50%;
+  background: var(--accent); animation: pop .35s ease;
+}
+@keyframes pop { from { transform: scale(0); } to { transform: scale(1); } }
+
+.tabpane { flex: 1; overflow-y: auto; padding: 16px; display: none; }
+.tabpane.active { display: block; }
+
+.section-eyebrow {
+  font-size: 10.5px; text-transform: uppercase; letter-spacing: .08em; color: #A2ABB6;
+  margin: 20px 0 9px; display: flex; align-items: center; gap: 6px;
+}
+.section-eyebrow:first-child { margin-top: 0; }
+.section-eyebrow .line { flex: 1; height: 1px; background: var(--line-soft); }
+
+.trip-header {
+  background: linear-gradient(135deg, var(--ink) 0%, #1D3145 100%); color: #fff;
+  border-radius: var(--radius); padding: 16px; margin-bottom: 4px;
+}
+.trip-header .name { font-family: var(--font-display); font-size: 17px; font-weight: 500; }
+.trip-header .meta { font-size: 11.5px; color: rgba(255,255,255,.65); margin-top: 5px; display: flex; gap: 10px; flex-wrap: wrap; }
+.trip-header .status-pill { display: inline-block; padding: 2px 8px; border-radius: 20px; font-size: 10px; background: rgba(255,255,255,.14); }
+
+.empty-note {
+  font-size: 12px; color: #9AA5B1; padding: 14px 4px; line-height: 1.6;
+}
+
+/* Kartu tiket: bentuk sobekan boarding pass -- karena isinya memang
+   urutan pemberhentian perjalanan, bukan daftar generik. */
+.ticket {
+  position: relative; border: 1px solid var(--line); border-radius: 12px; background: var(--paper);
+  padding: 13px 14px 12px; margin-bottom: 10px; transition: box-shadow .25s, border-color .25s;
+}
+.ticket.confirmed { border-color: #BFE3D9; background: #FAFEFC; }
+.ticket.booked { border-color: #CFE0D9; background: var(--accent-tint); }
+.ticket.just-updated {
+  border-color: var(--gold); box-shadow: 0 0 0 3px var(--gold-tint);
+  animation: settle 2.6s ease forwards;
+}
+@keyframes settle { 0% { box-shadow: 0 0 0 4px var(--gold-tint); } 100% { box-shadow: 0 0 0 0 rgba(0,0,0,0); } }
+
+.ticket-top { display: flex; justify-content: space-between; align-items: flex-start; gap: 8px; }
+.ticket-num {
+  font-family: var(--font-mono); font-size: 10px; color: #9AA5B1; width: 18px; padding-top: 2px; flex-shrink: 0;
+}
+.ticket-title { font-weight: 600; font-size: 13px; flex: 1; }
+.ticket-sub { font-size: 11px; color: var(--ink-soft); margin-top: 2px; }
+.tag-userpick { color: var(--violet); font-weight: 500; }
+.tag-new {
+  font-size: 9.5px; text-transform: uppercase; letter-spacing: .04em; background: var(--gold);
+  color: #fff; padding: 1px 6px; border-radius: 4px; flex-shrink: 0;
+}
+
+.badge {
+  display: inline-flex; align-items: center; gap: 3px; font-size: 10.5px; padding: 2px 7px;
+  border-radius: 6px; background: var(--line-soft); color: var(--ink-soft); font-family: var(--font-mono);
+}
+.badge.near { background: var(--accent-tint); color: var(--accent-deep); }
+.badge.price { background: var(--gold-tint); color: var(--gold); }
+.badge.status-suggested { background: var(--line-soft); color: var(--ink-soft); font-family: var(--font-body); font-weight: 500; }
+.badge.status-confirmed { background: var(--accent-tint); color: var(--accent-deep); font-family: var(--font-body); font-weight: 500; }
+.badge.status-booked { background: var(--ink); color: #fff; font-family: var(--font-body); font-weight: 500; }
+
+.stay-block {
+  background: #F7F8F9; border-radius: 9px; padding: 9px 10px; margin-top: 9px; font-size: 11.5px;
+}
+.stay-block .stay-name { font-weight: 600; }
+.stay-block.empty { color: #A2ABB6; font-style: normal; border: 1px dashed var(--line); background: transparent; }
+
+.dates-row { display: flex; gap: 6px; margin-top: 9px; }
+.dates-row input[type=date] {
+  flex: 1; border: 1px solid var(--line); border-radius: 7px; padding: 5px 6px; font-size: 11px; min-width: 0;
+}
+
+.actions-row { display: flex; gap: 6px; margin-top: 9px; flex-wrap: wrap; }
+.actions-row button {
+  border: 1px solid var(--line); background: #fff; border-radius: 7px; padding: 5px 10px;
+  font-size: 11.5px; cursor: pointer; color: var(--ink); font-weight: 500;
+}
+.actions-row button:hover { border-color: var(--ink-soft); }
+.actions-row button.primary { background: var(--ink); color: #fff; border-color: var(--ink); }
+.actions-row button.danger { color: var(--danger); border-color: #EBC9C4; }
+.actions-row button.danger:hover { background: var(--danger-tint); }
+
+.hotel-picker { margin-top: 8px; border-top: 1px dashed var(--line); padding-top: 8px; }
+
+.flight-card {
+  border: 1px solid var(--line); border-radius: 12px; padding: 12px 13px; margin-bottom: 9px; font-size: 12px;
+}
+.flight-card.booked { border-color: #CFE0D9; background: var(--accent-tint); }
+.flight-card .fc-top { display: flex; justify-content: space-between; align-items: center; }
+.flight-route { font-family: var(--font-mono); font-size: 12.5px; font-weight: 500; }
+.flight-price { font-family: var(--font-mono); color: var(--gold); font-weight: 500; }
+.flight-time { color: var(--ink-soft); margin-top: 4px; font-size: 11.5px; }
+
+.checkout-btn {
+  width: 100%; padding: 12px; border: 0; border-radius: 11px; background: var(--accent); color: #fff;
+  font-weight: 600; font-size: 13px; cursor: pointer; margin-top: 16px;
+}
+.checkout-btn:disabled { background: var(--line); color: #9AA5B1; cursor: not-allowed; }
+.checkout-btn:hover:not(:disabled) { background: var(--accent-deep); }
+
+/* Cari destinasi */
+.searchbar { display: flex; gap: 7px; margin-bottom: 9px; }
+.searchbar input[type=text] {
+  flex: 1; border: 1px solid var(--line); border-radius: 9px; padding: 8px 11px; font-size: 12.5px; min-width: 0;
+}
+.searchbar select { border: 1px solid var(--line); border-radius: 9px; padding: 8px 9px; font-size: 12.5px; }
+.searchbar button {
+  background: var(--ink); color: #fff; border: 0; border-radius: 9px; padding: 0 14px; cursor: pointer; font-size: 12.5px; font-weight: 500;
+}
+
+.result-card {
+  display: flex; gap: 9px; align-items: flex-start; padding: 10px; border: 1px solid var(--line-soft);
+  border-radius: 11px; margin-bottom: 7px; cursor: pointer; transition: border-color .15s, background .15s;
+}
+.result-card:hover { border-color: var(--accent); background: var(--accent-tint); }
+.result-card input { margin-top: 2px; accent-color: var(--accent); flex-shrink: 0; cursor: pointer; }
+.result-name { font-weight: 600; font-size: 12.5px; }
+.result-sub { display: flex; flex-wrap: wrap; gap: 4px; margin-top: 5px; }
+
+.addbar {
+  position: sticky; bottom: -16px; margin: 12px -16px -16px; padding: 12px 16px;
+  background: linear-gradient(to top, var(--paper) 70%, transparent);
+}
+.addbar button {
+  width: 100%; padding: 10px; border: 0; border-radius: 10px; background: var(--accent); color: #fff;
+  font-weight: 600; cursor: pointer; font-size: 12.5px;
+}
+.addbar button:disabled { background: var(--line); color: #9AA5B1; cursor: not-allowed; }
+
+/* Aktivitas toast: bukti "AI baru saja melakukan X" walau mata di chat */
+.toast-stack { position: fixed; right: 20px; bottom: 20px; z-index: 50; display: flex; flex-direction: column; gap: 8px; align-items: flex-end; }
+.toast {
+  background: var(--ink); color: #fff; padding: 9px 14px; border-radius: 10px; font-size: 12px;
+  box-shadow: 0 8px 24px -6px rgba(0,0,0,.35); display: flex; align-items: center; gap: 8px;
+  animation: toast-in .25s ease;
+}
+.toast .dotgold { width: 6px; height: 6px; border-radius: 50%; background: var(--gold); flex-shrink: 0; }
+@keyframes toast-in { from { opacity: 0; transform: translateY(6px); } to { opacity: 1; transform: translateY(0); } }
+
+/* Console kecil untuk debugging saat uji coba */
+.devlog {
+  height: 92px; flex-shrink: 0; background: #0C1219; color: #7C8A9A; font-family: var(--font-mono);
+  font-size: 10.5px; padding: 6px 12px; overflow-y: auto; line-height: 1.6; border-top: 1px solid #1C2A38;
+}
+.devlog .e { color: #E38B7F; }
+.devlog .k { color: #6FD3B0; }
+
+/* ---------- Peta ---------- */
+#tripmap { height: 300px; border-radius: 12px; border: 1px solid var(--line); z-index: 0; }
+.leaflet-container { font-family: var(--font-body); }
+
+.pin {
+  width: 18px; height: 18px; border-radius: 50% 50% 50% 2px; transform: rotate(-45deg);
+  border: 2px solid #fff; box-shadow: 0 1px 4px rgba(0,0,0,.35);
+}
+.pin.dest { background: var(--accent); }
+.pin.stay { background: var(--gold); }
+.pin.air { background: var(--ink); }
+.pin.suggest { background: #fff; border-color: var(--accent); border-style: dashed; }
+.pin.suggest-stay { background: #fff; border-color: var(--gold); border-style: dashed; }
+
+.legend { display: flex; gap: 12px; flex-wrap: wrap; margin: 10px 0 4px; font-size: 11px; color: var(--ink-soft); }
+.legend span { display: flex; align-items: center; gap: 5px; }
+.legend i { width: 9px; height: 9px; border-radius: 50%; display: inline-block; }
+
+.mapsel {
+  border: 1px solid var(--line); border-radius: 11px; padding: 11px 12px; margin-top: 10px;
+}
+.mapsel .t { font-weight: 600; font-size: 12.5px; }
+.mapsel .s { font-size: 11px; color: var(--ink-soft); margin-top: 3px; }
+
+.scrollbar-thin::-webkit-scrollbar { width: 7px; height: 7px; }
+.scrollbar-thin::-webkit-scrollbar-thumb { background: #D3D9DE; border-radius: 4px; }
+.chatlog, .rail-list, .tabpane, .devlog { scrollbar-width: thin; }
+</style>
+</head>
+<body>
+<div id="root"></div>
+
+<script type="text/plain" id="app-source">
+const { useState, useEffect, useRef, useCallback } = React;
+
+// ============================================================
+// Util
+// ============================================================
+function formatRupiah(n) {
+  if (n == null) return '-';
+  return 'Rp' + Number(n).toLocaleString('id-ID');
+}
+function formatTime(ts) {
+  if (!ts) return '-';
+  return ts.replace('T', ' ').slice(0, 16);
+}
+function fmtDate(s) {
+  if (!s) return null;
+  const d = new Date(s + 'T00:00:00');
+  return d.toLocaleDateString('id-ID', { day: 'numeric', month: 'short' });
+}
+
+// ============================================================
+// Root
+// ============================================================
+function App() {
+  const [apiBase, setApiBase] = useState('http://localhost:4000');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [token, setToken] = useState(null);
+  const [authing, setAuthing] = useState(false);
+
+  const [rooms, setRooms] = useState([]);
+  const [currentRoom, setCurrentRoom] = useState(null);
+  const [currentTrip, setCurrentTrip] = useState(null);
+  const [messages, setMessages] = useState([]);
+  const [canvas, setCanvas] = useState(null);
+  const [sending, setSending] = useState(false);
+
+  const [cities, setCities] = useState([]);
+  const [logs, setLogs] = useState([]);
+  const [toasts, setToasts] = useState([]);
+  const [justUpdated, setJustUpdated] = useState({}); // itemId/flightType -> timestamp
+  const prevCanvasRef = useRef(null);
+
+  const log = useCallback((text, kind = '') => {
+    setLogs(l => [...l.slice(-60), { text, kind, t: new Date().toLocaleTimeString() }]);
+  }, []);
+
+  const pushToast = useCallback((text) => {
+    const id = Math.random().toString(36).slice(2);
+    setToasts(t => [...t, { id, text }]);
+    setTimeout(() => setToasts(t => t.filter(x => x.id !== id)), 4200);
+  }, []);
+
+  const api = useCallback(async (method, path, body) => {
+    const headers = { 'Content-Type': 'application/json' };
+    if (token) headers.Authorization = `Bearer ${token}`;
+    let res, data;
+    try {
+      res = await fetch(apiBase + path, { method, headers, body: body ? JSON.stringify(body) : undefined });
+      data = await res.json().catch(() => null);
+    } catch (err) {
+      log(`${method} ${path} -> koneksi gagal: ${err.message}`, 'e');
+      return { status: 0, data: null };
+    }
+    if (!res.ok) log(`${method} ${path} -> ${res.status} ${JSON.stringify(data)}`, 'e');
+    return { status: res.status, data };
+  }, [apiBase, token, log]);
+
+  // ---------- Deteksi perubahan canvas untuk highlight + toast ----------
+  const applyCanvas = useCallback((next) => {
+    const prev = prevCanvasRef.current;
+    if (prev && next) {
+      const prevItems = Object.fromEntries((prev.items || []).map(i => [i.id, i]));
+      const bumps = {};
+
+      for (const it of next.items || []) {
+        const before = prevItems[it.id];
+        if (!before) {
+          bumps[it.id] = Date.now();
+          pushToast(`Ditambahkan ke rencana: ${it.destinations?.name || 'destinasi'}`);
+        } else if (before.accommodation_id !== it.accommodation_id && it.accommodations) {
+          bumps[it.id] = Date.now();
+          pushToast(`Penginapan dipilih: ${it.accommodations.name}`);
+        } else if (before.status !== it.status && it.status === 'confirmed') {
+          bumps[it.id] = Date.now();
+        }
+      }
+
+      const prevFlights = Object.fromEntries((prev.flights || []).map(f => [f.flight_type, f]));
+      for (const f of next.flights || []) {
+        const before = prevFlights[f.flight_type];
+        if (!before || before.flight_options?.id !== f.flight_options?.id) {
+          bumps['flight-' + f.flight_type] = Date.now();
+          pushToast(`Penerbangan ${f.flight_type === 'outbound' ? 'berangkat' : 'pulang'} dipilih`);
+        }
+      }
+
+      if (Object.keys(bumps).length) {
+        setJustUpdated(j => ({ ...j, ...bumps }));
+        setTimeout(() => {
+          setJustUpdated(j => {
+            const copy = { ...j };
+            for (const k of Object.keys(bumps)) delete copy[k];
+            return copy;
+          });
+        }, 2600);
+      }
+    }
+    prevCanvasRef.current = next;
+    setCanvas(next);
+  }, [pushToast]);
+
+  // ---------- Login ----------
+  async function handleLogin() {
+    if (!email || !password) return log('Email dan password wajib diisi', 'e');
+    setAuthing(true);
+    try {
+      const cfg = await fetch(apiBase + '/api/public-config').then(r => r.json()).catch(() => null);
+      if (!cfg?.supabase_url) { log('Backend belum punya /api/public-config', 'e'); return; }
+
+      const res = await fetch(`${cfg.supabase_url}/auth/v1/token?grant_type=password`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', apikey: cfg.supabase_anon_key },
+        body: JSON.stringify({ email, password }),
+      });
+      const data = await res.json();
+      if (!data.access_token) { log('Login gagal: ' + JSON.stringify(data), 'e'); return; }
+
+      setToken(data.access_token);
+      log('Login berhasil', 'k');
+    } catch (err) {
+      log('Login error: ' + err.message, 'e');
+    } finally {
+      setAuthing(false);
+    }
+  }
+
+  useEffect(() => {
+    if (!token) return;
+    (async () => {
+      const { data: c } = await api('GET', '/api/cities');
+      setCities(c?.data || []);
+      const { data: r } = await api('GET', '/api/chat/rooms');
+      setRooms(r?.data || []);
+    })();
+    // eslint-disable-next-line
+  }, [token]);
+
+  async function refreshRooms() {
+    const { data } = await api('GET', '/api/chat/rooms');
+    setRooms(data?.data || []);
+  }
+
+  async function createRoom() {
+    const { data } = await api('POST', '/api/chat/rooms');
+    if (data?.data?.id) {
+      log('Percakapan baru dibuat', 'k');
+      await refreshRooms();
+      await openRoom(data.data.id);
+    }
+  }
+
+  async function openRoom(roomId) {
+    setCurrentRoom(roomId);
+    prevCanvasRef.current = null;
+    const { data } = await api('GET', `/api/chat/rooms/${roomId}`);
+    if (!data?.data) return;
+    const { room, messages: msgs, canvas: cv } = data.data;
+    setCurrentTrip(room.trip_id);
+    setMessages(msgs || []);
+    applyCanvas(cv);
+    refreshRooms();
+  }
+
+  async function sendMessage(text) {
+    if (!text.trim() || !currentRoom) return;
+    setMessages(m => [...m, { role: 'user', content: text }]);
+    setSending(true);
+
+    const started = Date.now();
+    const { status, data } = await api('POST', `/api/chat/rooms/${currentRoom}/messages`, { message: text });
+    const elapsed = ((Date.now() - started) / 1000).toFixed(1);
+
+    if (status === 200 && data?.data) {
+      const { answer, canvas: cv, tools_used, interactive } = data.data;
+      setMessages(m => [...m, { role: 'assistant', content: answer, tools_used, elapsed, interactive }]);
+      applyCanvas(cv);
+      log(`Balasan ${elapsed}s \u00b7 tool: ${tools_used?.join(', ') || 'tidak ada'}`, 'k');
+    } else {
+      setMessages(m => [...m, { role: 'assistant', content: 'Gagal memproses pesan. Lihat log di bawah.', error: true }]);
+    }
+    setSending(false);
+  }
+
+  async function doCheckout() {
+    const { status, data } = await api('POST', `/api/chat/rooms/${currentRoom}/checkout`);
+    if (status === 201 && data?.data) {
+      const r = data.data;
+      const lines = [];
+      if (r.flight_booking) lines.push(`Penerbangan: ${r.flight_booking.booking_code}`);
+      for (const a of r.accommodation_bookings || []) lines.push(`${a.destination}: ${a.booking_code}`);
+      for (const e of r.errors || []) lines.push(`Gagal (${e.kind}): ${e.message}`);
+      log('Checkout selesai. ' + lines.join(' | '), r.errors?.length ? 'e' : 'k');
+      alert('Checkout selesai:\n\n' + lines.join('\n') + '\n\nStatus booking masih pending sampai dibayar.');
+      await openRoom(currentRoom);
+    } else {
+      log('Checkout gagal: ' + JSON.stringify(data), 'e');
+    }
+  }
+
+  // Saran destinasi dari seluruh percakapan, bukan cuma balasan terakhir --
+  // supaya tempat yang ditawarkan di awal obrolan tetap bisa dilihat
+  // posisinya di peta. Hanya yang punya koordinat yang bisa dipetakan.
+  const suggestions = React.useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const m of messages) {
+      for (const b of m.interactive || []) {
+        if (b.type !== 'destination') continue;
+        for (const d of b.options || []) {
+          if (seen.has(d.id) || d.latitude == null || d.longitude == null) continue;
+          seen.add(d.id);
+          out.push(d);
+        }
+      }
+    }
+    return out;
+  }, [messages]);
+
+  // Sama seperti suggestions di atas, tapi untuk penginapan. Tiap opsi
+  // dibawa bersama destination_id-nya karena hotel selalu menempel ke
+  // destinasi tertentu di rencana -- bukan titik berdiri sendiri.
+  const hotelSuggestions = React.useMemo(() => {
+    const seen = new Set();
+    const out = [];
+    for (const m of messages) {
+      for (const b of m.interactive || []) {
+        if (b.type !== 'accommodation') continue;
+        for (const a of b.options || []) {
+          const key = a.id + '@' + b.destination_id;
+          if (seen.has(key) || a.latitude == null || a.longitude == null) continue;
+          seen.add(key);
+          out.push({ ...a, destination_id: b.destination_id, near: b.near });
+        }
+      }
+    }
+    return out;
+  }, [messages]);
+
+  return (
+    <React.Fragment>
+      <Topbar
+        apiBase={apiBase} setApiBase={setApiBase}
+        email={email} setEmail={setEmail}
+        password={password} setPassword={setPassword}
+        onLogin={handleLogin} authing={authing} loggedIn={!!token}
+      />
+      <div className="shell">
+        <Rail rooms={rooms} currentRoom={currentRoom} onOpen={openRoom} onNew={createRoom} loggedIn={!!token} />
+        <ChatColumn
+          messages={messages} onSend={sendMessage} sending={sending}
+          disabled={!currentRoom}
+          api={api} currentTrip={currentTrip} canvas={canvas} onCanvasChange={applyCanvas}
+        />
+        <SidePanel
+          canvas={canvas} api={api} log={log} currentTrip={currentTrip}
+          cities={cities} onCanvasChange={applyCanvas} onCheckout={doCheckout}
+          justUpdated={justUpdated} suggestions={suggestions} hotelSuggestions={hotelSuggestions}
+        />
+      </div>
+      <Devlog logs={logs} />
+      <ToastStack toasts={toasts} />
+    </React.Fragment>
+  );
+}
+
+// ============================================================
+// Topbar
+// ============================================================
+function Topbar({ apiBase, setApiBase, email, setEmail, password, setPassword, onLogin, authing, loggedIn }) {
+  return (
+    <div className="topbar">
+      <div className="brand">rencana<em>.ai</em></div>
+      {!loggedIn && (
+        <React.Fragment>
+          <input id="apiBase" value={apiBase} onChange={e => setApiBase(e.target.value)} placeholder="URL backend" />
+          <input className="auth" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="email" />
+          <input className="auth" type="password" value={password} onChange={e => setPassword(e.target.value)}
+                 placeholder="password" onKeyDown={e => e.key === 'Enter' && onLogin()} />
+          <button className="login" disabled={authing} onClick={onLogin}>{authing ? 'Masuk...' : 'Masuk'}</button>
+        </React.Fragment>
+      )}
+      <div className="status">
+        <span className={"pip " + (loggedIn ? "on" : "")}></span>
+        {loggedIn ? (email || 'masuk') : 'belum masuk'}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Rail
+// ============================================================
+function Rail({ rooms, currentRoom, onOpen, onNew, loggedIn }) {
+  return (
+    <div className="rail">
+      <div className="rail-head">
+        <div className="eyebrow">Percakapan</div>
+        <button className="new" disabled={!loggedIn} onClick={onNew}>+ Rencana baru</button>
+      </div>
+      <div className="rail-list">
+        {rooms.length === 0 && <div className="rail-empty">Belum ada percakapan. Buat satu untuk mulai.</div>}
+        {rooms.map(r => (
+          <div key={r.id} className={"rail-item " + (r.id === currentRoom ? "active" : "")} onClick={() => onOpen(r.id)}>
+            {r.title}
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Kolom chat
+// ============================================================
+function ChatColumn({ messages, onSend, sending, disabled, api, currentTrip, canvas, onCanvasChange }) {
+  const [text, setText] = useState('');
+  const logRef = useRef(null);
+
+  useEffect(() => {
+    if (logRef.current) logRef.current.scrollTop = logRef.current.scrollHeight;
+  }, [messages, sending]);
+
+  function submit() {
+    if (!text.trim() || disabled) return;
+    onSend(text);
+    setText('');
+  }
+
+  return (
+    <div className="chatcol">
+      <div className="chatlog scrollbar-thin" ref={logRef}>
+        <div className="chatlog-inner">
+          {messages.length === 0 && (
+            <div className="chat-empty">
+              <h2>Ceritakan liburan yang kamu bayangkan</h2>
+              <p>
+                Sebutkan suasana yang kamu cari, berapa lama, dan dari kota mana kamu berangkat.
+                Aku akan mencarikan tempatnya dan menyusunnya di panel sebelah &mdash;
+                kamu tetap yang memutuskan apa yang jadi dipilih.
+              </p>
+            </div>
+          )}
+          {messages.map((m, i) => (
+            <React.Fragment key={i}>
+              <div className={"row " + m.role}>
+                <div className="bubble" style={m.error ? { color: 'var(--danger)' } : undefined}>
+                  {m.role === 'assistant' ? <MarkdownLite text={m.content} /> : m.content}
+                </div>
+              </div>
+              {m.role === 'assistant' && (
+                <ProvenanceNote toolsUsed={m.tools_used} content={m.content} />
+              )}
+              {m.role === 'assistant' && m.interactive?.length > 0 && (
+                <InteractiveBlocks
+                  blocks={m.interactive} api={api} currentTrip={currentTrip}
+                  canvas={canvas} onCanvasChange={onCanvasChange}
+                />
+              )}
+              {m.role === 'assistant' && m.tools_used !== undefined && (
+                <div className="toolstrip">
+                  {(m.tools_used || []).map((t, j) => <span key={j} className="toolchip">{t}</span>)}
+                  <span className="meta">{m.tools_used?.length ? '' : 'tidak memakai tool'} &middot; {m.elapsed}s</span>
+                </div>
+              )}
+            </React.Fragment>
+          ))}
+          {sending && <ThinkingBubble />}
+        </div>
+      </div>
+      <div className="composer">
+        <div className="composer-inner">
+          <textarea
+            rows={1} value={text} placeholder={disabled ? "Buat atau buka percakapan dulu" : "Ceritakan rencana liburanmu..."}
+            disabled={disabled || sending}
+            onChange={e => setText(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); submit(); } }}
+          />
+          <button className="send" disabled={disabled || sending || !text.trim()} onClick={submit} aria-label="Kirim">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M4 12h15M13 5l7 7-7 7" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>
+          </button>
+        </div>
+        <div className="composer-hint">Enter untuk kirim &middot; Shift+Enter untuk baris baru</div>
+      </div>
+    </div>
+  );
+}
+
+// ============================================================
+// Kartu pilihan interaktif di bawah bubble AI
+// ============================================================
+// Satu balasan bisa membawa beberapa blok (misal: penerbangan berangkat +
+// penerbangan pulang dalam satu jawaban). Tiap blok dirender terpisah, dan
+// begitu satu opsi diklik, blok itu langsung menandai pilihannya sendiri
+// tanpa memengaruhi blok lain.
+function InteractiveBlocks({ blocks, api, currentTrip, canvas, onCanvasChange }) {
+  return (
+    <div style={{ display: 'flex', flexDirection: 'column', gap: 10, margin: '2px 0 14px' }}>
+      {blocks.map((b, i) => {
+        if (b.type === 'flight') return <FlightPickCard key={i} block={b} api={api} currentTrip={currentTrip} canvas={canvas} onCanvasChange={onCanvasChange} />;
+        if (b.type === 'destination') return <DestinationPickCard key={i} block={b} api={api} currentTrip={currentTrip} onCanvasChange={onCanvasChange} />;
+        if (b.type === 'accommodation') return <AccommodationPickCard key={i} block={b} api={api} currentTrip={currentTrip} canvas={canvas} onCanvasChange={onCanvasChange} />;
+        return null;
+      })}
+    </div>
+  );
+}
+
+// Penantian dibuat terbaca: satu giliran bisa memanggil model beberapa kali
+// berturut-turut, jadi 10-15 detik itu wajar. Tanpa penghitung, diamnya
+// layar tidak bisa dibedakan dari aplikasi yang menggantung.
+function ThinkingBubble() {
+  const [secs, setSecs] = useState(0);
+  useEffect(() => {
+    const t = setInterval(() => setSecs(s => s + 1), 1000);
+    return () => clearInterval(t);
+  }, []);
+
+  return (
+    <div className="row assistant">
+      <div className="bubble typing">
+        <span className="dot3"></span><span className="dot3"></span><span className="dot3"></span>
+        <span style={{ fontSize: 11, color: '#9AA5B1', marginLeft: 6 }}>
+          {secs < 6 ? 'mencari data' : secs < 15 ? 'menyusun jawaban' : 'masih memproses'} &middot; {secs}s
+        </span>
+      </div>
+    </div>
+  );
+}
+
+// Kalau balasan tidak memakai tool sama sekali padahal menyebut tempat atau
+// harga, isinya berasal dari pengetahuan umum model, bukan katalog. Itu perlu
+// terlihat -- pengguna berhak tahu mana yang bisa dipercaya sebagai data.
+function ProvenanceNote({ toolsUsed, content }) {
+  if (!Array.isArray(toolsUsed) || toolsUsed.length > 0) return null;
+
+  const mentionsData = /rp\s?\d|\d{2,3}\.\d{3}|pantai|hotel|penginapan|penerbangan|maskapai|pukul|\d{2}[.:]\d{2}/i.test(content || '');
+  if (!mentionsData) return null;
+
+  return (
+    <div style={{
+      display: 'flex', gap: 6, alignItems: 'flex-start', maxWidth: 420,
+      background: 'var(--gold-tint)', color: '#8A6415', borderRadius: 9,
+      padding: '7px 10px', fontSize: 11, lineHeight: 1.5, margin: '2px 0 10px',
+    }}>
+      <span style={{ flexShrink: 0 }}>&#9888;</span>
+      <span>Jawaban ini tidak mengambil data dari katalog. Cek ulang nama tempat dan harganya lewat panel pencarian sebelum dipakai.</span>
+    </div>
+  );
+}
+
+// ============================================================
+// Markdown ringan
+// ============================================================
+// Model sering menyusun jawaban pakai **tebal**, heading, dan daftar --
+// itu wajar dan membantu keterbacaan untuk jawaban terstruktur (destinasi
+// dikelompokkan per kota, dst). Daripada melarangnya di prompt (yang bikin
+// jawaban jadi paragraf datar), tanda-tandanya dirender di sini jadi
+// format asli. Sengaja ditulis manual, bukan pakai library markdown penuh,
+// karena yang perlu ditangani cuma tiga pola yang benar-benar dipakai
+// model: **tebal**, baris heading (### ...), dan daftar (- ...).
+function renderInline(text) {
+  const parts = text.split(/(\*\*[^*]+\*\*)/g);
+  return parts.map((part, i) => {
+    if (part.startsWith('**') && part.endsWith('**') && part.length > 4) {
+      return <strong key={i}>{part.slice(2, -2)}</strong>;
+    }
+    return part;
+  });
+}
+
+function MarkdownLite({ text }) {
+  const lines = (text || '').split('\n');
+  const blocks = [];
+  let listBuf = [];
+
+  const flushList = () => {
+    if (listBuf.length) {
+      blocks.push(<ul key={blocks.length} style={{ margin: '4px 0', paddingLeft: 18 }}>{listBuf}</ul>);
+      listBuf = [];
+    }
+  };
+
+  lines.forEach((line, i) => {
+    const bullet = line.match(/^\s*[-*]\s+(.*)/);
+    const heading = line.match(/^#{1,4}\s+(.*)/);
+
+    if (bullet) {
+      listBuf.push(<li key={i} style={{ marginBottom: 2 }}>{renderInline(bullet[1])}</li>);
+      return;
+    }
+    flushList();
+
+    if (heading) {
+      blocks.push(<div key={i} style={{ fontWeight: 700, marginTop: blocks.length ? 8 : 0 }}>{renderInline(heading[1])}</div>);
+    } else if (line.trim() === '') {
+      blocks.push(<div key={i} style={{ height: 6 }} />);
+    } else {
+      blocks.push(<div key={i}>{renderInline(line)}</div>);
+    }
+  });
+  flushList();
+
+  return <React.Fragment>{blocks}</React.Fragment>;
+}
+
+function pickCardShell(children, footnote) {
+  return (
+    <div style={{
+      background: 'var(--paper)', border: '1px solid var(--line-soft)', borderRadius: 14,
+      padding: '12px 13px', boxShadow: 'var(--shadow-card)', maxWidth: 420,
+    }}>
+      {children}
+      {footnote && <div style={{ fontSize: 10.5, color: '#9AA5B1', marginTop: 8 }}>{footnote}</div>}
+    </div>
+  );
+}
+
+function FlightPickCard({ block, api, currentTrip, canvas, onCanvasChange }) {
+  const [pickedId, setPickedId] = useState(null);
+  const [pickedType, setPickedType] = useState(null);
+  const [busy, setBusy] = useState(false);
+  const [err, setErr] = useState(null);
+
+  async function pick(option, flightType) {
+    if (!currentTrip || busy) return;
+    setErr(null);
+
+    // Slot berangkat/pulang cuma satu masing-masing. Kalau sudah terisi
+    // dan belum dipesan, konfirmasi dulu -- ini juga satu-satunya jalan
+    // "menambah" penerbangan ketiga sebenarnya menimpa salah satu slot.
+    const existing = (canvas?.flights || []).find(fl => fl.flight_type === flightType);
+    if (existing && !existing.booked_at) {
+      const o = existing.flight_options;
+      const ok = window.confirm(
+        `Slot ${flightType === 'outbound' ? 'berangkat' : 'pulang'} sudah diisi ${o?.airline} ${o?.flight_number}. Ganti dengan ${option.airline} ${option.flight_number}?`
+      );
+      if (!ok) return;
+    }
+
+    setBusy(true);
+    const { status, data } = await api('PUT', `/api/trips/${currentTrip}/flights`, {
+      flight_option_id: option.id, flight_type: flightType,
+    });
+    if (status === 200 && data?.data) {
+      setPickedId(option.id);
+      setPickedType(flightType);
+      onCanvasChange(data.data);
+    } else {
+      // Harga dan kursi di kartu ini adalah cuplikan saat AI mencarinya.
+      // Kalau kursinya keburu habis, kegagalannya harus terbaca di sini,
+      // bukan cuma tercatat di log kecil bawah layar.
+      setErr(data?.message || 'Gagal memakai penerbangan ini. Coba cari ulang di tab Pesawat.');
+    }
+    setBusy(false);
+  }
+
+  const bothFilled = (canvas?.flights || []).some(f => f.flight_type === 'outbound')
+    && (canvas?.flights || []).some(f => f.flight_type === 'return');
+
+  return pickCardShell(
+    <React.Fragment>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        Penerbangan &middot; {block.date}
+      </div>
+      {bothFilled && (
+        <div style={{ fontSize: 10.5, color: '#8A6415', background: 'var(--gold-tint)', borderRadius: 7, padding: '6px 8px', marginBottom: 8 }}>
+          Berangkat dan pulang sudah terisi. Memilih di sini akan mengganti salah satunya.
+        </div>
+      )}
+      {block.options.slice(0, 6).map(f => {
+        const isPicked = pickedId === f.id;
+        return (
+          <div key={f.id} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+            padding: '8px 0', borderTop: '1px solid var(--line-soft)',
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600 }}>{f.airline} {f.flight_number}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+                {formatTime(f.departure_time).slice(-5)}&ndash;{formatTime(f.arrival_time).slice(-5)} &middot; {formatRupiah(f.price)}
+              </div>
+            </div>
+            {isPicked ? (
+              <span className="badge status-booked" style={{ flexShrink: 0 }}>dipakai sbg {pickedType === 'outbound' ? 'berangkat' : 'pulang'}</span>
+            ) : (
+              <div style={{ display: 'flex', gap: 5, flexShrink: 0 }}>
+                <button disabled={busy} onClick={() => pick(f, 'outbound')}
+                        style={{ fontSize: 10.5, padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>
+                  Berangkat
+                </button>
+                <button disabled={busy} onClick={() => pick(f, 'return')}
+                        style={{ fontSize: 10.5, padding: '4px 8px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff', cursor: 'pointer' }}>
+                  Pulang
+                </button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </React.Fragment>,
+    err
+      ? <span style={{ color: 'var(--danger)' }}>{err}</span>
+      : 'Pilih salah satu sebagai penerbangan berangkat atau pulang.'
+  );
+}
+
+function DestinationPickCard({ block, api, currentTrip, onCanvasChange }) {
+  const [added, setAdded] = useState({});
+  const [busyId, setBusyId] = useState(null);
+
+  async function add(d) {
+    if (!currentTrip || busyId) return;
+    setBusyId(d.id);
+    const { status, data } = await api('POST', `/api/trips/${currentTrip}/items`, { destination_id: d.id });
+    if ((status === 201 || status === 200) && data?.data) {
+      setAdded(a => ({ ...a, [d.id]: true }));
+      onCanvasChange(data.data);
+    }
+    setBusyId(null);
+  }
+
+  return pickCardShell(
+    <React.Fragment>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        Destinasi
+      </div>
+      {block.options.slice(0, 8).map(d => (
+        <div key={d.id} style={{
+          display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+          padding: '8px 0', borderTop: '1px solid var(--line-soft)',
+        }}>
+          <div style={{ minWidth: 0 }}>
+            <div style={{ fontSize: 12.5, fontWeight: 600 }}>{d.name}</div>
+            <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+              {d.city} &middot; {d.category}{d.rating ? ` \u00b7 \u2605 ${d.rating}` : ''}
+            </div>
+          </div>
+          {added[d.id] ? (
+            <span className="badge status-confirmed" style={{ flexShrink: 0 }}>ditambahkan</span>
+          ) : (
+            <button disabled={busyId === d.id} onClick={() => add(d)}
+                    style={{ fontSize: 10.5, padding: '4px 9px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff', cursor: 'pointer', flexShrink: 0, fontWeight: 500 }}>
+              {busyId === d.id ? 'Menambahkan...' : 'Tambahkan'}
+            </button>
+          )}
+        </div>
+      ))}
+    </React.Fragment>
+  );
+}
+
+function AccommodationPickCard({ block, api, currentTrip, canvas, onCanvasChange }) {
+  const [pickedId, setPickedId] = useState(null);
+  const [busyId, setBusyId] = useState(null);
+
+  // Penginapan selalu menempel ke destinasi tertentu. Kalau destinasi itu
+  // belum ada di rencana, belum ada item untuk ditempeli -- jadi tombolnya
+  // dinonaktifkan dengan penjelasan, bukan pura-pura berhasil.
+  const targetItem = (canvas?.items || []).find(i => i.destinations?.id === block.destination_id);
+
+  async function pick(a) {
+    if (!targetItem || busyId) return;
+    setBusyId(a.id);
+    const { status, data } = await api('PATCH', `/api/trips/${currentTrip}/items/${targetItem.id}`, { accommodation_id: a.id });
+    if (status === 200 && data?.data) {
+      setPickedId(a.id);
+      onCanvasChange(data.data);
+    }
+    setBusyId(null);
+  }
+
+  return pickCardShell(
+    <React.Fragment>
+      <div style={{ fontSize: 11, fontWeight: 600, color: 'var(--ink-soft)', marginBottom: 8, textTransform: 'uppercase', letterSpacing: '.04em' }}>
+        Penginapan dekat {block.near}
+      </div>
+      {block.options.slice(0, 6).map(a => {
+        const isPicked = pickedId === a.id || targetItem?.accommodations?.id === a.id;
+        return (
+          <div key={a.id} style={{
+            display: 'flex', justifyContent: 'space-between', alignItems: 'center', gap: 8,
+            padding: '8px 0', borderTop: '1px solid var(--line-soft)',
+          }}>
+            <div style={{ minWidth: 0 }}>
+              <div style={{ fontSize: 12.5, fontWeight: 600 }}>{a.name}</div>
+              <div style={{ fontSize: 11, color: 'var(--ink-soft)' }}>
+                {a.tier} &middot; {formatRupiah(a.price_per_night)}/malam
+                {a.distance_km != null ? ` \u00b7 ${a.distance_km} km` : ''}
+              </div>
+            </div>
+            {isPicked ? (
+              <span className="badge status-confirmed" style={{ flexShrink: 0 }}>dipilih</span>
+            ) : (
+              <button disabled={!targetItem || busyId === a.id} onClick={() => pick(a)}
+                      style={{ fontSize: 10.5, padding: '4px 9px', border: '1px solid var(--line)', borderRadius: 6, background: '#fff', cursor: targetItem ? 'pointer' : 'not-allowed', flexShrink: 0, fontWeight: 500, opacity: targetItem ? 1 : .5 }}>
+                Pilih
+              </button>
+            )}
+          </div>
+        );
+      })}
+    </React.Fragment>,
+    targetItem ? null : 'Tambahkan destinasinya ke rencana dulu supaya penginapan ini bisa ditempelkan.'
+  );
+}
+
+// ============================================================
+// Panel kanan: tabs
+// ============================================================
+function SidePanel({ canvas, api, log, currentTrip, cities, onCanvasChange, onCheckout, justUpdated, suggestions, hotelSuggestions }) {
+  const [tab, setTab] = useState('plan');
+  const bumpCount = Object.keys(justUpdated).length;
+
+  return (
+    <div className="panel">
+      <div className="tabs">
+        <button className={tab === 'plan' ? 'active' : ''} onClick={() => setTab('plan')}>
+          Rencana {tab !== 'plan' && bumpCount > 0 && <span className="tab-bump" />}
+        </button>
+        <button className={tab === 'map' ? 'active' : ''} onClick={() => setTab('map')}>Peta</button>
+        <button className={tab === 'search' ? 'active' : ''} onClick={() => setTab('search')}>Cari</button>
+        <button className={tab === 'flights' ? 'active' : ''} onClick={() => setTab('flights')}>Pesawat</button>
+      </div>
+
+      <div className={"tabpane scrollbar-thin " + (tab === 'plan' ? 'active' : '')}>
+        <PlanPane canvas={canvas} api={api} log={log} currentTrip={currentTrip}
+                   onCanvasChange={onCanvasChange} onCheckout={onCheckout} justUpdated={justUpdated} />
+      </div>
+      <div className={"tabpane scrollbar-thin " + (tab === 'map' ? 'active' : '')}>
+        <MapPane canvas={canvas} cities={cities} suggestions={suggestions} hotelSuggestions={hotelSuggestions} api={api}
+                 currentTrip={currentTrip} onCanvasChange={onCanvasChange} active={tab === 'map'} log={log} />
+      </div>
+      <div className={"tabpane scrollbar-thin " + (tab === 'search' ? 'active' : '')}>
+        <SearchPane api={api} log={log} currentTrip={currentTrip} cities={cities} onAdded={onCanvasChange} />
+      </div>
+      <div className={"tabpane scrollbar-thin " + (tab === 'flights' ? 'active' : '')}>
+        <FlightPane api={api} log={log} currentTrip={currentTrip} cities={cities} onPicked={onCanvasChange} canvas={canvas} />
+      </div>
+    </div>
+  );
+}
+
+// ---------- Tab: Peta ----------
+// Satu peta untuk tiga jenis titik yang selama ini cuma berupa daftar:
+// destinasi dalam rencana, penginapan yang sudah dipilih, dan bandara kota
+// asal/tujuan penerbangan. Saran AI ikut ditandai dengan pin berongga
+// supaya bisa dilihat posisinya sebelum diputuskan.
+function MapPane({ canvas, cities, suggestions, hotelSuggestions, api, currentTrip, onCanvasChange, active, log }) {
+  const mapRef = useRef(null);
+  const layerRef = useRef(null);
+  const nodeRef = useRef(null);
+  const [selected, setSelected] = useState(null);
+  const [busy, setBusy] = useState(false);
+
+  // Peta dibuat sekali. Leaflet salah menghitung ukuran kalau kontainernya
+  // sedang tersembunyi, jadi ukurannya disegarkan tiap tab ini dibuka.
+  useEffect(() => {
+    if (!nodeRef.current || mapRef.current) return;
+    if (typeof L === 'undefined') { log('Leaflet gagal dimuat dari CDN', 'e'); return; }
+
+    const map = L.map(nodeRef.current, { scrollWheelZoom: false }).setView([-2.5, 118], 4);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+      attribution: '&copy; OpenStreetMap',
+      maxZoom: 18,
+    }).addTo(map);
+    mapRef.current = map;
+    layerRef.current = L.layerGroup().addTo(map);
+  }, [log]);
+
+  useEffect(() => {
+    if (active && mapRef.current) setTimeout(() => mapRef.current.invalidateSize(), 60);
+  }, [active]);
+
+  useEffect(() => {
+    const map = mapRef.current, layer = layerRef.current;
+    if (!map || !layer) return;
+    layer.clearLayers();
+
+    const pts = [];
+    const pin = (cls) => L.divIcon({ className: '', html: `<div class="pin ${cls}"></div>`, iconSize: [18, 18], iconAnchor: [9, 16] });
+
+    const add = (lat, lng, cls, payload) => {
+      if (lat == null || lng == null) return;
+      const m = L.marker([Number(lat), Number(lng)], { icon: pin(cls) }).addTo(layer);
+      m.on('click', () => setSelected(payload));
+      m.bindTooltip(payload.title, { direction: 'top', offset: [0, -14] });
+      pts.push([Number(lat), Number(lng)]);
+    };
+
+    for (const it of canvas?.items || []) {
+      const d = it.destinations || {};
+      add(d.latitude, d.longitude, 'dest', {
+        kind: 'dest', title: d.name, sub: `${d.cities?.name || ''} · ${d.category || ''} · ${it.status}`,
+      });
+      if (it.accommodations) {
+        const a = it.accommodations;
+        add(a.latitude, a.longitude, 'stay', {
+          kind: 'stay', title: a.name, sub: `${a.tier} · ${formatRupiah(a.price_per_night)}/malam · penginapan untuk ${d.name}`,
+        });
+      }
+    }
+
+    // Bandara: sekarang datanya dari tabel airports (satu kota bisa punya
+    // lebih dari satu bandara), diembed lewat GET /api/cities. Kota yang
+    // belum diisi bandaranya dilewati tanpa merusak apa pun.
+    const cityById = Object.fromEntries((cities || []).map(c => [String(c.id), c]));
+    for (const f of canvas?.flights || []) {
+      const o = f.flight_options || {};
+      for (const [cid, label] of [[o.origin_city_id, 'asal'], [o.destination_city_id, 'tujuan']]) {
+        const c = cityById[String(cid)];
+        const airport = c?.airports?.[0];
+        if (!airport) continue;
+        add(airport.latitude, airport.longitude, 'air', {
+          kind: 'air', title: `Bandara ${airport.code}${c.name ? ' · ' + c.name : ''}`,
+          sub: `${f.flight_type === 'outbound' ? 'Berangkat' : 'Pulang'} · ${label} · ${o.airline || ''} ${o.flight_number || ''}`,
+        });
+      }
+    }
+
+    const inTrip = new Set((canvas?.items || []).map(i => i.destinations?.id));
+    for (const s of suggestions || []) {
+      if (inTrip.has(s.id)) continue;
+      add(s.latitude, s.longitude, 'suggest', {
+        kind: 'suggest', id: s.id, title: s.name, sub: `${s.city || ''} · ${s.category || ''} · saran dari AI`,
+      });
+    }
+
+    // Saran penginapan dari AI. Sebuah hotel selalu menempel ke destinasi
+    // tertentu di rencana -- kalau destinasinya belum ada, pin tetap
+    // ditampilkan (biar user lihat lokasinya), tapi tombol pilih dimatikan
+    // dengan keterangan yang jelas, sama seperti kartu di bawah bubble chat.
+    for (const h of hotelSuggestions || []) {
+      const targetItem = (canvas?.items || []).find(i => i.destinations?.id === h.destination_id);
+      if (targetItem?.accommodations?.id === h.id) continue; // sudah dipilih, tidak perlu pin saran lagi
+      add(h.latitude, h.longitude, 'suggest-stay', {
+        kind: 'suggest-stay', id: h.id, targetItemId: targetItem?.id,
+        title: h.name,
+        sub: `${h.tier} · ${formatRupiah(h.price_per_night)}/malam${h.distance_km != null ? ` · ${h.distance_km} km dari ${h.near || 'destinasi'}` : ''} · saran dari AI`,
+      });
+    }
+
+    if (pts.length === 1) map.setView(pts[0], 11);
+    else if (pts.length > 1) map.fitBounds(L.latLngBounds(pts).pad(0.25));
+  }, [canvas, cities, suggestions, hotelSuggestions]);
+
+  async function addSelected() {
+    if (!selected?.id || !currentTrip) return;
+    setBusy(true);
+    const { status, data } = await api('POST', `/api/trips/${currentTrip}/items`, { destination_id: selected.id });
+    if ((status === 201 || status === 200) && data?.data) {
+      onCanvasChange(data.data);
+      setSelected(null);
+    }
+    setBusy(false);
+  }
+
+  async function pickHotelFromMap() {
+    if (!selected?.id || !selected?.targetItemId) return;
+    setBusy(true);
+    const { status, data } = await api('PATCH', `/api/trips/${currentTrip}/items/${selected.targetItemId}`, {
+      accommodation_id: selected.id,
+    });
+    if (status === 200 && data?.data) {
+      onCanvasChange(data.data);
+      setSelected(null);
+    }
+    setBusy(false);
+  }
+
+  const nothingToShow = !(canvas?.items || []).length && !(suggestions || []).length && !(hotelSuggestions || []).length;
+
+  return (
+    <React.Fragment>
+      <div id="tripmap" ref={nodeRef} />
+      <div className="legend">
+        <span><i style={{ background: 'var(--accent)' }} />Destinasi</span>
+        <span><i style={{ background: 'var(--gold)' }} />Penginapan</span>
+        <span><i style={{ background: 'var(--ink)' }} />Bandara</span>
+        <span><i style={{ background: '#fff', border: '1.5px dashed var(--accent)' }} />Saran AI</span>
+        <span><i style={{ background: '#fff', border: '1.5px dashed var(--gold)' }} />Saran hotel</span>
+      </div>
+
+      {nothingToShow && (
+        <div className="empty-note">Belum ada yang bisa dipetakan. Tambahkan destinasi lewat chat atau tab Cari.</div>
+      )}
+
+      {selected && (
+        <div className="mapsel">
+          <div className="t">{selected.title}</div>
+          <div className="s">{selected.sub}</div>
+          {selected.kind === 'suggest' && (
+            <div className="actions-row">
+              <button className="primary" disabled={busy} onClick={addSelected}>
+                {busy ? 'Menambahkan...' : 'Tambahkan ke rencana'}
+              </button>
+              <button onClick={() => setSelected(null)}>Tutup</button>
+            </div>
+          )}
+          {selected.kind === 'suggest-stay' && (
+            selected.targetItemId ? (
+              <div className="actions-row">
+                <button className="primary" disabled={busy} onClick={pickHotelFromMap}>
+                  {busy ? 'Memilih...' : 'Pilih penginapan ini'}
+                </button>
+                <button onClick={() => setSelected(null)}>Tutup</button>
+              </div>
+            ) : (
+              <div className="empty-note" style={{ padding: '6px 0 0' }}>
+                Tambahkan destinasinya ke rencana dulu supaya penginapan ini bisa ditempelkan.
+              </div>
+            )
+          )}
+        </div>
+      )}
+
+      {(canvas?.flights || []).length > 0 && !(cities || []).some(c => c.airports?.length) && (
+        <div className="empty-note">
+          Bandara belum muncul karena tabel airports masih kosong.
+          Isi datanya mengikuti petunjuk di migration patch.
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
+// ---------- Tab: Rencana ----------
+function PlanPane({ canvas, api, log, currentTrip, onCanvasChange, onCheckout, justUpdated }) {
+  const [openHotelFor, setOpenHotelFor] = useState(null);
+  const [hotelOptions, setHotelOptions] = useState({});
+
+  if (!canvas) {
+    return <div className="empty-note">Buka atau buat percakapan untuk melihat rencananya di sini.</div>;
+  }
+
+  const { trip, items = [], flights = [] } = canvas;
+
+  async function patchItem(itemId, patch) {
+    const { data } = await api('PATCH', `/api/trips/${currentTrip}/items/${itemId}`, patch);
+    if (data?.data) onCanvasChange(data.data);
+  }
+  async function removeItem(itemId) {
+    const { data } = await api('DELETE', `/api/trips/${currentTrip}/items/${itemId}`);
+    if (data?.data) onCanvasChange(data.data);
+  }
+  async function dropFlight(type) {
+    const { data } = await api('DELETE', `/api/trips/${currentTrip}/flights/${type}`);
+    if (data?.data) onCanvasChange(data.data);
+  }
+  async function openHotels(itemId, destId) {
+    if (openHotelFor === itemId) { setOpenHotelFor(null); return; }
+    setOpenHotelFor(itemId);
+    if (!hotelOptions[itemId]) {
+      const { data } = await api('GET', `/api/destinations/${destId}/accommodations`);
+      setHotelOptions(h => ({ ...h, [itemId]: data?.data || [] }));
+    }
+  }
+  async function pickHotel(itemId, accId) {
+    await patchItem(itemId, { accommodation_id: accId });
+    setOpenHotelFor(null);
+  }
+
+  const readyToCheckout =
+    items.some(i => i.status === 'confirmed' && i.accommodations && i.check_in && i.check_out) ||
+    flights.some(f => !f.booked_at);
+
+  const allBooked = items.length > 0 && items.every(i => i.status === 'booked')
+    && flights.length > 0 && flights.every(f => f.booked_at);
+  const someBooked = items.some(i => i.status === 'booked') || flights.some(f => f.booked_at);
+
+  // Daftar apa yang masih kurang, disebut spesifik per destinasi. Tanpa ini
+  // tombol checkout yang mati tidak memberi tahu APA yang bolong -- pengguna
+  // harus menebak sendiri destinasi mana yang belum lengkap.
+  const gaps = [];
+  for (const it of items) {
+    if (it.status === 'booked') continue;
+    const nama = it.destinations?.name || 'Destinasi';
+    if (it.status !== 'confirmed') gaps.push(`${nama} belum dikonfirmasi`);
+    else if (!it.accommodations) gaps.push(`${nama} belum punya penginapan`);
+    else if (!it.check_in || !it.check_out) gaps.push(`${nama} belum punya tanggal menginap`);
+  }
+  if (items.length > 0 && flights.length === 0) gaps.push('Belum ada penerbangan dipilih');
+
+  return (
+    <React.Fragment>
+      {trip && (
+        <div className="trip-header">
+          <div className="name">{trip.name || 'Rencana tanpa nama'}</div>
+          <div className="meta">
+            <span>{fmtDate(trip.start_date) || 'tanggal?'} &rarr; {fmtDate(trip.end_date) || '?'}</span>
+            <span>{trip.travelers || 1} orang</span>
+            {someBooked && (
+              <span className="status-pill">{allBooked ? 'semua dipesan' : 'sebagian dipesan'}</span>
+            )}
+          </div>
+        </div>
+      )}
+
+      <div className="section-eyebrow"><span>Penerbangan</span><span className="line" /></div>
+      {flights.length === 0 && <div className="empty-note">Belum ada. Pilih di tab Pesawat, atau minta dicarikan lewat chat.</div>}
+      {flights.map(f => {
+        const o = f.flight_options || {};
+        const bumped = !!justUpdated['flight-' + f.flight_type];
+        return (
+          <div key={f.flight_type} className={"flight-card " + (f.booked_at ? 'booked' : '') + (bumped ? ' just-updated' : '')}>
+            <div className="fc-top">
+              <span className="flight-route">{f.flight_type === 'outbound' ? 'BERANGKAT' : 'PULANG'}</span>
+              {f.booked_at
+                ? <span className="badge status-booked">dipesan</span>
+                : <span className="flight-price">{formatRupiah(o.price)}</span>}
+            </div>
+            <div className="flight-time">{o.airline} {o.flight_number}<br />{formatTime(o.departure_time)} &rarr; {formatTime(o.arrival_time)}</div>
+            {!f.booked_at && (
+              <div className="actions-row">
+                <button className="danger" onClick={() => dropFlight(f.flight_type)}>Lepas pilihan</button>
+              </div>
+            )}
+          </div>
+        );
+      })}
+
+      <div className="section-eyebrow"><span>Destinasi</span><span className="line" /></div>
+      {items.length === 0 && <div className="empty-note">Belum ada. Cari di tab Cari Destinasi, atau ceritakan maumu lewat chat.</div>}
+      {items.map(it => {
+        const d = it.destinations || {};
+        const a = it.accommodations;
+        const locked = it.status === 'booked';
+        const bumped = !!justUpdated[it.id];
+
+        return (
+          <div key={it.id} className={"ticket " + it.status + (bumped ? ' just-updated' : '')}>
+            {bumped && <span className="tag-new" style={{ float: 'right' }}>baru</span>}
+            <div className="ticket-top">
+              <span className="ticket-num">{String(it.sequence_order).padStart(2, '0')}</span>
+              <div style={{ flex: 1 }}>
+                <div className="ticket-title">{d.name}</div>
+                <div className="ticket-sub">
+                  {d.cities?.name} &middot; {d.category}
+                  {it.added_by === 'user' && <span className="tag-userpick"> &middot; kamu yang pilih</span>}
+                </div>
+              </div>
+              <span className={"badge status-" + it.status}>{it.status}</span>
+            </div>
+
+            {a ? (
+              <div className="stay-block">
+                <span className="stay-name">{a.name}</span> &middot; {a.tier} &middot; {formatRupiah(a.price_per_night)}/malam
+                {it.check_in ? <div style={{ marginTop: 3, color: 'var(--ink-soft)' }}>{fmtDate(it.check_in)} &ndash; {fmtDate(it.check_out) || '?'}</div>
+                             : <div style={{ marginTop: 3, color: '#B08A2E' }}>Tanggal belum diisi</div>}
+              </div>
+            ) : (
+              <div className="stay-block empty">Belum pilih penginapan</div>
+            )}
+
+            {!locked && (
+              <React.Fragment>
+                <div className="dates-row">
+                  <input type="date" value={it.check_in || ''} onChange={e => patchItem(it.id, { check_in: e.target.value || null })} title="Check-in" />
+                  <input type="date" value={it.check_out || ''} onChange={e => patchItem(it.id, { check_out: e.target.value || null })} title="Check-out" />
+                </div>
+                <div className="actions-row">
+                  <button onClick={() => openHotels(it.id, d.id)}>{a ? 'Ganti hotel' : 'Pilih hotel'}</button>
+                  <button className={it.status === 'confirmed' ? '' : 'primary'}
+                          onClick={() => patchItem(it.id, { status: it.status === 'confirmed' ? 'suggested' : 'confirmed' })}>
+                    {it.status === 'confirmed' ? 'Batalkan konfirmasi' : 'Konfirmasi'}
+                  </button>
+                  <button className="danger" onClick={() => removeItem(it.id)}>Hapus</button>
+                </div>
+
+                {openHotelFor === it.id && (
+                  <div className="hotel-picker">
+                    {!hotelOptions[it.id] && <div className="empty-note">Memuat...</div>}
+                    {hotelOptions[it.id]?.length === 0 && <div className="empty-note">Tidak ada penginapan di kota ini.</div>}
+                    {hotelOptions[it.id]?.slice(0, 6).map(h => (
+                      <label key={h.id} className="result-card" onClick={() => pickHotel(it.id, h.id)}>
+                        <input type="radio" readOnly checked={a?.id === h.id} />
+                        <div>
+                          <div className="result-name">{h.name}</div>
+                          <div className="result-sub">
+                            <span className="badge">{h.tier}</span>
+                            <span className="badge price">{formatRupiah(h.price_per_night)}/malam</span>
+                            {h.distance_km != null && <span className="badge near">{h.distance_km} km</span>}
+                          </div>
+                        </div>
+                      </label>
+                    ))}
+                  </div>
+                )}
+              </React.Fragment>
+            )}
+          </div>
+        );
+      })}
+
+      {gaps.length > 0 && (
+        <div style={{
+          background: '#FFFBF2', border: '1px solid #F0E0BE', borderRadius: 11,
+          padding: '11px 12px', marginTop: 16, fontSize: 11.5, lineHeight: 1.6, color: '#7A5C18',
+        }}>
+          <div style={{ fontWeight: 600, marginBottom: 5 }}>Belum siap dipesan</div>
+          {gaps.slice(0, 6).map((g, i) => (
+            <div key={i} style={{ display: 'flex', gap: 6 }}>
+              <span style={{ color: '#C9A227' }}>&middot;</span><span>{g}</span>
+            </div>
+          ))}
+          {gaps.length > 6 && <div style={{ marginTop: 4, opacity: .75 }}>dan {gaps.length - 6} lagi</div>}
+        </div>
+      )}
+
+      <button className="checkout-btn" disabled={!readyToCheckout} onClick={onCheckout}>
+        {readyToCheckout ? 'Checkout rencana ini' : 'Belum ada yang siap dipesan'}
+      </button>
+    </React.Fragment>
+  );
+}
+
+// ---------- Tab: Cari Destinasi ----------
+function SearchPane({ api, log, currentTrip, cities, onAdded }) {
+  const [q, setQ] = useState('');
+  const [cityId, setCityId] = useState('');
+  const [results, setResults] = useState(null);
+  const [checked, setChecked] = useState({});
+  const [adding, setAdding] = useState(false);
+
+  async function search() {
+    const params = new URLSearchParams();
+    if (q.trim()) params.set('q', q.trim());
+    if (cityId) params.set('city_id', cityId);
+    const { status, data } = await api('GET', '/api/destinations?' + params.toString());
+    if (status === 404 || !data?.data?.length) { setResults([]); return; }
+    setResults(data.data);
+    log(`${data.data.length} destinasi ditemukan`, 'k');
+  }
+
+  function toggle(id) { setChecked(c => ({ ...c, [id]: !c[id] })); }
+
+  async function addChecked() {
+    if (!currentTrip) return log('Buka percakapan dulu supaya ada rencana yang diisi', 'e');
+    const ids = Object.entries(checked).filter(([, v]) => v).map(([k]) => k);
+    if (!ids.length) return;
+
+    setAdding(true);
+    let last = null;
+    for (const id of ids) {
+      const { data } = await api('POST', `/api/trips/${currentTrip}/items`, { destination_id: id });
+      if (data?.data) last = data.data;
+    }
+    if (last) onAdded(last);
+    setChecked({});
+    setAdding(false);
+    log(`${ids.length} destinasi ditambahkan`, 'k');
+  }
+
+  const anyChecked = Object.values(checked).some(Boolean);
+
+  return (
+    <React.Fragment>
+      <div className="searchbar">
+        <input type="text" placeholder="pantai, air terjun, budaya..." value={q}
+               onChange={e => setQ(e.target.value)} onKeyDown={e => e.key === 'Enter' && search()} />
+        <button onClick={search}>Cari</button>
+      </div>
+      <div className="searchbar">
+        <select value={cityId} onChange={e => setCityId(e.target.value)} style={{ flex: 1 }}>
+          <option value="">Semua kota</option>
+          {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+
+      {results === null && <div className="empty-note">Ketik kata kunci, lalu tekan Cari. Centang yang kamu suka.</div>}
+      {results?.length === 0 && <div className="empty-note">Tidak ada hasil untuk kata itu. Coba istilah lain.</div>}
+
+      {results?.map(d => (
+        <label key={d.id} className="result-card" onClick={() => toggle(d.id)}>
+          <input type="checkbox" readOnly checked={!!checked[d.id]} />
+          <div>
+            <div className="result-name">{d.name}</div>
+            <div className="result-sub">
+              <span className="badge">{d.cities?.name}</span>
+              <span className="badge">{d.category}</span>
+              {d.avg_rating > 0 && <span className="badge">&#9733; {d.avg_rating}</span>}
+            </div>
+          </div>
+        </label>
+      ))}
+
+      {results?.length > 0 && (
+        <div className="addbar">
+          <button disabled={!anyChecked || adding} onClick={addChecked}>
+            {adding ? 'Menambahkan...' : `Tambahkan yang dicentang${anyChecked ? ` (${Object.values(checked).filter(Boolean).length})` : ''}`}
+          </button>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
+// ---------- Tab: Pesawat ----------
+function FlightPane({ api, log, currentTrip, cities, onPicked, canvas }) {
+  const [origin, setOrigin] = useState('');
+  const [dest, setDest] = useState('');
+  const [date, setDate] = useState('');
+  const [type, setType] = useState('outbound');
+  const [results, setResults] = useState(null);
+  const [picked, setPicked] = useState(null);
+
+  const flights = canvas?.flights || [];
+  const existingForType = flights.find(f => f.flight_type === type);
+  const bothFilled = flights.some(f => f.flight_type === 'outbound') && flights.some(f => f.flight_type === 'return');
+
+  async function search() {
+    if (!origin || !dest || !date) return log('Kota asal, tujuan, dan tanggal wajib diisi', 'e');
+    if (origin === dest) return log('Kota asal dan tujuan tidak boleh sama', 'e');
+    const { status, data } = await api('GET', `/api/flights?origin_city_id=${origin}&destination_city_id=${dest}&date=${date}`);
+    setResults(status === 404 ? [] : (data?.data || []));
+  }
+
+  async function confirmPick() {
+    if (!picked) return;
+    if (!currentTrip) return log('Buka percakapan dulu', 'e');
+
+    // Slot outbound/pulang cuma ada satu masing-masing. Menimpa yang sudah
+    // dipilih itu wajar (ganti pikiran), tapi harus disadari, bukan
+    // kejadian diam-diam -- terutama karena ini juga satu-satunya jalan
+    // "menambah" penerbangan ketiga: sebenarnya itu menimpa, bukan menambah.
+    if (existingForType && !existingForType.booked_at) {
+      const o = existingForType.flight_options;
+      const ok = window.confirm(
+        `Slot ${type === 'outbound' ? 'berangkat' : 'pulang'} sudah diisi ${o?.airline} ${o?.flight_number}. ` +
+        `Ganti dengan pilihan baru ini?`
+      );
+      if (!ok) return;
+    }
+
+    const { status, data } = await api('PUT', `/api/trips/${currentTrip}/flights`, { flight_option_id: picked, flight_type: type });
+    if (status === 200 && data?.data) {
+      onPicked(data.data);
+      log('Penerbangan dipilih', 'k');
+      setResults(null); setPicked(null);
+    }
+  }
+
+  return (
+    <React.Fragment>
+      {bothFilled && (
+        <div style={{
+          background: 'var(--gold-tint)', color: '#8A6415', borderRadius: 10, padding: '9px 11px',
+          fontSize: 11.5, lineHeight: 1.5, marginBottom: 12,
+        }}>
+          Rencana ini sudah punya penerbangan berangkat dan pulang &mdash; itu maksimalnya. Untuk kota
+          tambahan yang butuh penerbangan sendiri, buat percakapan baru khusus segmen itu.
+        </div>
+      )}
+      <div className="searchbar">
+        <select value={origin} onChange={e => setOrigin(e.target.value)} style={{ flex: 1 }}>
+          <option value="">Kota asal</option>
+          {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+        <select value={dest} onChange={e => setDest(e.target.value)} style={{ flex: 1 }}>
+          <option value="">Kota tujuan</option>
+          {cities.map(c => <option key={c.id} value={c.id}>{c.name}</option>)}
+        </select>
+      </div>
+      <div className="searchbar">
+        <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ flex: 1, border: '1px solid var(--line)', borderRadius: 9, padding: '8px 9px', fontSize: 12.5 }} />
+        <select value={type} onChange={e => setType(e.target.value)}>
+          <option value="outbound">Berangkat</option>
+          <option value="return">Pulang</option>
+        </select>
+        <button onClick={search}>Cari</button>
+      </div>
+      {existingForType && !existingForType.booked_at && (
+        <div className="empty-note" style={{ padding: '0 0 8px' }}>
+          Slot ini sedang diisi {existingForType.flight_options?.airline} {existingForType.flight_options?.flight_number}.
+          Memilih penerbangan baru akan menggantinya.
+        </div>
+      )}
+
+      {results === null && <div className="empty-note">Pilih rute dan tanggal, lalu tekan Cari.</div>}
+      {results?.length === 0 && <div className="empty-note">Tidak ada penerbangan di tanggal ini.</div>}
+
+      {results?.map(f => (
+        <label key={f.id} className="result-card" onClick={() => setPicked(f.id)}>
+          <input type="radio" readOnly checked={picked === f.id} />
+          <div>
+            <div className="result-name">{f.airline} {f.flight_number}</div>
+            <div className="result-sub">
+              <span className="badge">{formatTime(f.departure_time)} &rarr; {formatTime(f.arrival_time)}</span>
+              <span className="badge price">{formatRupiah(f.price)}</span>
+              <span className="badge">{f.available_seats} kursi</span>
+            </div>
+          </div>
+        </label>
+      ))}
+
+      {results?.length > 0 && (
+        <div className="addbar">
+          <button disabled={!picked} onClick={confirmPick}>
+            Pakai sebagai penerbangan {type === 'outbound' ? 'berangkat' : 'pulang'}
+          </button>
+        </div>
+      )}
+    </React.Fragment>
+  );
+}
+
+// ============================================================
+// Toast & devlog
+// ============================================================
+function ToastStack({ toasts }) {
+  return (
+    <div className="toast-stack">
+      {toasts.map(t => (
+        <div key={t.id} className="toast"><span className="dotgold" />{t.text}</div>
+      ))}
+    </div>
+  );
+}
+
+function Devlog({ logs }) {
+  const ref = useRef(null);
+  useEffect(() => { if (ref.current) ref.current.scrollTop = ref.current.scrollHeight; }, [logs]);
+  return (
+    <div className="devlog scrollbar-thin" ref={ref}>
+      {logs.length === 0 && <div>Siap. Masuk dulu untuk mulai menguji.</div>}
+      {logs.map((l, i) => <div key={i} className={l.kind === 'e' ? 'e' : (l.kind === 'k' ? 'k' : '')}>[{l.t}] {l.text}</div>)}
+    </div>
+  );
+}
+
+ReactDOM.createRoot(document.getElementById('root')).render(<App />);
+</script>
+
+<script>
+  // Ditransformasi manual, bukan lewat pemindaian otomatis Babel ke
+  // seluruh halaman. Pemindaian otomatis Babel akan mencoba mentransformasi
+  // SEMUA tag <script> di halaman, termasuk yang disuntikkan ekstensi
+  // browser (React DevTools, Grammarly, password manager, dll seringkali
+  // menyuntik <script type="module">). Kalau ada "import" di script asing
+  // itu, Babel gagal dan seluruh halaman jadi putih tanpa alasan yang
+  // jelas. Dengan mengambil source kita sendiri secara eksplisit lewat id,
+  // Babel tidak pernah menyentuh script siapa pun selain milik kita.
+  const src = document.getElementById('app-source').textContent;
+  const compiled = Babel.transform(src, { presets: [['react', { runtime: 'classic' }]] }).code;
+  const script = document.createElement('script');
+  script.textContent = compiled;
+  document.body.appendChild(script);
+</script>
+</body>
+</html>

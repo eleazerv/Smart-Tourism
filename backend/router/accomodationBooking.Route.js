@@ -90,7 +90,9 @@ router.get('/:id', globalLimiter, getAccommodationBooking);
  *       200:
  *         description: Invoice lama masih berlaku dan dipakai ulang
  *       409:
- *         description: Booking sudah dibayar
+ *         description: >
+ *           Booking sudah dibayar, sudah lewat batas waktu pembayaran
+ *           (booking_expired), atau statusnya memang tidak bisa dibayar
  *       502:
  *         description: Xendit tidak bisa dihubungi
  */
@@ -113,7 +115,9 @@ router.post('/:id/pay', strictLimiter, payAccommodationBooking);
  *       200:
  *         description: Booking dibatalkan
  *       409:
- *         description: Booking sudah dibayar
+ *         description: >
+ *           Booking sudah dibayar, atau sudah tertutup lebih dulu karena
+ *           kedaluwarsa/dibatalkan (booking_not_cancellable)
  */
 router.post('/:id/cancel', moderateLimiter, cancelAccommodationBooking);
 

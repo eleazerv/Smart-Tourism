@@ -95,7 +95,9 @@ router.get('/:id', globalLimiter, getFlightBooking);
  *     description: >
  *       Mengembalikan invoice_url yang harus dibuka user. Kalau invoice
  *       sebelumnya masih berlaku, link yang sama dipakai ulang. Status
- *       booking baru berubah setelah Xendit mengirim webhook, bukan di sini.
+ *       booking baru berubah setelah Xendit mengirim webhook, bukan di sini —
+ *       kecuali kalau batas waktunya sudah lewat, yang langsung ditutup di sini
+ *       sebagai failed.
  *     tags: [Bookings]
  *     security:
  *       - bearerAuth: []
@@ -110,7 +112,9 @@ router.get('/:id', globalLimiter, getFlightBooking);
  *       200:
  *         description: Invoice lama masih berlaku dan dipakai ulang
  *       409:
- *         description: Booking sudah dibayar atau tidak bisa dibayar
+ *         description: >
+ *           Booking sudah dibayar, sudah lewat batas waktu pembayaran
+ *           (booking_expired), atau statusnya memang tidak bisa dibayar
  *       502:
  *         description: Xendit tidak bisa dihubungi
  */
@@ -133,7 +137,9 @@ router.post('/:id/pay', strictLimiter, payFlightBooking);
  *       200:
  *         description: Booking dibatalkan, kursi dikembalikan
  *       409:
- *         description: Booking sudah dibayar
+ *         description: >
+ *           Booking sudah dibayar, atau sudah tertutup lebih dulu karena
+ *           kedaluwarsa/dibatalkan (booking_not_cancellable)
  */
 router.post('/:id/cancel', moderateLimiter, cancelFlightBooking);
 

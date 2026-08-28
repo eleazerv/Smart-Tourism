@@ -19,9 +19,12 @@ export const toggleSaveDestination = async (req, res) => {
             .eq('destination_id', destinationId)
             .eq('user_id', userId)
             .maybeSingle();
- 
+        
+        if (existingError) throw existingError;
+
         if (existing) {
             await req.db.from('saved_destinations').delete().eq('id', existing.id);
+            if (delError) throw delError;
             return res.json({ saved: false });
         }
  

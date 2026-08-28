@@ -5,6 +5,12 @@
  */
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
+  AccommodationTier,
+  ChatMessage,
+  ChatRoom,
+  ChatTurn,
+  CheckoutResult,
+  City,
   Destination,
   DestinationDetail,
   EventItem,
@@ -14,6 +20,7 @@ import type {
   FlightDetail,
   FlightOption,
   HeatmapEntry,
+  NearbyAccommodation,
   PaymentIntent,
   Paginated,
   PersonalRecommendations,
@@ -22,6 +29,7 @@ import type {
   SeasonalRecommendations,
   Tag,
   TrendingDestination,
+  TripCanvas,
 } from "@/lib/api/types";
 
 type Auth = Pick<ApiFetchOptions, "token" | "signal">;
@@ -349,4 +357,187 @@ export async function cancelFlightBooking(id: string, auth: Auth) {
     ...auth,
     method: "POST",
   });
+}
+
+/* ------------------------------------------------- AI trip planner --- */
+
+export async function listChatRooms(auth: Auth): Promise<ChatRoom[]> {
+  const { data } = await apiFetch<{ data: ChatRoom[] }>("/api/chat/rooms", auth);
+  return data ?? [];
+}
+
+/** Membuat ruang percakapan sekaligus draft rencana yang menempel padanya. */
+export async function createChatRoom(auth: Auth): Promise<ChatRoom> {
+  const { data } = await apiFetch<{ data: ChatRoom }>("/api/chat/rooms", {
+    ...auth,
+    method: "POST",
+  });
+  return data;
+}
+
+export async function getChatRoom(
+  id: string,
+  auth: Auth,
+): Promise<{
+  room: ChatRoom;
+  messages: ChatMessage[];
+  canvas: TripCanvas;
+} | null> {
+  const result = await apiFetch<{
+    data: { room: ChatRoom; messages: ChatMessage[]; canvas: TripCanvas };
+  }>(`/api/chat/rooms/${id}`, { ...auth, nullOn404: true });
+  return result?.data ?? null;
+}
+
+/**
+ * Satu giliran bisa memanggil beberapa tool katalog berturut-turut, jadi
+ * balasannya wajar memakan belasan detik. Panggil dengan `signal` kalau
+ * penggunanya boleh membatalkan.
+ */
+export async function sendChatMessage(
+  roomId: string,
+  message: string,
+  auth: Auth,
+): Promise<ChatTurn> {
+  const { data } = await apiFetch<{ data: ChatTurn }>(
+    `/api/chat/rooms/${roomId}/messages`,
+    { ...auth, method: "POST", body: { message } },
+  );
+  return data;
+}
+
+/** Mengubah isi rencana jadi booking sungguhan, semuanya berstatus pending. */
+export async function checkoutTrip(
+  roomId: string,
+  auth: Auth,
+): Promise<CheckoutResult> {
+  const { data } = await apiFetch<{ data: CheckoutResult }>(
+    `/api/chat/rooms/${roomId}/checkout`,
+    { ...auth, method: "POST" },
+  );
+  return data;
+}
+
+/** Daftar kota, urut abjad. Dipakai pemilih rute penerbangan di panel rencana. */
+export async function listCities(): Promise<City[]> {
+  const { data } = await apiFetch<{ data: City[] }>("/api/cities");
+  return data ?? [];
+}
+
+/**
+ * Penginapan di kota destinasi ini, terdekat lebih dulu. Dipakai panel rencana
+ * untuk memilih penginapan tanpa harus lewat percakapan.
+ */
+export async function getDestinationAccommodations(
+  destinationId: string,
+  options: { tier?: AccommodationTier } & Auth = {},
+): Promise<NearbyAccommodation[]> {
+  const { tier, ...auth } = options;
+  const { data } = await apiFetch<{ data: NearbyAccommodation[] }>(
+    `/api/destinations/${destinationId}/accommodations`,
+    { query: { tier }, ...auth },
+  );
+  return data ?? [];
+}
+
+export async function getTripCanvas(
+  tripId: string,
+  auth: Auth,
+): Promise<TripCanvas | null> {
+  const result = await apiFetch<{ data: TripCanvas }>(`/api/trips/${tripId}`, {
+    ...auth,
+    nullOn404: true,
+  });
+  return result?.data ?? null;
+}
+
+export async function updateTrip(
+  tripId: string,
+  patch: {
+    name?: string | null;
+    start_date?: string | null;
+    end_date?: string | null;
+    travelers?: number;
+    origin_city_id?: number | null;
+  },
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}`,
+    { ...auth, method: "PATCH", body: patch },
+  );
+  return data;
+}
+
+/**
+ * Semua endpoint di bawah membalas canvas utuh, bukan baris yang berubah saja,
+ * jadi pemanggilnya cukup mengganti seluruh state rencana dengan hasilnya.
+ */
+export async function addTripItem(
+  tripId: string,
+  destinationId: string,
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/items`,
+    { ...auth, method: "POST", body: { destination_id: destinationId } },
+  );
+  return data;
+}
+
+export async function updateTripItem(
+  tripId: string,
+  itemId: string,
+  patch: {
+    status?: "suggested" | "confirmed";
+    accommodation_id?: string | null;
+    check_in?: string | null;
+    check_out?: string | null;
+    guests?: number;
+    notes?: string | null;
+  },
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/items/${itemId}`,
+    { ...auth, method: "PATCH", body: patch },
+  );
+  return data;
+}
+
+export async function removeTripItem(
+  tripId: string,
+  itemId: string,
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/items/${itemId}`,
+    { ...auth, method: "DELETE" },
+  );
+  return data;
+}
+
+/** Slot berangkat & pulang masing-masing cuma satu: ini mengganti, bukan menambah. */
+export async function setTripFlight(
+  tripId: string,
+  body: { flight_option_id: string; flight_type: "outbound" | "return" },
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/flights`,
+    { ...auth, method: "PUT", body },
+  );
+  return data;
+}
+
+export async function removeTripFlight(
+  tripId: string,
+  type: "outbound" | "return",
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/flights/${type}`,
+    { ...auth, method: "DELETE" },
+  );
+  return data;
 }
