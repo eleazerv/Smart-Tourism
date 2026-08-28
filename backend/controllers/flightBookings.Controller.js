@@ -1,4 +1,4 @@
-import { handleRpcError, startPayment } from "../lib/bookingPayment.js";
+import { handleRpcError, settleOverdue, startPayment } from "../lib/bookingPayment.js";
 import { expireInvoice } from "../lib/xendit.js";
 
 const BOOKING_FIELDS = `
@@ -68,6 +68,10 @@ export const getFlightBooking = async (req, res) => {
       });
     }
  
+    // Booking yang tenggatnya sudah lewat ditutup sebelum ditampilkan, supaya
+    // pembeli tidak melihat tombol bayar untuk tagihan yang sudah mati.
+    await settleOverdue(data, 'getFlightBooking');
+ 
     return res.json({ data });
   } catch (err) {
     console.error('[getFlightBooking] error', err);
@@ -80,12 +84,14 @@ export const listFlightBookings = async (req, res) => {
   try {
     const { data, error } = await req.db
       .from('flight_bookings')
-      .select('id, booking_code, total_price, payment_status, created_at, paid_at')
+      .select('id, booking_code, total_price, payment_status, invoice_expires_at, created_at, paid_at')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
       .limit(50);
  
     if (error) throw error;
+ 
+    await settleOverdue(data, 'listFlightBookings');
  
     return res.json({ data });
   } catch (err) {
@@ -127,7 +133,7 @@ export const cancelFlightBooking = async (req, res) => {
   try {
     const { data: booking, error: fetchError } = await req.db
       .from('flight_bookings')
-      .select('booking_code, payment_status, xendit_invoice_id')
+      .select('booking_code, payment_status, xendit_invoice_id, invoice_expires_at, created_at')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
       .maybeSingle();
@@ -145,6 +151,17 @@ export const cancelFlightBooking = async (req, res) => {
       return res.status(409).json({
         error: 'already_paid',
         message: 'Booking yang sudah dibayar tidak bisa dibatalkan di sini',
+      });
+    }
+ 
+    await settleOverdue(booking, 'cancelFlightBooking');
+ 
+    // Kursi hanya perlu dilepas sekali. Booking yang sudah gagal atau sudah
+    // dibatalkan sebelumnya tidak boleh masuk ke cancel_booking lagi.
+    if (booking.payment_status !== 'pending') {
+      return res.status(409).json({
+        error: 'booking_not_cancellable',
+        message: `Booking dengan status ${booking.payment_status} tidak bisa dibatalkan`,
       });
     }
  

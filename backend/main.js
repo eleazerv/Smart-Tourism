@@ -17,6 +17,7 @@ import flightBookingsRouter from './router/flightbooking.Route.js';
 import accommodationBookingsRouter from './router/accomodationBooking.Route.js';
 import webhooksRouter from './router/webhook.Route.js';
 import savedDestinationsRouter from './router/saved-destinations.Route.js';
+import { sweepOverdueBookings } from './lib/bookingPayment.js';
 
 
 const app = express();
@@ -58,7 +59,24 @@ app.use((err, req, res, next) => {
 app.use((req, res) => {
   res.status(404).json({ error: 'not_found', message: 'Route not found' });
 });
+// Tenggat pembayaran ditegakkan oleh jam, bukan oleh webhook Xendit saja.
+// Booking yang ditinggalkan pembelinya tidak akan pernah dibuka lagi, jadi
+// tanpa sapuan berkala kursinya tertahan selamanya.
+const SWEEP_INTERVAL_MS = Number(process.env.BOOKING_SWEEP_INTERVAL_MS || 5 * 60 * 1000);
+
+function sweepBookings () {
+  sweepOverdueBookings().catch((err) => {
+    console.error('[sweepOverdueBookings] error', err);
+  });
+}
+
 const PORT = process.env.PORT || 4000;
 app.listen(PORT, () => {
   console.log(`Server running on http://localhost:${PORT}`);
+
+  if (SWEEP_INTERVAL_MS > 0) {
+    sweepBookings();
+    // unref supaya timer ini tidak ikut menahan proses saat server ditutup.
+    setInterval(sweepBookings, SWEEP_INTERVAL_MS).unref();
+  }
 });

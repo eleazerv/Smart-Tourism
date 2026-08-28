@@ -1,4 +1,4 @@
-import { handleRpcError, startPayment } from '../lib/bookingPayment.js';
+import { handleRpcError, settleOverdue, startPayment } from '../lib/bookingPayment.js';
 import { expireInvoice } from '../lib/xendit.js';
 
 const BOOKING_FIELDS = `
@@ -79,6 +79,10 @@ export const getAccommodationBooking = async (req, res) => {
       });
     }
 
+    // Booking yang tenggatnya sudah lewat ditutup sebelum ditampilkan, supaya
+    // pembeli tidak melihat tombol bayar untuk tagihan yang sudah mati.
+    await settleOverdue(data, 'getAccommodationBooking');
+
     return res.json({ data });
   } catch (err) {
     console.error('[getAccommodationBooking] error', err);
@@ -93,7 +97,7 @@ export const listAccommodationBookings = async (req, res) => {
       .from('accommodation_bookings')
       .select(`
         id, booking_code, check_in, check_out, nights, guests,
-        total_price, payment_status, created_at, paid_at,
+        total_price, payment_status, invoice_expires_at, created_at, paid_at,
         accommodations ( id, name, tier, cover_image_url )
       `)
       .eq('user_id', req.user.id)
@@ -101,6 +105,8 @@ export const listAccommodationBookings = async (req, res) => {
       .limit(50);
 
     if (error) throw error;
+
+    await settleOverdue(data, 'listAccommodationBookings');
 
     return res.json({ data });
   } catch (err) {
@@ -138,7 +144,7 @@ export const cancelAccommodationBooking = async (req, res) => {
   try {
     const { data: booking, error: fetchError } = await req.db
       .from('accommodation_bookings')
-      .select('booking_code, payment_status, xendit_invoice_id')
+      .select('booking_code, payment_status, xendit_invoice_id, invoice_expires_at, created_at')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
       .maybeSingle();
@@ -156,6 +162,17 @@ export const cancelAccommodationBooking = async (req, res) => {
       return res.status(409).json({
         error: 'already_paid',
         message: 'Booking yang sudah dibayar tidak bisa dibatalkan di sini',
+      });
+    }
+
+    await settleOverdue(booking, 'cancelAccommodationBooking');
+
+    // Kursi/kamar hanya perlu dilepas sekali. Booking yang sudah gagal atau
+    // sudah dibatalkan sebelumnya tidak boleh masuk ke cancel_booking lagi.
+    if (booking.payment_status !== 'pending') {
+      return res.status(409).json({
+        error: 'booking_not_cancellable',
+        message: `Booking dengan status ${booking.payment_status} tidak bisa dibatalkan`,
       });
     }
 

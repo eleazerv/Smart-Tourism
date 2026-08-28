@@ -190,7 +190,16 @@ export type FlightCalendarDay = {
 
 /* ------------------------------------------------------------ bookings --- */
 
-export type PaymentStatus = "pending" | "paid" | "expired" | "cancelled";
+/**
+ * `failed` is what the API writes once an invoice lapses — either from
+ * Xendit's EXPIRED callback or from the backend's own deadline sweep.
+ */
+export type PaymentStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "expired"
+  | "cancelled";
 
 export type FlightBookingItem = {
   id: string;
@@ -213,6 +222,8 @@ export type FlightBookingSummary = {
   booking_code: string;
   total_price: number;
   payment_status: PaymentStatus;
+  /** Payment deadline. Read as UTC — Postgres returns it without a zone. */
+  invoice_expires_at: string | null;
   created_at: string;
   paid_at: string | null;
 };
@@ -220,7 +231,6 @@ export type FlightBookingSummary = {
 export type FlightBooking = FlightBookingSummary & {
   payment_method: string | null;
   invoice_url: string | null;
-  invoice_expires_at: string | null;
   flight_booking_items: FlightBookingItem[];
 };
 

@@ -2,10 +2,10 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { ArrowLeft, ExternalLink, Plane } from "lucide-react";
+import { AlertTriangle, ArrowLeft, ExternalLink, Plane, Search } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
 import { BookingActions } from "@/components/account/booking-actions";
-import { BookingStatus } from "@/components/account/booking-status";
+import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import {
   airportByCityId,
   clockOf,
@@ -18,6 +18,7 @@ import {
   getFlightBooking,
   type FlightBooking,
   type FlightBookingItem,
+  type PaymentStatus,
 } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
 import { formatDateTime } from "@/lib/format-date";
@@ -66,6 +67,9 @@ async function BookingDetail({ params }: PageProps) {
   if (!booking) notFound();
 
   const items = booking.flight_booking_items ?? [];
+  // A closed booking holds no seats and owes nothing: it is shown as a record
+  // of what was attempted, not as something still waiting on the reader.
+  const closed = isClosed(booking.payment_status);
   const invoiceLive =
     booking.payment_status === "pending" &&
     booking.invoice_url !== null &&
@@ -80,7 +84,13 @@ async function BookingDetail({ params }: PageProps) {
         <div className="rounded-2xl border border-border bg-card p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <BookingStatus status={booking.payment_status} />
-            <p className="text-lg font-bold tabular-nums">
+            <p
+              className={
+                closed
+                  ? "text-lg font-bold tabular-nums text-muted-foreground line-through decoration-1"
+                  : "text-lg font-bold tabular-nums"
+              }
+            >
               {formatIDR(booking.total_price)}
             </p>
           </div>
@@ -92,14 +102,15 @@ async function BookingDetail({ params }: PageProps) {
             {booking.payment_method && (
               <Row label="Metode" value={booking.payment_method} />
             )}
-            {booking.payment_status === "pending" &&
-              booking.invoice_expires_at && (
-                <Row
-                  label="Batas pembayaran"
-                  value={formatDateTime(booking.invoice_expires_at)}
-                />
-              )}
+            {booking.invoice_expires_at && booking.payment_status !== "paid" && (
+              <Row
+                label={closed ? "Batas pembayaran berakhir" : "Batas pembayaran"}
+                value={formatDateTime(booking.invoice_expires_at)}
+              />
+            )}
           </dl>
+
+          {closed && <ClosedNotice status={booking.payment_status} />}
 
           {booking.payment_status === "pending" && (
             <div className="mt-4 space-y-3 border-t border-border pt-4">
@@ -124,14 +135,79 @@ async function BookingDetail({ params }: PageProps) {
             Rincian penerbangan untuk pesanan ini tidak tersedia.
           </p>
         ) : (
-          items.map((item) => <ItemCard key={item.id} item={item} />)
+          items.map((item) => (
+            <ItemCard key={item.id} item={item} closed={closed} />
+          ))
         )}
       </div>
     </AccountSection>
   );
 }
 
-function ItemCard({ item }: { item: FlightBookingItem }) {
+/** Why a closed booking ended, and the one thing left to do about it. */
+const CLOSED_COPY: Partial<Record<PaymentStatus, { title: string; body: string }>> = {
+  failed: {
+    title: "Pembayaran tidak selesai",
+    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kursi yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+  },
+  expired: {
+    title: "Tagihan sudah kedaluwarsa",
+    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kursinya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+  },
+  cancelled: {
+    title: "Pesanan dibatalkan",
+    body: "Pesanan ini dibatalkan dan kursinya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+  },
+};
+
+function ClosedNotice({ status }: { status: PaymentStatus }) {
+  const copy = CLOSED_COPY[status];
+  if (!copy) return null;
+
+  // Only a lapsed payment is the reader's loss to act on; a booking they
+  // cancelled themselves is stated plainly, without the alarm colour.
+  const alarming = status === "failed";
+
+  return (
+    <div
+      className={
+        alarming
+          ? "mt-4 flex gap-3 rounded-xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-500/30 dark:bg-rose-500/10"
+          : "mt-4 flex gap-3 rounded-xl border border-border bg-muted/50 p-4"
+      }
+    >
+      <AlertTriangle
+        aria-hidden="true"
+        className={
+          alarming
+            ? "mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-300"
+            : "mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
+        }
+      />
+
+      <div className="min-w-0">
+        <p className="text-sm font-semibold">{copy.title}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
+
+        <Link
+          href="/flights"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        >
+          <Search className="h-4 w-4" />
+          Cari penerbangan lagi
+        </Link>
+      </div>
+    </div>
+  );
+}
+
+function ItemCard({
+  item,
+  closed,
+}: {
+  item: FlightBookingItem;
+  closed: boolean;
+}) {
   const flight = item.flight_options;
 
   if (!flight) {
@@ -147,7 +223,13 @@ function ItemCard({ item }: { item: FlightBookingItem }) {
   const dayOffset = arrivalDayOffset(flight);
 
   return (
-    <div className="rounded-2xl border border-border bg-card p-5">
+    <div
+      className={
+        closed
+          ? "rounded-2xl border border-dashed border-border bg-muted/40 p-5"
+          : "rounded-2xl border border-border bg-card p-5"
+      }
+    >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
           {item.flight_type === "return" ? "Penerbangan pulang" : "Keberangkatan"}
@@ -201,9 +283,20 @@ function ItemCard({ item }: { item: FlightBookingItem }) {
 
       <p className="mt-4 border-t border-border pt-3 text-sm">
         <span className="text-muted-foreground">Harga tiket </span>
-        <span className="font-semibold tabular-nums">
+        <span
+          className={
+            closed
+              ? "font-semibold tabular-nums text-muted-foreground line-through decoration-1"
+              : "font-semibold tabular-nums"
+          }
+        >
           {formatIDR(item.price)}
         </span>
+        {closed && (
+          <span className="ml-2 text-xs text-muted-foreground">
+            tiket tidak berlaku
+          </span>
+        )}
       </p>
     </div>
   );

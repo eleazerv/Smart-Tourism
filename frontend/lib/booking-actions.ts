@@ -37,8 +37,12 @@ function messageFor(error: unknown, fallback: string): string {
       return "Penerbangan ini sudah tidak tersedia.";
     case "already_paid":
       return "Pesanan ini sudah dibayar.";
+    case "booking_expired":
+      return "Batas waktu pembayaran pesanan ini sudah lewat. Silakan pesan ulang.";
     case "booking_not_payable":
       return "Pesanan ini sudah tidak bisa dibayar. Silakan pesan ulang.";
+    case "booking_not_cancellable":
+      return "Pesanan ini sudah ditutup, jadi tidak ada yang perlu dibatalkan.";
     case "payment_gateway_error":
       return "Gagal membuat tagihan pembayaran. Coba lagi sebentar lagi.";
     case "network_error":
