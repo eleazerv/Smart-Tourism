@@ -28,6 +28,7 @@ import { ShareButton } from "@/components/destination/share-button";
 import { SimilarRail } from "@/components/destination/similar-rail";
 import { TrackView } from "@/components/destination/track-view";
 import { crowdLevel, formatCount, gallery } from "@/lib/destination-data";
+import { loadSavedIds } from "@/lib/saved-destinations";
 
 type PageProps = { params: Promise<{ id: string }> };
 
@@ -149,9 +150,10 @@ async function Guide({ params }: PageProps) {
   }
   if (!destination) notFound();
 
-  const [heatmap, bestTime] = await Promise.all([
+  const [heatmap, bestTime, savedIds] = await Promise.all([
     loadHeatmap(),
     loadBestMonths(destination.id, destination.province_id),
+    loadSavedIds(),
   ]);
 
   const crowd = crowdLevel(destination.provinces?.code, heatmap);
@@ -200,7 +202,11 @@ async function Guide({ params }: PageProps) {
 
           <div className="flex shrink-0 items-center gap-1">
             <ShareButton name={destination.name} />
-            <SaveButton name={destination.name} />
+            <SaveButton
+              destinationId={destination.id}
+              name={destination.name}
+              initialSaved={savedIds.has(destination.id)}
+            />
           </div>
         </div>
 

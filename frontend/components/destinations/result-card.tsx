@@ -11,6 +11,8 @@ export type ResultProps = {
   destination: RecommendedDestination;
   /** Reviews behind the score; omitted when the count could not be loaded. */
   reviews?: number;
+  /** Whether the signed-in reader has already saved this destination. */
+  saved?: boolean;
   /** Skips lazy-loading for the covers above the fold. */
   priority?: boolean;
 };
@@ -25,14 +27,23 @@ function placeOf(destination: RecommendedDestination) {
  * Booking-style row: cover on the left, editorial detail in the middle, and
  * the decision column — reach and call to action — pinned right.
  */
-export function ResultRow({ destination, reviews, priority }: ResultProps) {
+export function ResultRow({
+  destination,
+  reviews,
+  saved,
+  priority,
+}: ResultProps) {
   const place = placeOf(destination);
   const href = `/destinations/${destination.id}`;
 
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
-        <FavoriteButton label={destination.name} />
+        <FavoriteButton
+          destinationId={destination.id}
+          label={destination.name}
+          initialSaved={saved}
+        />
         <Link href={href} tabIndex={-1} aria-hidden="true">
           <Image
             src={coverImage(destination, 640, 480)}
@@ -95,14 +106,23 @@ export function ResultRow({ destination, reviews, priority }: ResultProps) {
 }
 
 /** Compact variant for the grid view — same data, one column wide. */
-export function ResultTile({ destination, reviews, priority }: ResultProps) {
+export function ResultTile({
+  destination,
+  reviews,
+  saved,
+  priority,
+}: ResultProps) {
   const place = placeOf(destination);
   const href = `/destinations/${destination.id}`;
 
   return (
     <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
       <div className="relative aspect-[4/3] overflow-hidden bg-brand-700">
-        <FavoriteButton label={destination.name} />
+        <FavoriteButton
+          destinationId={destination.id}
+          label={destination.name}
+          initialSaved={saved}
+        />
         <Link href={href} tabIndex={-1} aria-hidden="true">
           <Image
             src={coverImage(destination, 600, 450)}

@@ -3,9 +3,11 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { CalendarDays, MapPin, Search, Users } from "lucide-react";
-import { withFilter, type StaySearchState } from "@/lib/stays-search";
-
-export type CityOption = { id: number; name: string; province: string };
+import {
+  withFilter,
+  type CityFacet,
+  type StaySearchState,
+} from "@/lib/stays-search";
 
 /**
  * The booking-form header: where, when, and how many. Submits by navigating,
@@ -16,7 +18,7 @@ export function StaySearchPanel({
   cities,
 }: {
   state: StaySearchState;
-  cities: CityOption[];
+  cities: CityFacet[];
 }) {
   const router = useRouter();
 
@@ -56,7 +58,8 @@ export function StaySearchPanel({
             <option value={0}>Semua kota</option>
             {cities.map((city) => (
               <option key={city.id} value={city.id}>
-                {city.name} &middot; {city.province}
+                {city.name}
+                {city.province ? ` · ${city.province}` : ""} ({city.count})
               </option>
             ))}
           </select>

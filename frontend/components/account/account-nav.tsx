@@ -3,7 +3,7 @@
 import Link from "next/link";
 import { useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
-import { Heart, KeyRound, LogOut, Ticket, UserRound } from "lucide-react";
+import { Bookmark, Heart, KeyRound, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
@@ -11,6 +11,7 @@ import { cn } from "@/lib/utils";
 const ITEMS = [
   { href: "/akun", label: "Profil", icon: UserRound },
   { href: "/akun/pesanan", label: "Pesanan saya", icon: Ticket },
+  { href: "/akun/tersimpan", label: "Destinasi tersimpan", icon: Bookmark },
   { href: "/akun/minat", label: "Minat perjalanan", icon: Heart },
   { href: "/akun/kata-sandi", label: "Ubah kata sandi", icon: KeyRound },
 ] as const;

@@ -1,31 +1,32 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
+import { cacheLife } from "next/cache";
 import { Compass } from "lucide-react";
+import { getAllAccommodations, type Accommodation } from "@/lib/api";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { FilterDrawer } from "@/components/catalogue/filter-drawer";
 import { Pagination } from "@/components/catalogue/pagination";
-import { SampleDataNotice, SearchHero } from "@/components/catalogue/search-hero";
+import { SearchHero } from "@/components/catalogue/search-hero";
 import { SortSelect } from "@/components/catalogue/sort-select";
 import { StayFilters } from "@/components/stays/stay-filters";
 import { StayRow } from "@/components/stays/stay-row";
 import { StaySearchPanel } from "@/components/stays/stay-search-panel";
 import { ListingSkeleton } from "@/components/catalogue/listing-skeleton";
-import { STAY_CITIES, allStays, type Stay } from "@/lib/stay-data";
+import { LoadError } from "@/components/home/load-error";
 import {
   PAGE_SIZE,
   SORTS,
   activeFilterCount,
   applyFilters,
-  facilityFacets,
+  cityFacets,
   formatDateLabel,
   nightCount,
   parseStaySearch,
   sortStays,
-  starFacets,
+  tierFacets,
   toHref,
-  typeFacets,
   withFilter,
   type RawSearchParams,
   type StaySearchState,
@@ -36,14 +37,28 @@ type PageProps = { searchParams: Promise<RawSearchParams> };
 export const metadata: Metadata = {
   title: "Hotel & Penginapan",
   description:
-    "Cari hotel, resor, vila, dan homestay di kota-kota wisata Indonesia. Bandingkan harga per malam, rating tamu, dan fasilitas sebelum memilih.",
+    "Cari penginapan di kota-kota wisata Indonesia. Bandingkan harga per malam, kelas akomodasi, dan kapasitas kamar sebelum memilih.",
   openGraph: {
     title: "Hotel & Penginapan",
-    description:
-      "Cari hotel, resor, vila, dan homestay di kota-kota wisata Indonesia.",
+    description: "Cari penginapan di kota-kota wisata Indonesia.",
     type: "website",
   },
 };
+
+/**
+ * The whole accommodation table, flattened out of its 20-row pages.
+ *
+ * Fetched whole rather than page by page because the price filter, the sort,
+ * and the city facet counts all have to see every row — `/api/accommodations`
+ * orders by rating only and cannot filter on price or capacity, so a per-page
+ * pass would only rearrange an arbitrary slice. Cached, so the walk is paid
+ * once rather than on every search.
+ */
+async function loadStays(): Promise<Accommodation[]> {
+  "use cache";
+  cacheLife("hours");
+  return getAllAccommodations();
+}
 
 export default function HotelsPage({ searchParams }: PageProps) {
   return (
@@ -64,13 +79,25 @@ export default function HotelsPage({ searchParams }: PageProps) {
 async function Results({ searchParams }: PageProps) {
   const state = parseStaySearch(await searchParams);
 
-  const city = STAY_CITIES.find((entry) => entry.id === state.cityId) ?? null;
+  let stays: Accommodation[];
+  try {
+    stays = await loadStays();
+  } catch {
+    return (
+      <div className="container-page py-16">
+        <LoadError what="Daftar penginapan" />
+      </div>
+    );
+  }
+
+  const cities = cityFacets(stays);
+  const city = cities.find((entry) => entry.id === state.cityId) ?? null;
 
   // The city narrows the pool the facets are counted over; every other filter
   // is applied after, so the sidebar always shows the alternatives within the
   // chosen city rather than a set of dead ends.
-  const pool = allStays().filter(
-    (stay) => state.cityId === null || stay.cityId === state.cityId,
+  const pool = stays.filter(
+    (stay) => state.cityId === null || stay.cities?.id === state.cityId,
   );
   const matched = applyFilters(pool, state);
 
@@ -82,19 +109,12 @@ async function Results({ searchParams }: PageProps) {
   );
 
   const nights = nightCount(state);
+  const resetHref = withFilter(state, { tiers: [], maxPrice: null });
   const filters = (
     <StayFilters
       state={state}
-      resetHref={withFilter(state, {
-        types: [],
-        stars: [],
-        facilities: [],
-        minScore: 0,
-        maxPrice: null,
-      })}
-      typeCounts={typeFacets(pool)}
-      starCounts={starFacets(pool)}
-      facilityCounts={facilityFacets(pool)}
+      resetHref={resetHref}
+      tierCounts={tierFacets(pool)}
     />
   );
 
@@ -106,8 +126,8 @@ async function Results({ searchParams }: PageProps) {
         }
         subtitle={
           city
-            ? `Pilihan menginap di ${city.name}, ${city.province} untuk ${formatDateLabel(state.checkIn)} – ${formatDateLabel(state.checkOut)} (${nights} malam).`
-            : "Dari homestay di dekat kawah sampai resor tepi pantai. Bandingkan harga per malam, rating tamu, dan fasilitas di kota-kota wisata Indonesia."
+            ? `Pilihan menginap di ${city.name}${city.province ? `, ${city.province}` : ""} untuk ${formatDateLabel(state.checkIn)} – ${formatDateLabel(state.checkOut)} (${nights} malam).`
+            : "Dari homestay sampai resor. Bandingkan harga per malam, kelas akomodasi, dan kapasitas kamar di kota-kota wisata Indonesia."
         }
         seed={city ? `hotel-${city.name}` : "hotel-lobby-nusantara"}
         crumbs={[
@@ -117,15 +137,15 @@ async function Results({ searchParams }: PageProps) {
             : [{ label: "Hotel" }]),
         ]}
       >
-        <StaySearchPanel state={state} cities={STAY_CITIES} />
+        <StaySearchPanel state={state} cities={cities} />
       </SearchHero>
 
       <div className="container-page grid items-start gap-8 py-8 lg:grid-cols-[16rem_1fr]">
-        <aside className="hidden lg:sticky lg:top-24 lg:block">{filters}</aside>
+        <aside className="hidden lg:sticky lg:top-24 lg:block lg:max-h-[calc(100vh-7rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pr-1 scrollbar-quiet">
+          {filters}
+        </aside>
 
         <div className="min-w-0 space-y-5">
-          <SampleDataNotice what="Tarif, rating, dan ketersediaan kamar" />
-
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground" aria-live="polite">
               {matched.length === 0 ? (
@@ -158,7 +178,7 @@ async function Results({ searchParams }: PageProps) {
           </div>
 
           {results.length === 0 ? (
-            <EmptyStays state={state} />
+            <EmptyStays state={state} resetHref={resetHref} />
           ) : (
             <div className="space-y-4">
               {results.map((stay, i) => (
@@ -179,6 +199,12 @@ async function Results({ searchParams }: PageProps) {
             totalPages={totalPages}
             hrefFor={(next) => withFilter(state, { page: next })}
           />
+
+          <p className="text-center text-xs leading-relaxed text-muted-foreground">
+            Tarif dan kapasitas berasal dari katalog akomodasi mitra. Tanggal
+            yang Anda pilih belum dicek terhadap ketersediaan kamar, jadi
+            anggaplah sebagai perkiraan biaya, bukan konfirmasi pemesanan.
+          </p>
         </div>
       </div>
     </>
@@ -186,15 +212,22 @@ async function Results({ searchParams }: PageProps) {
 }
 
 /**
- * Sends the reader to the real catalogue for the city they are looking at —
- * the destinations API is the part of this page that is actually backed by
- * data, so it is where "what is there to do" gets answered.
+ * Sends the reader to the destination catalogue for the city they are looking
+ * at — this page answers "where to sleep", and that one answers "what is there
+ * to do once you are there".
  */
-function destinationsHrefFor(stay: Stay): string {
-  return `/destinations?q=${encodeURIComponent(stay.cityName)}`;
+function destinationsHrefFor(stay: Accommodation): string {
+  const city = stay.cities?.name;
+  return city ? `/destinations?q=${encodeURIComponent(city)}` : "/destinations";
 }
 
-function EmptyStays({ state }: { state: StaySearchState }) {
+function EmptyStays({
+  state,
+  resetHref,
+}: {
+  state: StaySearchState;
+  resetHref: string;
+}) {
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
@@ -207,18 +240,13 @@ function EmptyStays({ state }: { state: StaySearchState }) {
         Belum ada penginapan yang cocok
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        Coba longgarkan filter harga atau fasilitas, atau cari di seluruh kota.
+        Coba longgarkan batas harga atau kelas akomodasi, kurangi jumlah tamu,
+        atau cari di seluruh kota.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {activeFilterCount(state) > 0 && (
           <Link
-            href={withFilter(state, {
-              types: [],
-              stars: [],
-              facilities: [],
-              minScore: 0,
-              maxPrice: null,
-            })}
+            href={resetHref}
             className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
           >
             Hapus semua filter

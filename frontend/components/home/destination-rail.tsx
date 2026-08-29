@@ -4,6 +4,7 @@ import { DestinationCard } from "@/components/home/destination-card";
 import { LoadError } from "@/components/home/load-error";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
+import { loadSavedIds } from "@/lib/saved-destinations";
 
 const SHOWN = 8;
 
@@ -33,6 +34,9 @@ export async function DestinationRail() {
 
   if (destinations.length === 0) return null;
 
+  // Read after the cached loader above, never inside it — see loadSavedIds.
+  const savedIds = await loadSavedIds();
+
   return (
     <Section
       title="Destinasi populer di Indonesia"
@@ -40,7 +44,11 @@ export async function DestinationRail() {
     >
       <Rail label="Destinasi populer">
         {destinations.map((destination) => (
-          <DestinationCard key={destination.id} destination={destination} />
+          <DestinationCard
+            key={destination.id}
+            destination={destination}
+            saved={savedIds.has(destination.id)}
+          />
         ))}
       </Rail>
     </Section>

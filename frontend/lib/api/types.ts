@@ -130,6 +130,20 @@ export type Profile = {
   created_at: string;
 };
 
+/**
+ * One row of `GET /api/saved-destinations` — the destination columns the
+ * controller selects, flattened out of the join, plus when it was saved.
+ */
+export type SavedDestination = Pick<
+  Destination,
+  "id" | "name" | "category" | "cover_image_url" | "avg_rating" | "view_count"
+> & {
+  provinces: ProvinceRef | null;
+  cities: CityRef | null;
+  saved_id: string;
+  saved_at: string;
+};
+
 /** Author block joined onto every review by `REVIEW_FIELDS` in the controller. */
 export type ReviewAuthor = {
   id: string;
@@ -262,6 +276,28 @@ export type City = {
  * Penginapan di sekitar sebuah destinasi. `distance_km` dihitung backend dari
  * koordinat destinasinya, dan hasilnya sudah terurut dari yang terdekat.
  */
+/**
+ * Shape from `GET /api/accommodations` — the standalone catalogue behind
+ * `/hotels`. Wider than `NearbyAccommodation`: the list controller also joins
+ * the city (with its province) and selects the review aggregates.
+ */
+export type Accommodation = {
+  id: string;
+  name: string;
+  tier: AccommodationTier;
+  price_per_night: number;
+  max_guests: number | null;
+  partner_name: string | null;
+  external_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  cover_image_url: string | null;
+  /** 0 across the whole seeded table today — no accommodation is reviewed yet. */
+  avg_rating: number | null;
+  review_count: number;
+  cities: (CityRef & { provinces: ProvinceRef | null }) | null;
+};
+
 export type NearbyAccommodation = {
   id: string;
   name: string;

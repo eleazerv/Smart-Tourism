@@ -1,6 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
-import { ChevronRight, Info } from "lucide-react";
+import { ChevronRight } from "lucide-react";
 import { photo } from "@/lib/home-data";
 
 export type Crumb = { label: string; href?: string };
@@ -72,26 +72,5 @@ export function SearchHero({
         <div className="mt-6">{children}</div>
       </div>
     </section>
-  );
-}
-
-/**
- * Says plainly that the listings below are illustrative.
- *
- * The destination catalogue is backed by the API; hotels and flights have no
- * table behind them yet, and quoting invented rates without saying so would be
- * the one genuinely misleading thing on the site.
- */
-export function SampleDataNotice({ what }: { what: string }) {
-  return (
-    <p className="flex items-start gap-2 rounded-xl border border-dashed border-border bg-muted/50 px-4 py-3 text-xs leading-relaxed text-muted-foreground">
-      <Info className="mt-0.5 h-4 w-4 shrink-0" />
-      <span>
-        <span className="font-semibold text-foreground">Data contoh.</span>{" "}
-        {what} di halaman ini dibuat sebagai purwarupa dan belum terhubung ke
-        sistem pemesanan mana pun. Kota dan provinsi mengikuti data destinasi
-        yang asli.
-      </span>
-    </p>
   );
 }

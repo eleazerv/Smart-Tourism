@@ -12,10 +12,13 @@ const TOP_RATED = 4.5;
 export function DestinationCard({
   destination,
   note,
+  saved,
 }: {
   destination: RecommendedDestination;
   /** Extra line under the card — e.g. why it was recommended. */
   note?: string;
+  /** Whether the signed-in reader has already saved this destination. */
+  saved?: boolean;
 }) {
   const place = [destination.cities?.name, destination.provinces?.name]
     .filter(Boolean)
@@ -27,7 +30,11 @@ export function DestinationCard({
         data-rail-media
         className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-700"
       >
-        <FavoriteButton label={destination.name} />
+        <FavoriteButton
+          destinationId={destination.id}
+          label={destination.name}
+          initialSaved={saved}
+        />
         <Link href={`/destinations/${destination.id}`}>
           <Image
             src={coverImage(destination, 600, 450)}

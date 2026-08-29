@@ -5,6 +5,7 @@
  */
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
+  Accommodation,
   AccommodationTier,
   ChatMessage,
   ChatRoom,
@@ -26,6 +27,7 @@ import type {
   PersonalRecommendations,
   Profile,
   Review,
+  SavedDestination,
   SeasonalRecommendations,
   Tag,
   TrendingDestination,
@@ -52,12 +54,13 @@ export type DestinationQuery = {
   page?: number;
 };
 
-const EMPTY_PAGE: Paginated<Destination> = {
+/** Both catalogue routes answer 404 for "no matches", normalised to this. */
+const EMPTY_PAGE = {
   data: [],
   page: 1,
   total: 0,
   total_pages: 0,
-};
+} satisfies Paginated<never>;
 
 export async function searchDestinations(
   query: DestinationQuery = {},
@@ -203,6 +206,75 @@ export async function updatePreferences(
     method: "PUT",
     body: { tag_ids: tagIds },
   });
+  return data;
+}
+
+/* ------------------------------------------------------- accommodations --- */
+
+export type AccommodationQuery = {
+  city_id?: number;
+  province_id?: number;
+  tier?: AccommodationTier;
+  q?: string;
+  min_rating?: number;
+  page?: number;
+};
+
+export async function searchAccommodations(
+  query: AccommodationQuery = {},
+): Promise<Paginated<Accommodation>> {
+  // Like /api/destinations, this route answers 404 rather than an empty page.
+  const page = await apiFetch<Paginated<Accommodation>>(
+    "/api/accommodations",
+    { query, nullOn404: true },
+  );
+  return page ?? { ...EMPTY_PAGE, page: query.page ?? 1 };
+}
+
+/**
+ * Walks `/api/accommodations` to the end. The route sorts by rating only and
+ * cannot filter on price, capacity, or anything else `/hotels` offers, so the
+ * page has to hold the whole set to filter, sort, and count facets over it.
+ */
+export async function getAllAccommodations(
+  query: Omit<AccommodationQuery, "page"> = {},
+  maxPages = 40,
+): Promise<Accommodation[]> {
+  const first = await searchAccommodations({ ...query, page: 1 });
+  const pages = Math.min(first.total_pages, maxPages);
+
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(pages - 1, 0) }, (_, i) =>
+      searchAccommodations({ ...query, page: i + 2 }),
+    ),
+  );
+
+  return [first, ...rest].flatMap((page) => page.data);
+}
+
+/* --------------------------------------------------- saved destinations --- */
+
+/**
+ * Flips the save on or off in one call — the API decides which, so the
+ * response is the state to trust rather than the one the caller assumed.
+ */
+export async function toggleSavedDestination(
+  destinationId: string,
+  auth: Auth,
+): Promise<{ saved: boolean }> {
+  return apiFetch<{ saved: boolean }>(
+    `/api/destinations/${destinationId}/save`,
+    { ...auth, method: "POST" },
+  );
+}
+
+export async function listSavedDestinations(
+  auth: Auth,
+): Promise<SavedDestination[]> {
+  const { data } = await apiFetch<{ data: SavedDestination[] }>(
+    "/api/saved-destinations",
+    auth,
+  );
   return data;
 }
 
