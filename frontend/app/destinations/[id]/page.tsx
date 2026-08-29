@@ -18,7 +18,7 @@ import { Breadcrumb } from "@/components/destination/breadcrumb";
 import { DetailSkeleton } from "@/components/destination/detail-skeleton";
 import { Facts } from "@/components/destination/facts";
 import { Gallery } from "@/components/destination/gallery";
-import { LocationCard } from "@/components/destination/location-card";
+import { LocationCard } from "@/components/peta/location-card";
 import { MobileBar } from "@/components/destination/mobile-bar";
 import { NearbyEvents } from "@/components/destination/nearby-events";
 import { PlanCard } from "@/components/destination/plan-card";
@@ -252,7 +252,7 @@ async function Guide({ params }: PageProps) {
 
             <BestTime months={bestTime.months} seasons={bestTime.seasons} />
 
-            <LocationCard destination={destination} />
+            <LocationCard place={destination} placeLabel={place} />
 
             {destination.city_id !== null && destination.cities && (
               <Suspense fallback={null}>

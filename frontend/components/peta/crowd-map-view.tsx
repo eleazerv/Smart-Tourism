@@ -43,6 +43,7 @@ import {
   type RegionKey,
 } from "@/lib/heatmap-data";
 import type { CityStop } from "@/lib/trip-data";
+import { MAP_ATTRIBUTION, tileUrl } from "@/lib/map-tiles";
 
 /**
  * Camera target. `token` changes whenever the map should actually move, so a
@@ -66,14 +67,6 @@ const FIT_PADDING: L.PointTuple = [28, 28];
 
 /** A one-stop route has no extent; without this the fit slams to max zoom. */
 const FIT_MAX_ZOOM = 8;
-
-const TILES = {
-  light: "https://{s}.basemaps.cartocdn.com/light_all/{z}/{x}/{y}{r}.png",
-  dark: "https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png",
-};
-
-const ATTRIBUTION =
-  '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>';
 
 /** Brand deep pine and glow mint — the trip planner's own colour, kept clear
  *  of the density ramp so the two layers never read as one. */
@@ -176,8 +169,8 @@ export default function CrowdMapView({
     const map = mapRef.current;
     if (!map) return;
 
-    const layer = L.tileLayer(theme === "dark" ? TILES.dark : TILES.light, {
-      attribution: ATTRIBUTION,
+    const layer = L.tileLayer(tileUrl(theme), {
+      attribution: MAP_ATTRIBUTION,
     }).addTo(map);
 
     return () => {
@@ -324,5 +317,5 @@ export default function CrowdMapView({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [generation, camera.token]);
 
-  return <div ref={containerRef} className="crowd-map h-full w-full bg-muted" />;
+  return <div ref={containerRef} className="crowd-map map-surface h-full w-full bg-muted" />;
 }
