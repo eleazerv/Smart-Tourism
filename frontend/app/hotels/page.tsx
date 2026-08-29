@@ -25,6 +25,7 @@ import {
   nightCount,
   parseStaySearch,
   sortStays,
+  stayHref,
   tierFacets,
   toHref,
   withFilter,
@@ -187,7 +188,7 @@ async function Results({ searchParams }: PageProps) {
                   stay={stay}
                   nights={nights}
                   rooms={state.rooms}
-                  destinationsHref={destinationsHrefFor(stay)}
+                  href={stayHref(state, stay.id)}
                   priority={i < 2}
                 />
               ))}
@@ -201,24 +202,14 @@ async function Results({ searchParams }: PageProps) {
           />
 
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Tarif dan kapasitas berasal dari katalog akomodasi mitra. Tanggal
-            yang Anda pilih belum dicek terhadap ketersediaan kamar, jadi
-            anggaplah sebagai perkiraan biaya, bukan konfirmasi pemesanan.
+            Tarif dan kapasitas berasal dari katalog akomodasi mitra. Total di
+            daftar ini hanya perkalian tarif dengan lama menginap — sisa kamar
+            untuk tanggal Anda dicek di halaman detail masing-masing.
           </p>
         </div>
       </div>
     </>
   );
-}
-
-/**
- * Sends the reader to the destination catalogue for the city they are looking
- * at — this page answers "where to sleep", and that one answers "what is there
- * to do once you are there".
- */
-function destinationsHrefFor(stay: Accommodation): string {
-  const city = stay.cities?.name;
-  return city ? `/destinations?q=${encodeURIComponent(city)}` : "/destinations";
 }
 
 function EmptyStays({

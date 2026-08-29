@@ -164,6 +164,29 @@ export function toHref(state: StaySearchState, now = new Date()): string {
   return query ? `/hotels?${query}` : "/hotels";
 }
 
+/**
+ * Detail page for one property, carrying the dates and party size along so the
+ * availability check there answers for the stay the reader was planning. The
+ * facets and paging are deliberately left behind — they describe the list.
+ */
+export function stayHref(
+  state: StaySearchState,
+  id: string,
+  now = new Date(),
+): string {
+  const fallback = defaultDates(now);
+  const params = new URLSearchParams();
+
+  if (state.checkIn !== fallback.checkIn) params.set("checkin", state.checkIn);
+  if (state.checkOut !== fallback.checkOut)
+    params.set("checkout", state.checkOut);
+  if (state.guests !== 2) params.set("guests", String(state.guests));
+  if (state.rooms !== 1) params.set("rooms", String(state.rooms));
+
+  const query = params.toString();
+  return query ? `/hotels/${id}?${query}` : `/hotels/${id}`;
+}
+
 /** Href for a state with `patch` applied; anything but paging resets to page 1. */
 export function withFilter(
   state: StaySearchState,

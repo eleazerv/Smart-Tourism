@@ -276,6 +276,28 @@ export type City = {
  * Penginapan di sekitar sebuah destinasi. `distance_km` dihitung backend dari
  * koordinat destinasinya, dan hasilnya sudah terurut dari yang terdekat.
  */
+/** Room counts from `GET /api/accommodations/:id/availability`. */
+export type AccommodationAvailability = {
+  booked: number;
+  available: number;
+  room_count: number;
+};
+
+/**
+ * One row of `GET /api/accommodations/:id/reviews`. Unlike destination
+ * reviews these carry no like aggregate — there is no `accommodation_review_likes`
+ * table behind them.
+ */
+export type AccommodationReview = {
+  id: string;
+  accommodation_id: string;
+  rating: number;
+  comment: string | null;
+  photo_url: string | null;
+  created_at: string;
+  users: ReviewAuthor | null;
+};
+
 /**
  * Shape from `GET /api/accommodations` — the standalone catalogue behind
  * `/hotels`. Wider than `NearbyAccommodation`: the list controller also joins

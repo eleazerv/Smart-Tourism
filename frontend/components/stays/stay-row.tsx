@@ -16,14 +16,14 @@ export function StayRow({
   stay,
   nights,
   rooms,
-  /** Where the reader lands to keep planning; there is no checkout to send them to. */
-  destinationsHref,
+  /** Detail page for this property, carrying the dates the reader searched. */
+  href,
   priority,
 }: {
   stay: Accommodation;
   nights: number;
   rooms: number;
-  destinationsHref: string;
+  href: string;
   priority?: boolean;
 }) {
   const total = stay.price_per_night * nights * rooms;
@@ -38,14 +38,16 @@ export function StayRow({
   return (
     <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
-        <Image
-          src={coverImage(stay, 640, 480)}
-          alt=""
-          fill
-          priority={priority}
-          sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
-          className="object-cover"
-        />
+        <Link href={href} tabIndex={-1} aria-hidden="true" className="block h-full">
+          <Image
+            src={coverImage(stay, 640, 480)}
+            alt=""
+            fill
+            priority={priority}
+            sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
+            className="object-cover"
+          />
+        </Link>
         <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
           {tierLabel(stay.tier)}
         </span>
@@ -54,7 +56,9 @@ export function StayRow({
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row">
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-lg font-bold leading-snug tracking-tight">
-            {stay.name}
+            <Link href={href} className="underline-offset-4 hover:underline">
+              {stay.name}
+            </Link>
           </h3>
 
           {place && (
@@ -100,10 +104,10 @@ export function StayRow({
               {rooms > 1 && `, ${rooms} kamar`}
             </p>
             <Link
-              href={destinationsHref}
+              href={href}
               className="mt-2 inline-flex w-full items-center justify-center rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
             >
-              Lihat sekitar
+              Lihat detail
             </Link>
           </div>
         </div>

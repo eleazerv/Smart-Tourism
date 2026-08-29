@@ -6,6 +6,8 @@
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
   Accommodation,
+  AccommodationAvailability,
+  AccommodationReview,
   AccommodationTier,
   ChatMessage,
   ChatRoom,
@@ -250,6 +252,72 @@ export async function getAllAccommodations(
   );
 
   return [first, ...rest].flatMap((page) => page.data);
+}
+
+export async function getAccommodation(
+  id: string,
+): Promise<Accommodation | null> {
+  const result = await apiFetch<{ data: Accommodation }>(
+    `/api/accommodations/${id}`,
+    { nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+/**
+ * Rooms free across the requested nights. Both dates are required and
+ * `check_out` must be after `check_in`; the API answers 400 otherwise.
+ */
+export async function getAccommodationAvailability(
+  id: string,
+  range: { check_in: string; check_out: string },
+): Promise<AccommodationAvailability> {
+  const { data } = await apiFetch<{ data: AccommodationAvailability }>(
+    `/api/accommodations/${id}/availability`,
+    { query: range },
+  );
+  return data;
+}
+
+export async function getAccommodationReviews(
+  id: string,
+  options: { sort?: "recent" | "rating" } & Auth = {},
+): Promise<AccommodationReview[]> {
+  const { sort = "recent", ...auth } = options;
+  const { data } = await apiFetch<{ data: AccommodationReview[] }>(
+    `/api/accommodations/${id}/reviews`,
+    { query: { sort }, ...auth },
+  );
+  return data;
+}
+
+export async function createAccommodationReview(
+  id: string,
+  input: { rating: number; comment?: string; photo?: File },
+  auth: Auth,
+): Promise<AccommodationReview> {
+  // The route runs through multer, so the body must be multipart even when
+  // there is no photo attached.
+  const form = new FormData();
+  form.set("rating", String(input.rating));
+  if (input.comment) form.set("comment", input.comment);
+  if (input.photo) form.set("photo", input.photo);
+
+  const { data } = await apiFetch<{ data: AccommodationReview }>(
+    `/api/accommodations/${id}/reviews`,
+    { ...auth, method: "POST", body: form },
+  );
+  return data;
+}
+
+export async function deleteAccommodationReview(
+  reviewId: string,
+  auth: Auth,
+) {
+  return apiFetch<{ deleted: boolean; id: string }>(
+    `/api/accommodations/reviews/${reviewId}`,
+    { ...auth, method: "DELETE" },
+  );
 }
 
 /* --------------------------------------------------- saved destinations --- */
