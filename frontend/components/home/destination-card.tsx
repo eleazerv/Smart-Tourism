@@ -38,7 +38,7 @@ export function DestinationCard({
           />
         </Link>
         {(destination.avg_rating ?? 0) >= TOP_RATED && (
-          <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-100 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-brand-900">
+          <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-700 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
             <Award className="h-3 w-3" />
             Rating tertinggi
           </span>

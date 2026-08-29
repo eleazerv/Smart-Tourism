@@ -39,12 +39,7 @@ export function PlannerPromo() {
 
         <div className="relative grid gap-10 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center">
           <div>
-            <p className="inline-flex items-center gap-1.5 rounded-full bg-white/10 px-3 py-1 text-xs font-medium text-brand-100 ring-1 ring-inset ring-white/15">
-              <Sparkles className="h-3.5 w-3.5" />
-              Baru
-            </p>
-
-            <h2 className="mt-4 max-w-xl font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
+            <h2 className="max-w-xl font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
               Bingung mau ke mana? Ceritakan saja, biar disusunkan.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">

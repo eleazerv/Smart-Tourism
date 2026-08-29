@@ -31,7 +31,7 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Rating } from "@/components/home/rating";
-import { initialsOf } from "@/components/account/initials";
+import { Avatar } from "@/components/account/avatar";
 import { coverImage } from "@/lib/home-data";
 import { MONTHS, MONTHS_SHORT, relativeDate } from "@/lib/destination-data";
 import { cn } from "@/lib/utils";
@@ -427,22 +427,12 @@ function ReviewRow({ review }: { review: Review }) {
 
   return (
     <li className="flex gap-2.5">
-      <span
-        aria-hidden="true"
-        className="grid h-8 w-8 shrink-0 place-items-center overflow-hidden rounded-full bg-brand-700 text-[11px] font-semibold text-white dark:bg-brand-100 dark:text-brand-900"
-      >
-        {review.users?.avatar_url ? (
-          <Image
-            src={review.users.avatar_url}
-            alt=""
-            width={32}
-            height={32}
-            className="h-8 w-8 object-cover"
-          />
-        ) : (
-          initialsOf(author)
-        )}
-      </span>
+      <Avatar
+        name={author}
+        src={review.users?.avatar_url}
+        pixels={32}
+        className="h-8 w-8 text-[11px]"
+      />
 
       <div className="min-w-0 flex-1">
         <div className="flex items-center gap-2">

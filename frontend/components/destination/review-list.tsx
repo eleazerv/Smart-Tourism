@@ -6,7 +6,7 @@ import { Heart, Loader2, Trash2 } from "lucide-react";
 import type { Review } from "@/lib/api";
 import { likeReview } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
-import { initialsOf } from "@/components/account/initials";
+import { Avatar } from "@/components/account/avatar";
 import { Rating } from "@/components/home/rating";
 import { relativeDate } from "@/lib/destination-data";
 import { cn } from "@/lib/utils";
@@ -125,22 +125,12 @@ function ReviewCard({
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-start gap-3">
-        {review.users?.avatar_url ? (
-          <Image
-            src={review.users.avatar_url}
-            alt=""
-            width={40}
-            height={40}
-            className="h-10 w-10 shrink-0 rounded-full object-cover"
-          />
-        ) : (
-          <span
-            aria-hidden="true"
-            className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-700 text-sm font-bold text-white dark:bg-brand-100 dark:text-brand-900"
-          >
-            {initialsOf(name)}
-          </span>
-        )}
+        <Avatar
+          name={name}
+          src={review.users?.avatar_url}
+          pixels={40}
+          className="h-10 w-10 text-sm"
+        />
 
         <div className="min-w-0 flex-1">
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">

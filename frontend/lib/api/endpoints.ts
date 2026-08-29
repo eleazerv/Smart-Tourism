@@ -220,6 +220,23 @@ export async function getReviews(
   return data;
 }
 
+/**
+ * Review totals for a page of cards, keyed by destination id. The catalogue
+ * listing carries `avg_rating` but no count, and asking per destination would
+ * be one request per card.
+ */
+export async function getReviewCounts(
+  destinationIds: string[],
+  options: ApiFetchOptions = {},
+): Promise<Record<string, number>> {
+  if (destinationIds.length === 0) return {};
+  const { data } = await apiFetch<{ data: Record<string, number> }>(
+    "/api/destinations/review-counts",
+    { query: { ids: destinationIds.join(",") }, ...options },
+  );
+  return data;
+}
+
 export async function createReview(
   destinationId: string,
   input: { rating: number; comment?: string; photo?: File },

@@ -1,6 +1,5 @@
-import Image from "next/image";
 import type { Profile } from "@/lib/api";
-import { initialsOf } from "@/components/account/initials";
+import { Avatar } from "@/components/account/avatar";
 import { NameEditor } from "@/components/account/name-editor";
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -34,22 +33,12 @@ export function ProfileCard({
     <div className="space-y-3">
       <div className="overflow-hidden rounded-2xl border border-border bg-card">
         <div className="flex items-center gap-4 p-5">
-          {profile?.avatar_url ? (
-            <Image
-              src={profile.avatar_url}
-              alt=""
-              width={56}
-              height={56}
-              className="h-14 w-14 shrink-0 rounded-full object-cover"
-            />
-          ) : (
-            <span
-              aria-hidden="true"
-              className="grid h-14 w-14 shrink-0 place-items-center rounded-full bg-brand-700 font-display text-lg font-bold text-white dark:bg-brand-100 dark:text-brand-900"
-            >
-              {initialsOf(name)}
-            </span>
-          )}
+          <Avatar
+            name={name}
+            src={profile?.avatar_url}
+            pixels={56}
+            className="h-14 w-14 font-display text-lg"
+          />
           <div className="min-w-0 flex-1">
             <NameEditor name={name} />
             <p className="truncate text-sm text-muted-foreground">{email}</p>
