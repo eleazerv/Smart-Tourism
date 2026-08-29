@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import {
   ApiError,
   cancelFlightBooking,
+  claimFlightSeat,
   createFlightBooking,
   payFlightBooking,
 } from "@/lib/api";
@@ -19,7 +20,13 @@ import { getAccessToken } from "@/lib/api/session";
  */
 
 export type BookingResult =
-  | { ok: true; bookingId: string; invoiceUrl: string }
+  | {
+      ok: true;
+      bookingId: string;
+      invoiceUrl: string;
+      /** Set when the booking succeeded but a chosen seat could not be held. */
+      seatWarning?: string;
+    }
   | { ok: false; message: string; bookingId?: string };
 
 const SIGNED_OUT = "Sesi Anda sudah berakhir. Silakan masuk lagi.";
@@ -43,6 +50,10 @@ function messageFor(error: unknown, fallback: string): string {
       return "Pesanan ini sudah tidak bisa dibayar. Silakan pesan ulang.";
     case "booking_not_cancellable":
       return "Pesanan ini sudah ditutup, jadi tidak ada yang perlu dibatalkan.";
+    case "seat_taken":
+      return "Kursi itu baru saja diambil penumpang lain.";
+    case "invalid_passenger_names":
+      return "Nama penumpang harus diisi, maksimal 10 orang.";
     case "payment_gateway_error":
       return "Gagal membuat tagihan pembayaran. Coba lagi sebentar lagi.";
     case "network_error":
@@ -53,20 +64,71 @@ function messageFor(error: unknown, fallback: string): string {
 }
 
 /**
- * Books one seat on one flight and opens its payment invoice. One booking
- * covers one passenger, which is what `create_flight_booking` accepts.
+ * Assigns the seats the reader picked to the tickets that were just issued.
+ *
+ * Tickets are matched to passengers by name rather than by array position:
+ * the booking response is a Supabase join, whose row order is not promised to
+ * follow `passenger_names`. Each ticket is consumed once, so repeated names
+ * still land one seat each, in order.
+ *
+ * A seat that cannot be claimed is reported, never fatal — the booking and its
+ * held seats already exist by this point, and losing them over a seat number
+ * would be far worse than flying unseated.
  */
-export async function bookAndPay(flightId: string): Promise<BookingResult> {
+async function assignSeats(
+  bookingId: string,
+  tickets: { id: string; full_name: string }[],
+  passengers: { name: string; seat: string | null }[],
+  token: string,
+): Promise<string[]> {
+  const unclaimed = [...tickets];
+  const failed: string[] = [];
+
+  for (const passenger of passengers) {
+    if (!passenger.seat) continue;
+
+    const index = unclaimed.findIndex(
+      (ticket) => ticket.full_name.trim() === passenger.name.trim(),
+    );
+    const ticket = index >= 0 ? unclaimed.splice(index, 1)[0] : unclaimed.shift();
+    if (!ticket) break;
+
+    try {
+      await claimFlightSeat(bookingId, ticket.id, passenger.seat, { token });
+    } catch {
+      failed.push(passenger.seat);
+    }
+  }
+
+  return failed;
+}
+
+/**
+ * Books one seat per passenger on one flight, holds the chosen seats, then
+ * opens the payment invoice.
+ */
+export async function bookAndPay(
+  flightId: string,
+  passengers: { name: string; seat: string | null }[],
+): Promise<BookingResult> {
   const token = await getAccessToken();
   if (!token) return { ok: false, message: SIGNED_OUT };
 
+  const names = passengers.map((p) => p.name.trim()).filter(Boolean);
+  if (names.length === 0 || names.length !== passengers.length) {
+    return { ok: false, message: "Nama setiap penumpang harus diisi." };
+  }
+
   let bookingId: string;
+  let tickets: { id: string; full_name: string }[];
   try {
     const booking = await createFlightBooking(
       [{ flight_option_id: flightId, flight_type: "outbound" }],
+      names,
       { token },
     );
     bookingId = booking.id;
+    tickets = booking.flight_tickets ?? [];
   } catch (error) {
     return {
       ok: false,
@@ -74,13 +136,23 @@ export async function bookAndPay(flightId: string): Promise<BookingResult> {
     };
   }
 
-  // The seat is already held from here on, so a payment failure keeps the
+  // The seats are already held from here on, so a payment failure keeps the
   // booking id: the reader can retry payment from the order list.
   revalidatePath("/akun/pesanan");
 
+  const failedSeats = await assignSeats(bookingId, tickets, passengers, token);
+
   try {
     const payment = await payFlightBooking(bookingId, { token });
-    return { ok: true, bookingId, invoiceUrl: payment.invoice_url };
+    return {
+      ok: true,
+      bookingId,
+      invoiceUrl: payment.invoice_url,
+      seatWarning:
+        failedSeats.length > 0
+          ? `Kursi ${failedSeats.join(", ")} keburu diambil penumpang lain. Pesanan Anda tetap dibuat — nomor kursi bisa dipilih ulang dari halaman pesanan.`
+          : undefined,
+    };
   } catch (error) {
     return {
       ok: false,

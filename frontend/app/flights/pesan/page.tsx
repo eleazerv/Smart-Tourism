@@ -5,7 +5,7 @@ import { ArrowLeft, LogIn, Plane } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { Breadcrumb } from "@/components/destination/breadcrumb";
-import { BookButton } from "@/components/flights/book-button";
+import { BookingForm } from "@/components/flights/booking-form";
 import {
   airportByCityId,
   clockOf,
@@ -14,9 +14,8 @@ import {
   formatDuration,
   arrivalDayOffset,
 } from "@/lib/airports";
-import { getFlight, type FlightDetail } from "@/lib/api";
+import { getFlight, getProfile, getTakenSeats, type FlightDetail } from "@/lib/api";
 import { getAccessToken } from "@/lib/api/session";
-import { formatIDR } from "@/lib/seeded-random";
 import { formatDateLabel, type RawSearchParams } from "@/lib/flights-search";
 
 type PageProps = { searchParams: Promise<RawSearchParams> };
@@ -62,6 +61,17 @@ async function Booking({ searchParams }: PageProps) {
 
   const token = await getAccessToken();
 
+  // The seat map and the reader's own name are both nice-to-have: neither is
+  // worth failing the booking page over, so both degrade quietly.
+  const [takenSeats, profileName] = await Promise.all([
+    getTakenSeats(flight.id).catch(() => [] as string[]),
+    token
+      ? getProfile({ token })
+          .then((profile) => profile?.full_name?.trim() ?? "")
+          .catch(() => "")
+      : Promise.resolve(""),
+  ]);
+
   const from = flight.origin ? airportByCityId(flight.origin.id) : null;
   const to = flight.destination ? airportByCityId(flight.destination.id) : null;
   const fromLabel = from?.code ?? flight.origin?.name ?? "Asal";
@@ -93,7 +103,7 @@ async function Booking({ searchParams }: PageProps) {
           <p className="mt-1 text-sm text-muted-foreground">
             {flight.origin?.name ?? fromLabel} ke{" "}
             {flight.destination?.name ?? toLabel} &middot;{" "}
-            {formatDateLabel(date)} &middot; 1 penumpang
+            {formatDateLabel(date)}
           </p>
         </div>
         <Link
@@ -113,77 +123,59 @@ async function Booking({ searchParams }: PageProps) {
             toLabel={toLabel}
           />
 
-          <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
-            <h2 className="font-display text-base font-bold tracking-tight">
-              Penumpang
-            </h2>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              Satu pemesanan berlaku untuk satu penumpang dan diterbitkan atas
-              nama akun yang sedang masuk. E-tiket dan status pembayaran dapat
-              dilihat di{" "}
-              <Link
-                href="/akun/pesanan"
-                className="font-medium text-brand-700 underline underline-offset-2 dark:text-brand-100"
-              >
-                Pesanan saya
-              </Link>
-              .
-            </p>
-          </section>
+          {token ? (
+            <BookingForm
+              flight={{
+                id: flight.id,
+                airline: flight.airline,
+                flightNumber: flight.flight_number,
+                departureTime: flight.departure_time,
+                arrivalTime: flight.arrival_time,
+                durationMin: durationMinutes(flight),
+                fromLabel,
+                toLabel,
+                dateLabel: formatDateLabel(date),
+                price: flight.price,
+                seatsLeft: flight.available_seats,
+              }}
+              takenSeats={takenSeats}
+              defaultName={profileName}
+            />
+          ) : (
+            <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
+              <h2 className="font-display text-base font-bold tracking-tight">
+                Penumpang
+              </h2>
+              <p className="mt-1.5 text-sm text-muted-foreground">
+                Masuk dulu untuk mengisi nama penumpang dan memilih kursi.
+              </p>
+              <div className="mt-4">
+                <SignInFirst nextHref={bookHref} />
+              </div>
+            </section>
+          )}
         </div>
 
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <h2 className="font-display text-base font-bold tracking-tight">
-              Rincian harga
-            </h2>
-
-            <dl className="mt-3 space-y-2 text-sm">
-              <div className="flex justify-between gap-3">
-                <dt className="text-muted-foreground">Tarif (1 penumpang)</dt>
-                <dd className="tabular-nums">{formatIDR(flight.price)}</dd>
-              </div>
-              <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5 text-base font-bold">
-                <dt>Total</dt>
-                <dd className="tabular-nums">{formatIDR(flight.price)}</dd>
-              </div>
-            </dl>
-
-            <div className="mt-4">
-              {token ? (
-                <BookButton
-                  flight={{
-                    id: flight.id,
-                    airline: flight.airline,
-                    flightNumber: flight.flight_number,
-                    departureTime: flight.departure_time,
-                    arrivalTime: flight.arrival_time,
-                    durationMin: durationMinutes(flight),
-                    fromLabel,
-                    toLabel,
-                    dateLabel: formatDateLabel(date),
-                    price: flight.price,
-                    seatsLeft: flight.available_seats,
-                  }}
-                />
-              ) : (
-                <SignInFirst nextHref={bookHref} />
-              )}
-            </div>
-          </div>
-
-          <div className="mt-4 rounded-2xl border border-border bg-card p-4 shadow-card">
-            <h2 className="font-display text-base font-bold tracking-tight">
               Ketentuan
             </h2>
             <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
               <li>Sisa kursi saat ini: {flight.available_seats}.</li>
+              <li>Satu tiket diterbitkan untuk setiap nama penumpang.</li>
               <li>Pembayaran diproses oleh Xendit di halaman terpisah.</li>
               <li>
                 Pesanan yang belum dibayar dapat dibatalkan dari halaman
                 pesanan.
               </li>
             </ul>
+            <Link
+              href="/akun/pesanan"
+              className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-100"
+            >
+              Lihat Pesanan saya
+            </Link>
           </div>
         </aside>
       </div>

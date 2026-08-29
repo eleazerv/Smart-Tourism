@@ -32,6 +32,7 @@ import { Breadcrumb } from "@/components/destination/breadcrumb";
 import { ReviewForm } from "@/components/destination/review-form";
 import { ReviewSummary } from "@/components/destination/review-summary";
 import { AvailabilityCard } from "@/components/stays/availability-card";
+import { NearbyDestinations } from "@/components/stays/nearby-destinations";
 import { StayReviewList } from "@/components/stays/stay-review-list";
 import { removeStayReview, submitStayReview } from "@/app/hotels/[id]/actions";
 
@@ -222,6 +223,10 @@ async function StayDetail({ params, searchParams }: PageProps) {
           </p>
         </aside>
       </div>
+
+      <Suspense fallback={null}>
+        <NearbyDestinations stay={stay} />
+      </Suspense>
     </div>
   );
 }

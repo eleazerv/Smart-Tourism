@@ -242,10 +242,24 @@ export type FlightBookingSummary = {
   paid_at: string | null;
 };
 
+/**
+ * One ticket row as the booking response carries it — one per passenger per
+ * leg. `id` is what `POST /:id/tickets/:ticketId/seat` needs, and it survives
+ * only on this raw array: the `tickets` array the controller also returns is
+ * shaped for display and drops the id.
+ */
+export type FlightTicketRef = {
+  id: string;
+  ticket_code: string;
+  full_name: string;
+  booking_item_id: string;
+};
+
 export type FlightBooking = FlightBookingSummary & {
   payment_method: string | null;
   invoice_url: string | null;
   flight_booking_items: FlightBookingItem[];
+  flight_tickets: FlightTicketRef[];
 };
 
 /** What `POST /:id/pay` hands back — `invoice_url` is hosted by Xendit. */

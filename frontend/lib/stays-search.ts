@@ -10,6 +10,7 @@
  * one that is absent.
  */
 import type { Accommodation, AccommodationTier } from "@/lib/api";
+import { nightsBetween } from "@/lib/calendar";
 
 export const PAGE_SIZE = 10;
 
@@ -217,12 +218,9 @@ export function activeFilterCount(state: StaySearchState): number {
   return state.tiers.length + (state.maxPrice !== null ? 1 : 0);
 }
 
-/** Whole nights between the two dates; at least one. */
+/** Whole nights between the searched dates; at least one. */
 export function nightCount(state: StaySearchState): number {
-  const from = new Date(`${state.checkIn}T00:00:00Z`).getTime();
-  const to = new Date(`${state.checkOut}T00:00:00Z`).getTime();
-  const nights = Math.round((to - from) / 86_400_000);
-  return Number.isFinite(nights) && nights > 0 ? nights : 1;
+  return nightsBetween(state.checkIn, state.checkOut);
 }
 
 /* ------------------------------------------------------- result shaping --- */

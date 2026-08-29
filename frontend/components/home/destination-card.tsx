@@ -25,7 +25,9 @@ export function DestinationCard({
     .join(", ");
 
   return (
-    <article className="w-[calc(75%-0.5rem)] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
+    // `relative` scopes the stretched link below to this card, and `group`
+    // lets the title underline follow a hover anywhere on it.
+    <article className="group relative w-[calc(75%-0.5rem)] shrink-0 snap-start sm:w-[calc(50%-0.5rem)] lg:w-[calc(25%-0.75rem)]">
       <div
         data-rail-media
         className="relative aspect-[4/3] overflow-hidden rounded-2xl bg-brand-700"
@@ -34,16 +36,15 @@ export function DestinationCard({
           destinationId={destination.id}
           label={destination.name}
           initialSaved={saved}
+          className="z-10"
         />
-        <Link href={`/destinations/${destination.id}`}>
-          <Image
-            src={coverImage(destination, 600, 450)}
-            alt={destination.name}
-            fill
-            sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 75vw"
-            className="object-cover transition duration-500 hover:scale-105"
-          />
-        </Link>
+        <Image
+          src={coverImage(destination, 600, 450)}
+          alt={destination.name}
+          fill
+          sizes="(min-width: 1024px) 25vw, (min-width: 640px) 50vw, 75vw"
+          className="object-cover transition duration-500 group-hover:scale-105"
+        />
         {(destination.avg_rating ?? 0) >= TOP_RATED && (
           <span className="absolute bottom-2 left-2 inline-flex items-center gap-1 rounded-full bg-brand-700 px-2 py-1 text-[10px] font-bold uppercase tracking-wide text-white">
             <Award className="h-3 w-3" />
@@ -56,7 +57,7 @@ export function DestinationCard({
         <h3 className="truncate text-sm font-bold">
           <Link
             href={`/destinations/${destination.id}`}
-            className="underline-offset-2 hover:underline"
+            className="underline-offset-2 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
           >
             {destination.name}
           </Link>

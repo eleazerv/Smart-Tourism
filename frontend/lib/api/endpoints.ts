@@ -464,13 +464,47 @@ export type FlightBookingItemInput = {
  * One booking covers one passenger and one or two flights. Seats are held the
  * moment this succeeds, before any payment — see the route's Swagger note.
  */
+/**
+ * One ticket is issued per name per leg, so `passengerNames` also decides how
+ * many seats come out of inventory. The API requires 1–10 non-empty names.
+ */
 export async function createFlightBooking(
   items: FlightBookingItemInput[],
+  passengerNames: string[],
   auth: Auth,
 ): Promise<FlightBooking> {
   const { data } = await apiFetch<{ data: FlightBooking }>(
     "/api/flight-bookings",
-    { ...auth, method: "POST", body: { items } },
+    {
+      ...auth,
+      method: "POST",
+      body: { items, passenger_names: passengerNames },
+    },
+  );
+  return data;
+}
+
+/** Seat numbers already claimed on a flight, for greying out the seat map. */
+export async function getTakenSeats(flightId: string): Promise<string[]> {
+  const { taken_seats } = await apiFetch<{ taken_seats: string[] }>(
+    `/api/flights/${flightId}/seats`,
+  );
+  return taken_seats;
+}
+
+/**
+ * Claims one seat for one ticket. Only works while the booking is still
+ * active, so it has to run between creating the booking and paying for it.
+ */
+export async function claimFlightSeat(
+  bookingId: string,
+  ticketId: string,
+  seatNumber: string,
+  auth: Auth,
+): Promise<{ seat_number: string }> {
+  const { data } = await apiFetch<{ data: { seat_number: string } }>(
+    `/api/flight-bookings/${bookingId}/tickets/${ticketId}/seat`,
+    { ...auth, method: "POST", body: { seat_number: seatNumber } },
   );
   return data;
 }
