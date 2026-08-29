@@ -88,6 +88,36 @@
   .no-scrollbar::-webkit-scrollbar {
     display: none;
   }
+
+  /* Sticky rails that can overflow: the scrollbar stays out of sight until
+     the pointer is actually in the column, so the rail reads as plain page
+     content the rest of the time. Both syntaxes are declared — Firefox and
+     Chrome take the standard properties, Safari and older Chrome fall back
+     to the pseudo-elements. */
+  .scrollbar-quiet {
+    scrollbar-width: thin;
+    scrollbar-color: transparent transparent;
+  }
+  .scrollbar-quiet:hover,
+  .scrollbar-quiet:focus-within {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.4) transparent;
+  }
+  .scrollbar-quiet::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  .scrollbar-quiet::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  .scrollbar-quiet::-webkit-scrollbar-thumb {
+    background-color: transparent;
+    border-radius: 9999px;
+    transition: background-color 200ms ease;
+  }
+  .scrollbar-quiet:hover::-webkit-scrollbar-thumb,
+  .scrollbar-quiet:focus-within::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
 }
 
 /* Leaflet chrome for the crowd map on the landing page. Scoped to

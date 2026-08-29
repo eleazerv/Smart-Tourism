@@ -4,11 +4,10 @@ import Link from "next/link";
 import { cacheLife } from "next/cache";
 import { Map } from "lucide-react";
 import {
-  getHeatmap,
+  getReviewCounts,
   getTags,
   searchDestinations,
   type Destination,
-  type HeatmapEntry,
   type Tag,
 } from "@/lib/api";
 import { SiteFooter } from "@/components/home/site-footer";
@@ -25,7 +24,6 @@ import { EmptyResults } from "@/components/destinations/empty-results";
 import { FilterGroups } from "@/components/destinations/filter-groups";
 import { Pagination } from "@/components/catalogue/pagination";
 import { ResultRow, ResultTile } from "@/components/destinations/result-card";
-import { crowdLevel } from "@/lib/destination-data";
 import {
   PAGE_SIZE,
   applyProvince,
@@ -52,14 +50,14 @@ async function loadTags(): Promise<Tag[]> {
   return getTags();
 }
 
-async function loadHeatmap(): Promise<HeatmapEntry[]> {
-  "use cache";
-  cacheLife("hours");
+/** Review totals for the cards on screen; `{}` when the call fails. */
+async function loadReviewCounts(ids: string[]): Promise<Record<string, number>> {
   try {
-    return await getHeatmap();
+    return await getReviewCounts(ids);
   } catch {
-    // Crowding is one column of the card, not the page — degrade to "no data".
-    return [];
+    // The count is a parenthetical next to the stars, not the page — drop it
+    // rather than fail the whole listing over it.
+    return {};
   }
 }
 
@@ -140,7 +138,7 @@ function heroCopy(state: SearchState, tags: Tag[]): HeroCopy {
   return {
     title: "Jelajahi destinasi Indonesia",
     subtitle:
-      "Dari pantai sampai pusat kota tua. Saring berdasarkan jenis, provinsi, dan rating pengunjung, lalu buka panduannya untuk melihat waktu terbaik berkunjung.",
+      "Dari pantai sampai pusat kota tua. Saring berdasarkan jenis, provinsi, dan rating pengunjung, lalu buka halamannya untuk melihat waktu terbaik berkunjung.",
     seed: "nusantara-archipelago",
     crumbs: [{ label: "Beranda", href: "/" }, { label: "Destinasi" }],
   };
@@ -205,7 +203,6 @@ async function Catalogue({ searchParams }: PageProps) {
     );
   }
 
-  const heatmap = await loadHeatmap();
   const copy = heroCopy(state, tags);
 
   // Province is filtered here rather than through the API so the facet counts
@@ -223,6 +220,7 @@ async function Catalogue({ searchParams }: PageProps) {
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
   );
+  const reviewCounts = await loadReviewCounts(results.map((d) => d.id));
 
   return (
     <>
@@ -236,7 +234,7 @@ async function Catalogue({ searchParams }: PageProps) {
       <TagChips state={state} tags={tags} />
 
       <div className="container-page grid items-start gap-8 py-8 lg:grid-cols-[16rem_1fr]">
-        <aside className="hidden lg:sticky lg:top-32 lg:block">
+        <aside className="hidden lg:sticky lg:top-32 lg:block lg:max-h-[calc(100vh-9rem)] lg:overflow-y-auto lg:overscroll-contain lg:pb-6 lg:pr-1 scrollbar-quiet">
           <FilterGroups state={state} tags={tags} provinces={provinces} />
           <MapPromo />
         </aside>
@@ -259,7 +257,7 @@ async function Catalogue({ searchParams }: PageProps) {
                   <ResultTile
                     key={destination.id}
                     destination={destination}
-                    crowd={crowdLevel(destination.provinces?.code, heatmap)}
+                    reviews={reviewCounts[destination.id]}
                     priority={i < 3}
                   />
                 ))}
@@ -270,7 +268,7 @@ async function Catalogue({ searchParams }: PageProps) {
                   <ResultRow
                     key={destination.id}
                     destination={destination}
-                    crowd={crowdLevel(destination.provinces?.code, heatmap)}
+                    reviews={reviewCounts[destination.id]}
                     priority={i < 2}
                   />
                 ))}
@@ -283,12 +281,6 @@ async function Catalogue({ searchParams }: PageProps) {
             totalPages={totalPages}
             hrefFor={(next) => withFilter(state, { page: next })}
           />
-
-          <p className="mt-6 text-center text-xs leading-relaxed text-muted-foreground">
-            Tingkat kepadatan pada setiap kartu berasal dari statistik kunjungan
-            provinsi periode terakhir, bukan hitungan pengunjung harian
-            destinasi tersebut.
-          </p>
         </div>
       </div>
     </>

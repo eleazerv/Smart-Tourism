@@ -24,7 +24,7 @@ export function PromoBanner() {
           <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
             Temukan hal yang dapat dilakukan untuk semua yang Anda inginkan
           </h2>
-          <p className="text-sm text-white sm:text-base dark:text-white/80">
+          <p className="text-sm text-white/80 sm:text-base dark:text-white/80">
             Telusuri lebih dari 40.000 pengalaman di seluruh Nusantara dan pesan
             melalui kami.
           </p>

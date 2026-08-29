@@ -6,7 +6,7 @@ import { optionalAuth } from "../middleware/AuthMiddleware.js";
 import { authMiddleware } from "../middleware/AuthMiddleware.js";
 import { moderateLimiter } from "../middleware/RateLimit.js";
 import { handleReviewPhotoUpload } from "../middleware/HandleReviewPhoto.js";
-import { getReviews, createReview, deleteReview, likeReview } from "../controllers/reviews.Controller.js";
+import { getReviews, getReviewCounts, createReview, deleteReview, likeReview } from "../controllers/reviews.Controller.js";
 import { getDestinationPricing } from "../controllers/budget.Controller.js";
 import { getDestinationAccommodations } from "../controllers/accommodations.Controller.js";
 import { toggleSaveDestination } from "../controllers/savedDestination.Controller.js";
@@ -60,6 +60,26 @@ router.get("/", globalLimiter,optionalAuth, getDestinations);
  *         description: period tidak valid
  */
 router.get("/trending", globalLimiter, optionalAuth, getTrendingDestinations);
+
+/**
+ * @swagger
+ * /api/destinations/review-counts:
+ *   get:
+ *     summary: Jumlah ulasan untuk beberapa destinasi sekaligus
+ *     tags: [Destinations]
+ *     parameters:
+ *       - in: query
+ *         name: ids
+ *         required: true
+ *         description: Daftar id destinasi dipisah koma, maksimal 60
+ *         schema: { type: string }
+ *     responses:
+ *       200:
+ *         description: "data: objek id destinasi -> jumlah ulasan (0 kalau belum ada)"
+ *       400:
+ *         description: ids kosong atau terlalu banyak
+ */
+router.get("/review-counts", globalLimiter, getReviewCounts);
 
 /**
  * @swagger

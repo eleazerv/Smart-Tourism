@@ -190,7 +190,16 @@ export type FlightCalendarDay = {
 
 /* ------------------------------------------------------------ bookings --- */
 
-export type PaymentStatus = "pending" | "paid" | "expired" | "cancelled";
+/**
+ * `failed` is what the API writes once an invoice lapses — either from
+ * Xendit's EXPIRED callback or from the backend's own deadline sweep.
+ */
+export type PaymentStatus =
+  | "pending"
+  | "paid"
+  | "failed"
+  | "expired"
+  | "cancelled";
 
 export type FlightBookingItem = {
   id: string;
@@ -213,6 +222,8 @@ export type FlightBookingSummary = {
   booking_code: string;
   total_price: number;
   payment_status: PaymentStatus;
+  /** Payment deadline. Read as UTC — Postgres returns it without a zone. */
+  invoice_expires_at: string | null;
   created_at: string;
   paid_at: string | null;
 };
@@ -220,7 +231,6 @@ export type FlightBookingSummary = {
 export type FlightBooking = FlightBookingSummary & {
   payment_method: string | null;
   invoice_url: string | null;
-  invoice_expires_at: string | null;
   flight_booking_items: FlightBookingItem[];
 };
 
@@ -233,4 +243,205 @@ export type PaymentIntent = {
   expires_at: string;
   /** True when an unexpired invoice already existed and was handed back. */
   reused: boolean;
+};
+
+/* ------------------------------------------------- AI trip planner --- */
+
+/** Kelas penginapan di katalog. */
+export type AccommodationTier = "budget" | "mid" | "luxury";
+
+/** Kota yang punya penerbangan di katalog, untuk dropdown rute. */
+export type City = {
+  id: number;
+  name: string;
+  is_major_hub: boolean;
+  provinces: ProvinceRef | null;
+};
+
+/**
+ * Penginapan di sekitar sebuah destinasi. `distance_km` dihitung backend dari
+ * koordinat destinasinya, dan hasilnya sudah terurut dari yang terdekat.
+ */
+export type NearbyAccommodation = {
+  id: string;
+  name: string;
+  tier: AccommodationTier;
+  price_per_night: number;
+  max_guests: number | null;
+  partner_name: string | null;
+  external_url: string | null;
+  cover_image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Null kalau salah satu titiknya tidak punya koordinat. */
+  distance_km: number | null;
+};
+
+
+/**
+ * Kartu pilihan yang menempel di bawah satu balasan AI.
+ *
+ * Backend hanya menyertakan opsi yang benar-benar disebut model di teks
+ * jawabannya (`buildInteractiveBlocks` di `Chat.Controller.js`), jadi isi kartu
+ * dan isi kalimat tidak pernah berbeda. Semua tetap sekadar tawaran: yang
+ * memindahkannya ke rencana adalah klik pengguna, bukan AI.
+ */
+export type DestinationOption = {
+  id: string;
+  name: string;
+  city: string | null;
+  province: string | null;
+  category: string | null;
+  /** 0 atau null berarti belum pernah direview, bukan dinilai jelek. */
+  rating: number | null;
+  latitude: number | null;
+  longitude: number | null;
+  /** Satu kalimat kenapa tempat ini cocok, dari katalog. */
+  note?: string | null;
+  /** Ditempelkan backend sesudah model menjawab, jadi bisa null. */
+  cover_image_url?: string | null;
+};
+
+export type AccommodationOption = {
+  id: string;
+  name: string;
+  tier: AccommodationTier;
+  price_per_night: number;
+  max_guests: number | null;
+  /** Jarak ke destinasi yang ditanyakan, sudah dihitung backend. */
+  distance_km: number | null;
+  latitude: number | null;
+  longitude: number | null;
+};
+
+export type PlannerFlightOption = {
+  id: string;
+  airline: string;
+  flight_number: string;
+  departure_time: string;
+  arrival_time: string;
+  price: number;
+  available_seats: number;
+};
+
+export type InteractiveBlock =
+  | { type: "destination"; options: DestinationOption[] }
+  | {
+      type: "accommodation";
+      /** Destinasi yang penginapan ini menempel padanya. */
+      destination_id: string;
+      near: string;
+      options: AccommodationOption[];
+    }
+  | {
+      type: "flight";
+      date: string;
+      origin_city_id: number;
+      destination_city_id: number;
+      options: PlannerFlightOption[];
+    };
+
+export type ChatRoom = {
+  id: string;
+  title: string;
+  trip_id: string;
+  created_at: string;
+  updated_at?: string;
+};
+
+export type ChatMessage = {
+  id: string;
+  role: "user" | "assistant";
+  content: string;
+  created_at: string;
+  tool_name: string | null;
+  /** Tidak ada saat model menjawab tanpa menawarkan apa pun. */
+  interactive?: InteractiveBlock[];
+  /** Nama tool katalog yang dipakai. Array kosong = jawaban tanpa data. */
+  tools_used?: string[];
+};
+
+export type TripItemStatus = "suggested" | "confirmed" | "booked" | "removed";
+
+export type TripItem = {
+  id: string;
+  sequence_order: number;
+  status: TripItemStatus;
+  notes: string | null;
+  check_in: string | null;
+  check_out: string | null;
+  guests: number;
+  /** `ai` untuk yang datang dari saran, `user` untuk yang dipilih sendiri. */
+  added_by: "user" | "ai";
+  destinations: {
+    id: string;
+    name: string;
+    category: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    cities: { id: number; name: string } | null;
+  } | null;
+  accommodations: {
+    id: string;
+    name: string;
+    tier: AccommodationTier;
+    price_per_night: number;
+    max_guests: number | null;
+    latitude: number | null;
+    longitude: number | null;
+  } | null;
+};
+
+export type TripFlight = {
+  id: string;
+  flight_type: "outbound" | "return";
+  /** Terisi begitu penerbangannya benar-benar dipesan; sesudah itu terkunci. */
+  booked_at: string | null;
+  flight_options: {
+    id: string;
+    airline: string;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    price: number;
+  } | null;
+};
+
+export type TripSummary = {
+  id: string;
+  name: string | null;
+  start_date: string | null;
+  end_date: string | null;
+  travelers: number;
+  status: string;
+  origin_city_id: number | null;
+  cities: { name: string } | null;
+};
+
+/** Bentuk rencana yang dikembalikan setiap endpoint `/api/trips/...`. */
+export type TripCanvas = {
+  trip: TripSummary | null;
+  items: TripItem[];
+  flights: TripFlight[];
+};
+
+export type ChatTurn = {
+  answer: string;
+  canvas: TripCanvas;
+  tools_used: string[];
+  interactive: InteractiveBlock[];
+};
+
+/**
+ * Checkout tidak all-or-nothing: kamar yang keburu penuh tidak membatalkan
+ * tiket yang sudah dapat, jadi kegagalan datang per baris di `errors`.
+ */
+export type CheckoutResult = {
+  flight_booking: { id: string; booking_code: string } | null;
+  accommodation_bookings: {
+    destination: string;
+    booking_code: string;
+    id?: string;
+  }[];
+  errors: { kind: string; message: string }[];
 };

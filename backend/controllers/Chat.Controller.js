@@ -90,6 +90,47 @@ function buildInteractiveBlocks(toolTrace, answer) {
   return blocks;
 }
 
+/**
+ * Menempelkan foto sampul ke kartu destinasi.
+ *
+ * Sengaja dilakukan SETELAH model selesai menjawab, bukan dengan menambah
+ * kolom cover_image_url di hasil tool. Alasannya dua: url gambar memakan
+ * banyak token di setiap putaran tool padahal model tidak pernah butuh
+ * melihatnya, dan model yang melihat url cenderung ikut menempelkannya ke
+ * teks jawaban. Jadi gambarnya diambil terpisah, tepat sebelum blok dikirim
+ * ke layar.
+ *
+ * Kegagalan di sini tidak fatal: kartunya tetap tampil, hanya tanpa foto.
+ */
+async function attachCoverImages(blocks) {
+  const ids = blocks
+    .filter((b) => b.type === 'destination')
+    .flatMap((b) => b.options.map((o) => o.id));
+
+  if (!ids.length) return blocks;
+
+  try {
+    const { data, error } = await supabase
+      .from('destinations')
+      .select('id, cover_image_url')
+      .in('id', [...new Set(ids)]);
+
+    if (error) throw error;
+
+    const coverById = new Map((data || []).map((d) => [d.id, d.cover_image_url]));
+    for (const block of blocks) {
+      if (block.type !== 'destination') continue;
+      for (const option of block.options) {
+        option.cover_image_url = coverById.get(option.id) ?? null;
+      }
+    }
+  } catch (err) {
+    console.error('[attachCoverImages] gagal memuat sampul destinasi', err);
+  }
+
+  return blocks;
+}
+
 async function loadCanvas(db, tripId) {
   const [tripRes, itemsRes, flightsRes] = await Promise.all([
     db.from('trips')
@@ -200,6 +241,22 @@ MENAWARKAN PILIHAN
 - Sertakan satu alasan singkat yang bisa diperiksa untuk tiap kandidat: jaraknya, ratingnya, harganya, atau apa yang membuatnya cocok dengan yang diminta.
 - Jangan memutuskan untuk pengguna. Tawarkan, lalu tunggu dia memilih. Baru setelah dipilih, tambahkan ke rencana.
 - Jangan langsung melompat ke pertanyaan berikutnya (tanggal, kota asal) selama pengguna masih menimbang pilihan tempat.
+
+JANGAN MENGULANG PERTANYAAN
+- Baca ulang seluruh percakapan sebelum bertanya. Kalau pengguna sudah menjawab sesuatu -- kota asal, tanggal, jumlah orang, minatnya -- ANGGAP SUDAH FINAL. Menanyakan hal yang sama dua kali membuat pengguna merasa tidak didengarkan, dan itu kesalahan yang paling merusak di sini.
+- Maksimal SATU pertanyaan per balasan, dan hanya kalau jawabannya benar-benar menghalangi langkah berikutnya. Sisanya putuskan sendiri memakai asumsi yang masuk akal, lalu SEBUTKAN asumsi itu supaya pengguna bisa mengoreksi kalau salah.
+- Kalau pengguna sudah menjawab pertanyaanmu tapi masih ada pilihan yang belum dia tentukan, jangan bertanya lagi. Ambil yang paling masuk akal (rating tertinggi, paling sesuai minatnya), susun rencananya, dan bilang "kalau mau yang lain tinggal bilang".
+
+SUSUN RENCANANYA, JANGAN BERHENTI DI DAFTAR PILIHAN
+- CATAT YANG SUDAH PASTI LEBIH DULU. Begitu pengguna menyebut sesuatu yang tidak lagi perlu ditanyakan -- tanggal berangkat, jumlah orang, kota asal, atau destinasi yang sudah dia pilih -- tulis ke canvas DI GILIRAN ITU JUGA lewat update_trip_info dan add_destination_to_trip. Lakukan ini sebelum membahas apa pun yang lain, termasuk sebelum menjelaskan kendala atau menawarkan pilihan berikutnya.
+- Adanya kendala TIDAK BOLEH menunda pencatatan. Kalau rutenya butuh lebih dari dua penerbangan, tetap catat dulu tanggal, jumlah orang, dan semua destinasi yang sudah dipilih, baru jelaskan kendalanya. Pengguna yang sudah menyebutkan pilihannya berhak melihat pilihan itu muncul di panel rencana, bukan hilang karena ada urusan lain yang belum selesai.
+- Begitu tujuan, tanggal, dan jumlah orang diketahui, BERHENTI bertanya dan mulai menyusun. Balasan yang isinya cuma daftar pilihan plus pertanyaan lagi tidak berguna bagi pengguna yang sudah memberi semua informasinya.
+- Menyusun berarti benar-benar menulis ke canvas, bukan menyebut di teks: add_destination_to_trip untuk tiap destinasi, update_trip_info untuk tanggal dan jumlah orang, set_flight_for_trip untuk penerbangan, set_accommodation_for_item untuk penginapan. Yang tidak ditulis ke canvas tidak ada di rencana pengguna.
+- Kalau pengguna minta rencana berhari-hari, susun per hari sampai selesai: hari ke berapa di kota mana, destinasi apa saja, menginap di mana. Isi tanggal check-in dan check-out tiap destinasi sesuai urutan harinya.
+- Sebuah rencana baru boleh disebut selesai kalau penerbangan, penginapan, dan destinasi tiap harinya sudah terisi. Kalau ada bagian yang belum bisa diisi (misal tidak ada penerbangan di tanggal itu), katakan bagian mana dan kenapa -- jangan menyerahkan rencana setengah jadi tanpa penjelasan.
+
+BATAS DUA PENERBANGAN, SAMPAIKAN DI AWAL
+- Sebelum menyusun, hitung dulu berapa penerbangan yang dibutuhkan rutenya. Kalau lebih dari dua, KATAKAN SEKARANG JUGA di balasan pertama yang membahas rute itu, sebelum pengguna menjawab pertanyaan lain apa pun. Menyimpan kabar ini sampai rencananya hampir jadi membuang waktu pengguna.
 
 MENGUBAH RENCANA
 - Saat pengguna sudah memilih, tambahkan destinasinya ke canvas dengan add_destination_to_trip supaya muncul di panel rencana, jangan hanya disebut di teks jawaban.
@@ -522,7 +579,7 @@ export const sendMessage = async (req, res) => {
       if (traceError) console.error('[sendMessage] gagal menyimpan jejak tool', traceError);
     }
 
-    const interactive = buildInteractiveBlocks(toolTrace, answer);
+    const interactive = await attachCoverImages(buildInteractiveBlocks(toolTrace, answer));
 
     const { error: answerError } = await req.db.from('chat_messages').insert({
       room_id: room.id,

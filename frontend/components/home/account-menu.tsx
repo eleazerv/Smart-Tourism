@@ -15,7 +15,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
-import { initialsOf } from "@/components/account/initials";
+import { Avatar } from "@/components/account/avatar";
 import { cn } from "@/lib/utils";
 
 /**
@@ -30,6 +30,21 @@ const ITEM =
 function displayName(user: User) {
   const meta = user.user_metadata as { full_name?: string } | null;
   return meta?.full_name?.trim() || user.email?.split("@")[0] || "Akun";
+}
+
+/**
+ * Foto profil dari klaim sesi — terisi untuk akun yang masuk lewat penyedia
+ * seperti Google. Akun biasa tidak punya, dan `Avatar` menggambar inisial.
+ *
+ * Sengaja dibaca dari sesi, bukan dari `/api/auth/me`: header harus tenang
+ * pada paint pertama, dan `avatar_url` di tabel users cuma gambar inisial
+ * buatan yang toh diperlakukan sebagai "belum ada foto".
+ */
+function avatarOf(user: User) {
+  const meta = user.user_metadata as
+    | { avatar_url?: string; picture?: string }
+    | null;
+  return meta?.avatar_url ?? meta?.picture ?? null;
 }
 
 export function AccountMenu({ className }: { className?: string }) {
@@ -76,6 +91,7 @@ export function AccountMenu({ className }: { className?: string }) {
   }
 
   const name = displayName(user);
+  const avatarUrl = avatarOf(user);
 
   const signOut = async () => {
     setSigningOut(true);
@@ -94,9 +110,7 @@ export function AccountMenu({ className }: { className?: string }) {
             className,
           )}
         >
-          <span className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
-            {initialsOf(name)}
-          </span>
+          <Avatar name={name} src={avatarUrl} pixels={28} className="h-7 w-7 text-xs" />
           <span className="hidden max-w-24 truncate sm:block">{name}</span>
           <ChevronDown
             aria-hidden="true"
@@ -106,9 +120,7 @@ export function AccountMenu({ className }: { className?: string }) {
 
         <DropdownMenuContent align="end" sideOffset={8} className="w-60 rounded-xl p-1.5">
           <DropdownMenuLabel className="flex items-center gap-2.5 px-2.5 py-2 font-normal">
-            <span className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
-              {initialsOf(name)}
-            </span>
+            <Avatar name={name} src={avatarUrl} pixels={36} className="h-9 w-9 text-xs" />
             <span className="min-w-0">
               <span className="block truncate text-sm font-semibold">{name}</span>
               <span className="block truncate text-xs text-muted-foreground">
