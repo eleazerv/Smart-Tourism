@@ -618,11 +618,11 @@ const HANDLERS = {
     const to = data.find((d) => d.id === to_destination_id);
     if (!from || !to) return { error: 'Salah satu destinasi tidak ditemukan' };
 
-    const result = await estimateDrivingRoute({
+    const { geometry, ...result } = await estimateDrivingRoute({
       fromLat: from.latitude, fromLng: from.longitude,
       toLat: to.latitude, toLng: to.longitude,
-    });
-
+    });  
+    
     return { from: from.name, to: to.name, ...result };
   },
 

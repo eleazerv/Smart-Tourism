@@ -114,7 +114,7 @@ export const getForYou = async (req, res) => {
         return res.json({
             preference_tags: [],
             destinations: [],
-            message: 'Belum ada preferensi. Atur dulu di halaman preferensi.',
+            message: 'You have not set any preferences yet. Go to Setting',
         });
         }
 

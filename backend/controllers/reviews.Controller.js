@@ -182,7 +182,7 @@ export const deleteReview = async (req, res) => {
     if (!data) {
       return res.status(404).json({
         error: 'not_found',
-        message: 'Review not found or not yours',
+        message: 'Review not found',
       });
     }
     const path =  extractStoragePath(data.photo_url) 
@@ -213,7 +213,7 @@ export const likeReview = async (req, res) => {
         
         if (existing) {
         const { delError } = await req.db.from('review_likes').delete().eq('id', existing.id);
-        if (delError) throw error;
+        if (delError) throw delError;
         return res.json({ liked: false });
         }
 

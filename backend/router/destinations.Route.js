@@ -35,11 +35,17 @@ const router = express.Router();
  *         name: city_id
  *         schema: { type: integer }
  *       - in: query
+ *         name: min_rating
+ *         schema: { type: number, minimum: 0, maximum: 5 }
+ *         description: Filter destinasi dengan avg_rating minimal segini. Ikut mempengaruhi total/total_pages secara akurat (difilter di dalam RPC, bukan setelah data diambil).
+ *       - in: query
  *         name: page
  *         schema: { type: integer, default: 1 }
  *     responses:
  *       200:
  *         description: data, page, total, total_pages
+ *       400:
+ *         description: min_rating bukan angka 0-5
  */
 router.get("/", globalLimiter,optionalAuth, getDestinations);
 

@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-const ORS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car';
+const ORS_URL = 'https://api.openrouteservice.org/v2/directions/driving-car/geojson';
 
 
 export async function estimateDrivingRoute({ fromLat, fromLng, toLat, toLng }) {
@@ -40,9 +40,10 @@ export async function estimateDrivingRoute({ fromLat, fromLng, toLat, toLng }) {
     throw err;
   }
 
-  const summary = data?.routes?.[0]?.summary;
+  const feature = data?.features?.[0];
+  const summary = feature?.properties?.summary;
 
-  if (!summary) {
+  if (!summary || !feature?.geometry?.coordinates) {
     return {
       routable: false,
       message: 'Rute darat tidak ditemukan antara kedua titik ini.',
@@ -53,5 +54,6 @@ export async function estimateDrivingRoute({ fromLat, fromLng, toLat, toLng }) {
     routable: true,
     distance_km: Math.round((summary.distance / 1000) * 10) / 10,
     duration_minutes: Math.round(summary.duration / 60),
+    geometry: feature.geometry.coordinates.map(([lng, lat]) => [lat, lng]),
   };
 }

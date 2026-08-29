@@ -2,45 +2,60 @@ import { handleRpcError, startPayment } from '../lib/bookingPayment.js';
 import { expireInvoice } from '../lib/xendit.js';
 
 const BOOKING_FIELDS = `
-    id, booking_code, check_in, check_out, guests,
-    price_per_night, nights, total_price,
+    id, booking_code, total_price,
     payment_status, payment_method,
     invoice_url, invoice_expires_at, created_at, paid_at,
-    accommodations (
-      id, name, tier, max_guests, partner_name, cover_image_url,
-      latitude, longitude,
-      cities ( id, name, provinces ( id, code, name ) )
+    accommodation_booking_rooms (
+      id, room_name, check_in, check_out, guests,
+      price_per_night, nights, subtotal,
+      accommodations (
+        id, name, tier, max_guests, partner_name, cover_image_url,
+        latitude, longitude,
+        cities ( id, name, provinces ( id, code, name ) )
+      )
     )
 `;
 
 // POST /api/accommodation-bookings
-// Body: { accommodation_id, check_in, check_out, guests }
+// Body: { accommodation_id, rooms: [{ check_in, check_out, guests }, ...] }
+
 export const createAccommodationBooking = async (req, res) => {
   try {
-    const { accommodation_id, check_in, check_out, guests } = req.body;
+    const { accommodation_id, rooms } = req.body;
 
-    if (!accommodation_id || !check_in || !check_out) {
+    if (!accommodation_id) {
       return res.status(400).json({
         error: 'invalid_body',
-        message: 'accommodation_id, check_in, dan check_out wajib diisi',
+        message: 'accommodation_id msut be filled in',
+      });
+    }
+
+    if (!Array.isArray(rooms) || rooms.length === 0) {
+      return res.status(400).json({
+        error: 'invalid_body',
+        message: 'room must be an array with at least one room',
       });
     }
 
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
-    if (!datePattern.test(check_in) || !datePattern.test(check_out)) {
-      return res.status(400).json({
-        error: 'invalid_date',
-        message: 'check_in dan check_out harus format YYYY-MM-DD',
-      });
+    for (const r of rooms) {
+      if (!r.check_in || !r.check_out || !datePattern.test(r.check_in) || !datePattern.test(r.check_out)) {
+        return res.status(400).json({
+          error: 'invalid_date',
+          message: 'every room must have check_in and check_out',
+        });
+      }
     }
 
-    // Jumlah malam dan total harga dihitung di dalam fungsi Postgres
+    // Jumlah malam, nama kamar, dan total harga dihitung di dalam fungsi
     const { data, error } = await req.db.rpc('create_accommodation_booking', {
       p_user_id: req.user.id,
       p_accommodation_id: accommodation_id,
-      p_check_in: check_in,
-      p_check_out: check_out,
-      p_guests: Number(guests) || 1,
+      p_rooms: rooms.map((r) => ({
+        check_in: r.check_in,
+        check_out: r.check_out,
+        guests: Number(r.guests) || 1,
+      })),
     });
 
     if (error) return handleRpcError(res, error, 'createAccommodationBooking');
@@ -75,7 +90,7 @@ export const getAccommodationBooking = async (req, res) => {
     if (!data) {
       return res.status(404).json({
         error: 'not_found',
-        message: 'Booking tidak ditemukan atau bukan milik Anda',
+        message: 'Booking not Found ',
       });
     }
 
@@ -92,9 +107,11 @@ export const listAccommodationBookings = async (req, res) => {
     const { data, error } = await req.db
       .from('accommodation_bookings')
       .select(`
-        id, booking_code, check_in, check_out, nights, guests,
-        total_price, payment_status, created_at, paid_at,
-        accommodations ( id, name, tier, cover_image_url )
+        id, booking_code, total_price, payment_status, created_at, paid_at,
+        accommodation_booking_rooms (
+          id, room_name, check_in, check_out, nights,
+          accommodations ( id, name, tier, cover_image_url )
+        )
       `)
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
@@ -117,14 +134,14 @@ export const payAccommodationBooking = async (req, res) => {
       res,
       table: 'accommodation_bookings',
       tag: 'payAccommodationBooking',
-      describe: (b) => `Pembayaran akomodasi ${b.booking_code} (${b.nights} malam)`,
+      describe: (b) => ` accommodation payment ${b.booking_code}`,
     });
   } catch (err) {
     if (err.message === 'XENDIT_CREATE_INVOICE_FAILED') {
       console.error('[payAccommodationBooking] xendit error', err.status, err.detail);
       return res.status(502).json({
         error: 'payment_gateway_error',
-        message: 'Gagal membuat invoice pembayaran. Coba lagi sebentar lagi.',
+        message: 'Failed to create payment invoice.',
       });
     }
 
@@ -148,14 +165,14 @@ export const cancelAccommodationBooking = async (req, res) => {
     if (!booking) {
       return res.status(404).json({
         error: 'not_found',
-        message: 'Booking tidak ditemukan atau bukan milik Anda',
+        message: 'Booking not found',
       });
     }
 
     if (booking.payment_status === 'paid') {
       return res.status(409).json({
         error: 'already_paid',
-        message: 'Booking yang sudah dibayar tidak bisa dibatalkan di sini',
+        message: 'booking already paid, cannot be canceled',
       });
     }
 
@@ -170,7 +187,7 @@ export const cancelAccommodationBooking = async (req, res) => {
       try {
         await expireInvoice(booking.xendit_invoice_id);
       } catch (expireErr) {
-        console.error('[cancelAccommodationBooking] gagal expire invoice', expireErr);
+        console.error('[cancelAccommodationBooking] failed , invoice expired ', expireErr);
       }
     }
 
