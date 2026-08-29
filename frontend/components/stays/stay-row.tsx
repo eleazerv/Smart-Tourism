@@ -1,40 +1,45 @@
 import Image from "next/image";
 import Link from "next/link";
-import { MapPin, Star } from "lucide-react";
-import { photo } from "@/lib/home-data";
-import { ratingLabel } from "@/lib/destination-data";
+import { ArrowRight, MapPin, Users } from "lucide-react";
+import type { Accommodation } from "@/lib/api";
+import { coverImage } from "@/lib/home-data";
 import { formatIDR } from "@/lib/seeded-random";
-import { stayTypeLabel, type Stay } from "@/lib/stay-data";
-import { formatScore } from "@/lib/stays-search";
-import { FavoriteButton } from "@/components/home/favorite-button";
+import { tierLabel } from "@/lib/stays-search";
+import { Rating } from "@/components/home/rating";
 
 /**
  * One property. Cover on the left, the description in the middle, and the
- * booking column — guest score, nightly rate, total — pinned right, which is
- * the layout every accommodation search settled on.
+ * booking column — rate and total — pinned right, which is the layout every
+ * accommodation search settled on.
  */
 export function StayRow({
   stay,
   nights,
   rooms,
-  /** Where the reader lands to keep planning; there is no checkout to send them to. */
-  destinationsHref,
+  /** Detail page for this property, carrying the dates the reader searched. */
+  href,
   priority,
 }: {
-  stay: Stay;
+  stay: Accommodation;
   nights: number;
   rooms: number;
-  destinationsHref: string;
+  href: string;
   priority?: boolean;
 }) {
-  const total = stay.pricePerNight * nights * rooms;
+  const total = stay.price_per_night * nights * rooms;
+  const place = [stay.cities?.name, stay.cities?.provinces?.name]
+    .filter(Boolean)
+    .join(", ");
+  // Seeded rows report an unreviewed property as 0 rather than null, and
+  // "0,0" reads as a bad score instead of a missing one.
+  const rating =
+    stay.avg_rating !== null && stay.avg_rating > 0 ? stay.avg_rating : null;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
-        <FavoriteButton label={stay.name} />
         <Image
-          src={photo(`stay-${stay.id}`, 640, 480)}
+          src={coverImage(stay, 640, 480)}
           alt=""
           fill
           priority={priority}
@@ -42,80 +47,54 @@ export function StayRow({
           className="object-cover"
         />
         <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
-          {stayTypeLabel(stay.type)}
+          {tierLabel(stay.tier)}
         </span>
       </div>
 
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row">
         <div className="min-w-0 flex-1">
-          <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
-            <h3 className="font-display text-lg font-bold leading-snug tracking-tight">
-              {stay.name}
-            </h3>
-            <span
-              className="flex items-center gap-0.5"
-              role="img"
-              aria-label={`${stay.stars} bintang`}
+          <h3 className="font-display text-lg font-bold leading-snug tracking-tight">
+            <Link
+              href={href}
+              className="underline-offset-4 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
             >
-              {Array.from({ length: stay.stars }, (_, i) => (
-                <Star
-                  key={i}
-                  aria-hidden="true"
-                  className="h-3.5 w-3.5 fill-amber-400 text-amber-400"
-                />
-              ))}
-            </span>
+              {stay.name}
+            </Link>
+          </h3>
+
+          {place && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span className="truncate">{place}</span>
+            </p>
+          )}
+
+          {stay.max_guests !== null && (
+            <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
+              <Users className="h-3.5 w-3.5 shrink-0" />
+              Maks. {stay.max_guests} tamu per kamar
+            </p>
+          )}
+
+          <div className="mt-2.5">
+            {rating === null ? (
+              <p className="text-xs text-muted-foreground">Belum ada ulasan</p>
+            ) : (
+              <Rating value={rating} reviews={stay.review_count} />
+            )}
           </div>
 
-          <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
-            <MapPin className="h-3.5 w-3.5 shrink-0" />
-            <span className="truncate">
-              {stay.area} &middot; {stay.cityName}, {stay.provinceName}
-            </span>
-          </p>
-          <p className="mt-1 text-xs text-muted-foreground">
-            {stay.distanceKm.toLocaleString("id-ID")} km dari pusat kota
-            &middot; maks. {stay.maxGuests} tamu per kamar
-          </p>
-
-          <ul className="mt-2.5 flex flex-wrap gap-1.5">
-            {stay.facilities.slice(0, 5).map((facility) => (
-              <li
-                key={facility}
-                className="rounded-full border border-border px-2.5 py-1 text-[11px] font-medium text-muted-foreground"
-              >
-                {facility}
-              </li>
-            ))}
-            {stay.facilities.length > 5 && (
-              <li className="px-1 py-1 text-[11px] font-medium text-muted-foreground">
-                +{stay.facilities.length - 5} lainnya
-              </li>
-            )}
-          </ul>
+          {stay.partner_name && (
+            <p className="mt-2 text-xs text-muted-foreground">
+              Terdaftar lewat mitra {stay.partner_name}
+            </p>
+          )}
         </div>
 
-        <div className="flex shrink-0 flex-col justify-between gap-3 sm:w-48 sm:border-l sm:border-border sm:pl-4">
-          <div className="flex items-center justify-between gap-2 sm:justify-start">
-            <div className="min-w-0">
-              <p className="truncate text-sm font-semibold">
-                {ratingLabel(stay.score)}
-              </p>
-              <p className="text-xs text-muted-foreground">
-                {stay.reviews.toLocaleString("id-ID")} ulasan
-              </p>
-            </div>
-            <span
-              aria-label={`Rating tamu ${formatScore(stay.score)} dari 5`}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg rounded-bl-sm bg-brand-700 text-sm font-bold tabular-nums text-white dark:bg-brand-100 dark:text-brand-900"
-            >
-              {formatScore(stay.score)}
-            </span>
-          </div>
-
+        <div className="flex shrink-0 flex-col justify-end gap-3 sm:w-48 sm:border-l sm:border-border sm:pl-4">
           <div className="text-right sm:text-left">
             <p className="text-lg font-bold tabular-nums">
-              {formatIDR(stay.pricePerNight)}
+              {formatIDR(stay.price_per_night)}
               <span className="text-xs font-medium text-muted-foreground">
                 {" "}
                 /malam
@@ -125,12 +104,13 @@ export function StayRow({
               {formatIDR(total)} untuk {nights} malam
               {rooms > 1 && `, ${rooms} kamar`}
             </p>
-            <Link
-              href={destinationsHref}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+            <span
+              aria-hidden="true"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 dark:text-brand-100"
             >
-              Lihat sekitar
-            </Link>
+              Lihat detail
+              <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+            </span>
           </div>
         </div>
       </div>

@@ -1,6 +1,7 @@
 import { cacheLife } from "next/cache";
 import { searchDestinations, type Destination } from "@/lib/api";
 import { DestinationCard } from "@/components/home/destination-card";
+import { loadSavedIds } from "@/lib/saved-destinations";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
 
@@ -60,6 +61,9 @@ export async function SimilarRail({
 
   if (destinations.length === 0) return null;
 
+  // Read after the cached loader above, never inside it — see loadSavedIds.
+  const savedIds = await loadSavedIds();
+
   return (
     <Section
       title="Destinasi serupa"
@@ -72,7 +76,11 @@ export async function SimilarRail({
     >
       <Rail label="Destinasi serupa">
         {destinations.map((destination) => (
-          <DestinationCard key={destination.id} destination={destination} />
+          <DestinationCard
+            key={destination.id}
+            destination={destination}
+            saved={savedIds.has(destination.id)}
+          />
         ))}
       </Rail>
     </Section>

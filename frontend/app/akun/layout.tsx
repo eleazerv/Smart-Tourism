@@ -47,7 +47,7 @@ function SidebarSkeleton() {
         </div>
       </div>
       <div className="flex gap-1 md:flex-col">
-        {Array.from({ length: 3 }, (_, i) => (
+        {Array.from({ length: 5 }, (_, i) => (
           <div
             key={i}
             className="h-10 w-36 animate-pulse rounded-full bg-muted md:w-full md:rounded-lg"

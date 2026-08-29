@@ -24,6 +24,7 @@ import { EmptyResults } from "@/components/destinations/empty-results";
 import { FilterGroups } from "@/components/destinations/filter-groups";
 import { Pagination } from "@/components/catalogue/pagination";
 import { ResultRow, ResultTile } from "@/components/destinations/result-card";
+import { loadSavedIds } from "@/lib/saved-destinations";
 import {
   PAGE_SIZE,
   applyProvince,
@@ -220,7 +221,10 @@ async function Catalogue({ searchParams }: PageProps) {
     (page - 1) * PAGE_SIZE,
     page * PAGE_SIZE,
   );
-  const reviewCounts = await loadReviewCounts(results.map((d) => d.id));
+  const [reviewCounts, savedIds] = await Promise.all([
+    loadReviewCounts(results.map((d) => d.id)),
+    loadSavedIds(),
+  ]);
 
   return (
     <>
@@ -258,6 +262,7 @@ async function Catalogue({ searchParams }: PageProps) {
                     key={destination.id}
                     destination={destination}
                     reviews={reviewCounts[destination.id]}
+                    saved={savedIds.has(destination.id)}
                     priority={i < 3}
                   />
                 ))}
@@ -269,6 +274,7 @@ async function Catalogue({ searchParams }: PageProps) {
                     key={destination.id}
                     destination={destination}
                     reviews={reviewCounts[destination.id]}
+                    saved={savedIds.has(destination.id)}
                     priority={i < 2}
                   />
                 ))}

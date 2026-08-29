@@ -2,22 +2,35 @@
  * URL state for `/hotels`, mirroring the pattern `destinations-search.ts`
  * established: every filter is a link, so the results stay server-rendered and
  * a filtered view is shareable.
+ *
+ * The facets here are only the ones `/api/accommodations` can actually back —
+ * price, class, city, and capacity. Property type, star class, and facilities
+ * went away when the page moved off its placeholder catalogue: no column
+ * behind them exists, and a filter that sorts on invented values is worse than
+ * one that is absent.
  */
-import {
-  FACILITIES,
-  type Facility,
-  type Stay,
-  type StayType,
-} from "@/lib/stay-data";
+import type { Accommodation, AccommodationTier } from "@/lib/api";
+import { nightsBetween } from "@/lib/calendar";
 
 export const PAGE_SIZE = 10;
+
+export const TIERS: { value: AccommodationTier; label: string }[] = [
+  { value: "budget", label: "Ekonomis" },
+  { value: "mid", label: "Menengah" },
+  { value: "luxury", label: "Mewah" },
+];
+
+const TIER_LABELS = new Map(TIERS.map((tier) => [tier.value, tier.label]));
+
+export function tierLabel(tier: AccommodationTier): string {
+  return TIER_LABELS.get(tier) ?? tier;
+}
 
 export const SORTS = [
   { key: "rekomendasi", label: "Paling sesuai" },
   { key: "termurah", label: "Harga terendah" },
   { key: "termahal", label: "Harga tertinggi" },
-  { key: "rating", label: "Rating tamu" },
-  { key: "bintang", label: "Bintang terbanyak" },
+  { key: "kapasitas", label: "Kapasitas terbesar" },
 ] as const;
 
 export type SortKey = (typeof SORTS)[number]["key"];
@@ -25,7 +38,6 @@ const SORT_KEYS = SORTS.map((sort) => sort.key) as readonly SortKey[];
 
 /** Nightly-rate ceilings offered in the sidebar. */
 export const PRICE_CAPS = [500_000, 1_000_000, 2_000_000, 5_000_000] as const;
-export const SCORE_STEPS = [4.5, 4, 3.5, 3] as const;
 
 export type StaySearchState = {
   cityId: number | null;
@@ -34,11 +46,8 @@ export type StaySearchState = {
   checkOut: string;
   guests: number;
   rooms: number;
-  types: StayType[];
-  stars: number[];
-  minScore: number;
+  tiers: AccommodationTier[];
   maxPrice: number | null;
-  facilities: Facility[];
   sort: SortKey;
   page: number;
 };
@@ -116,10 +125,11 @@ export function parseStaySearch(
   const cityId = number(params.city);
   const guests = number(params.guests);
   const rooms = number(params.rooms);
-  const minScore = number(params.score);
   const maxPrice = number(params.maxprice);
   const page = number(params.page);
   const sort = firstValue(params.sort) as SortKey;
+
+  const tierValues = TIERS.map((tier) => tier.value) as readonly string[];
 
   return {
     cityId: cityId !== null && cityId > 0 ? cityId : null,
@@ -127,15 +137,10 @@ export function parseStaySearch(
     checkOut,
     guests: guests === null ? 2 : Math.min(Math.max(guests, 1), 12),
     rooms: rooms === null ? 1 : Math.min(Math.max(rooms, 1), 6),
-    types: parseList(params.type) as StayType[],
-    stars: parseList(params.stars)
-      .map(Number)
-      .filter((value) => value >= 1 && value <= 5),
-    minScore: minScore !== null && minScore > 0 ? minScore : 0,
-    maxPrice: maxPrice !== null && maxPrice > 0 ? maxPrice : null,
-    facilities: parseList(params.facility).filter((entry): entry is Facility =>
-      (FACILITIES as readonly string[]).includes(entry),
+    tiers: parseList(params.tier).filter((entry): entry is AccommodationTier =>
+      tierValues.includes(entry),
     ),
+    maxPrice: maxPrice !== null && maxPrice > 0 ? maxPrice : null,
     sort: SORT_KEYS.includes(sort) ? sort : "rekomendasi",
     page: page !== null && page > 1 ? Math.floor(page) : 1,
   };
@@ -151,17 +156,36 @@ export function toHref(state: StaySearchState, now = new Date()): string {
     params.set("checkout", state.checkOut);
   if (state.guests !== 2) params.set("guests", String(state.guests));
   if (state.rooms !== 1) params.set("rooms", String(state.rooms));
-  if (state.types.length) params.set("type", state.types.join(","));
-  if (state.stars.length) params.set("stars", state.stars.join(","));
-  if (state.minScore > 0) params.set("score", String(state.minScore));
+  if (state.tiers.length) params.set("tier", state.tiers.join(","));
   if (state.maxPrice !== null) params.set("maxprice", String(state.maxPrice));
-  if (state.facilities.length)
-    params.set("facility", state.facilities.join(","));
   if (state.sort !== "rekomendasi") params.set("sort", state.sort);
   if (state.page > 1) params.set("page", String(state.page));
 
   const query = params.toString();
   return query ? `/hotels?${query}` : "/hotels";
+}
+
+/**
+ * Detail page for one property, carrying the dates and party size along so the
+ * availability check there answers for the stay the reader was planning. The
+ * facets and paging are deliberately left behind — they describe the list.
+ */
+export function stayHref(
+  state: StaySearchState,
+  id: string,
+  now = new Date(),
+): string {
+  const fallback = defaultDates(now);
+  const params = new URLSearchParams();
+
+  if (state.checkIn !== fallback.checkIn) params.set("checkin", state.checkIn);
+  if (state.checkOut !== fallback.checkOut)
+    params.set("checkout", state.checkOut);
+  if (state.guests !== 2) params.set("guests", String(state.guests));
+  if (state.rooms !== 1) params.set("rooms", String(state.rooms));
+
+  const query = params.toString();
+  return query ? `/hotels/${id}?${query}` : `/hotels/${id}`;
 }
 
 /** Href for a state with `patch` applied; anything but paging resets to page 1. */
@@ -182,50 +206,21 @@ function toggle<T>(list: T[], value: T): T[] {
     : [...list, value];
 }
 
-export function withTypeToggled(
+export function withTierToggled(
   state: StaySearchState,
-  type: StayType,
+  tier: AccommodationTier,
   now = new Date(),
 ) {
-  return withFilter(state, { types: toggle(state.types, type) }, now);
-}
-
-export function withStarToggled(
-  state: StaySearchState,
-  star: number,
-  now = new Date(),
-) {
-  return withFilter(state, { stars: toggle(state.stars, star) }, now);
-}
-
-export function withFacilityToggled(
-  state: StaySearchState,
-  facility: Facility,
-  now = new Date(),
-) {
-  return withFilter(
-    state,
-    { facilities: toggle(state.facilities, facility) },
-    now,
-  );
+  return withFilter(state, { tiers: toggle(state.tiers, tier) }, now);
 }
 
 export function activeFilterCount(state: StaySearchState): number {
-  return (
-    state.types.length +
-    state.stars.length +
-    state.facilities.length +
-    (state.minScore > 0 ? 1 : 0) +
-    (state.maxPrice !== null ? 1 : 0)
-  );
+  return state.tiers.length + (state.maxPrice !== null ? 1 : 0);
 }
 
-/** Whole nights between the two dates; at least one. */
+/** Whole nights between the searched dates; at least one. */
 export function nightCount(state: StaySearchState): number {
-  const from = new Date(`${state.checkIn}T00:00:00Z`).getTime();
-  const to = new Date(`${state.checkOut}T00:00:00Z`).getTime();
-  const nights = Math.round((to - from) / 86_400_000);
-  return Number.isFinite(nights) && nights > 0 ? nights : 1;
+  return nightsBetween(state.checkIn, state.checkOut);
 }
 
 /* ------------------------------------------------------- result shaping --- */
@@ -234,79 +229,100 @@ export function nightCount(state: StaySearchState): number {
  * Applies every filter except the city, which the page handles separately so
  * the facet counts can be taken over the whole city.
  */
-export function applyFilters(stays: Stay[], state: StaySearchState): Stay[] {
+export function applyFilters(
+  stays: Accommodation[],
+  state: StaySearchState,
+): Accommodation[] {
   return stays.filter((stay) => {
-    if (state.types.length && !state.types.includes(stay.type)) return false;
-    if (state.stars.length && !state.stars.includes(stay.stars)) return false;
-    if (state.minScore > 0 && stay.score < state.minScore) return false;
-    if (state.maxPrice !== null && stay.pricePerNight > state.maxPrice)
+    if (state.tiers.length && !state.tiers.includes(stay.tier)) return false;
+    if (state.maxPrice !== null && stay.price_per_night > state.maxPrice)
       return false;
-    if (stay.maxGuests * state.rooms < state.guests) return false;
-    return state.facilities.every((facility) =>
-      stay.facilities.includes(facility),
-    );
+    // `max_guests` is per room, so the party has to fit across the rooms asked
+    // for. A row with no capacity recorded is not excluded on a guess.
+    if (
+      stay.max_guests !== null &&
+      stay.max_guests * state.rooms < state.guests
+    )
+      return false;
+    return true;
   });
 }
 
 const collator = new Intl.Collator("id-ID", { sensitivity: "base" });
 
-export function sortStays(stays: Stay[], sort: SortKey): Stay[] {
+export function sortStays(
+  stays: Accommodation[],
+  sort: SortKey,
+): Accommodation[] {
   const sorted = [...stays];
   switch (sort) {
     case "termurah":
-      return sorted.sort((a, b) => a.pricePerNight - b.pricePerNight);
+      return sorted.sort((a, b) => a.price_per_night - b.price_per_night);
     case "termahal":
-      return sorted.sort((a, b) => b.pricePerNight - a.pricePerNight);
-    case "rating":
-      return sorted.sort(
-        (a, b) => b.score - a.score || b.reviews - a.reviews,
-      );
-    case "bintang":
-      return sorted.sort((a, b) => b.stars - a.stars || b.score - a.score);
-    default:
-      // "Paling sesuai": guest score first, with stars breaking ties and the
-      // review count settling the rest, so a 4.8 with 900 reviews outranks a
-      // 4.8 with 14.
+      return sorted.sort((a, b) => b.price_per_night - a.price_per_night);
+    case "kapasitas":
       return sorted.sort(
         (a, b) =>
-          b.score - a.score ||
-          b.stars - a.stars ||
-          b.reviews - a.reviews ||
+          (b.max_guests ?? 0) - (a.max_guests ?? 0) ||
+          a.price_per_night - b.price_per_night,
+      );
+    default:
+      // "Paling sesuai": no accommodation carries a rating yet, so ordering on
+      // one would be ordering on zeroes. Cheapest first, with a stable
+      // alphabetical tiebreak, is the honest default until reviews exist.
+      return sorted.sort(
+        (a, b) =>
+          a.price_per_night - b.price_per_night ||
           collator.compare(a.name, b.name),
       );
   }
 }
 
-export type Facet = { value: string; label: string; count: number };
+export type CityFacet = {
+  id: number;
+  name: string;
+  province: string;
+  count: number;
+};
 
-export function typeFacets(stays: Stay[]): Map<StayType, number> {
-  const counts = new Map<StayType, number>();
-  for (const stay of stays) {
-    counts.set(stay.type, (counts.get(stay.type) ?? 0) + 1);
-  }
-  return counts;
-}
+/**
+ * Cities that actually have somewhere to stay, busiest first. Derived from the
+ * rows rather than from the cities table, so the picker can never offer a city
+ * that returns nothing.
+ */
+export function cityFacets(stays: Accommodation[]): CityFacet[] {
+  const byId = new Map<number, CityFacet>();
 
-export function starFacets(stays: Stay[]): Map<number, number> {
-  const counts = new Map<number, number>();
   for (const stay of stays) {
-    counts.set(stay.stars, (counts.get(stay.stars) ?? 0) + 1);
-  }
-  return counts;
-}
+    const city = stay.cities;
+    if (!city) continue;
 
-export function facilityFacets(stays: Stay[]): Map<string, number> {
-  const counts = new Map<string, number>();
-  for (const stay of stays) {
-    for (const facility of stay.facilities) {
-      counts.set(facility, (counts.get(facility) ?? 0) + 1);
+    const existing = byId.get(city.id);
+    if (existing) {
+      existing.count += 1;
+      continue;
     }
+    byId.set(city.id, {
+      id: city.id,
+      name: city.name,
+      province: city.provinces?.name ?? "",
+      count: 1,
+    });
   }
-  return counts;
+
+  return [...byId.values()].sort(
+    (a, b) => b.count - a.count || collator.compare(a.name, b.name),
+  );
 }
 
-export function formatScore(value: number): string {
-  return value.toFixed(1).replace(".", ",");
+export function tierFacets(
+  stays: Accommodation[],
+): Map<AccommodationTier, number> {
+  const counts = new Map<AccommodationTier, number>();
+  for (const stay of stays) {
+    counts.set(stay.tier, (counts.get(stay.tier) ?? 0) + 1);
+  }
+  return counts;
 }
 
 /** "Sab, 30 Agu" — the compact form booking forms use next to a date field. */

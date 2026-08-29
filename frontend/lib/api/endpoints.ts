@@ -5,6 +5,9 @@
  */
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
+  Accommodation,
+  AccommodationAvailability,
+  AccommodationReview,
   AccommodationTier,
   ChatMessage,
   ChatRoom,
@@ -26,6 +29,7 @@ import type {
   PersonalRecommendations,
   Profile,
   Review,
+  SavedDestination,
   SeasonalRecommendations,
   Tag,
   TrendingDestination,
@@ -52,12 +56,13 @@ export type DestinationQuery = {
   page?: number;
 };
 
-const EMPTY_PAGE: Paginated<Destination> = {
+/** Both catalogue routes answer 404 for "no matches", normalised to this. */
+const EMPTY_PAGE = {
   data: [],
   page: 1,
   total: 0,
   total_pages: 0,
-};
+} satisfies Paginated<never>;
 
 export async function searchDestinations(
   query: DestinationQuery = {},
@@ -206,6 +211,141 @@ export async function updatePreferences(
   return data;
 }
 
+/* ------------------------------------------------------- accommodations --- */
+
+export type AccommodationQuery = {
+  city_id?: number;
+  province_id?: number;
+  tier?: AccommodationTier;
+  q?: string;
+  min_rating?: number;
+  page?: number;
+};
+
+export async function searchAccommodations(
+  query: AccommodationQuery = {},
+): Promise<Paginated<Accommodation>> {
+  // Like /api/destinations, this route answers 404 rather than an empty page.
+  const page = await apiFetch<Paginated<Accommodation>>(
+    "/api/accommodations",
+    { query, nullOn404: true },
+  );
+  return page ?? { ...EMPTY_PAGE, page: query.page ?? 1 };
+}
+
+/**
+ * Walks `/api/accommodations` to the end. The route sorts by rating only and
+ * cannot filter on price, capacity, or anything else `/hotels` offers, so the
+ * page has to hold the whole set to filter, sort, and count facets over it.
+ */
+export async function getAllAccommodations(
+  query: Omit<AccommodationQuery, "page"> = {},
+  maxPages = 40,
+): Promise<Accommodation[]> {
+  const first = await searchAccommodations({ ...query, page: 1 });
+  const pages = Math.min(first.total_pages, maxPages);
+
+  const rest = await Promise.all(
+    Array.from({ length: Math.max(pages - 1, 0) }, (_, i) =>
+      searchAccommodations({ ...query, page: i + 2 }),
+    ),
+  );
+
+  return [first, ...rest].flatMap((page) => page.data);
+}
+
+export async function getAccommodation(
+  id: string,
+): Promise<Accommodation | null> {
+  const result = await apiFetch<{ data: Accommodation }>(
+    `/api/accommodations/${id}`,
+    { nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+/**
+ * Rooms free across the requested nights. Both dates are required and
+ * `check_out` must be after `check_in`; the API answers 400 otherwise.
+ */
+export async function getAccommodationAvailability(
+  id: string,
+  range: { check_in: string; check_out: string },
+): Promise<AccommodationAvailability> {
+  const { data } = await apiFetch<{ data: AccommodationAvailability }>(
+    `/api/accommodations/${id}/availability`,
+    { query: range },
+  );
+  return data;
+}
+
+export async function getAccommodationReviews(
+  id: string,
+  options: { sort?: "recent" | "rating" } & Auth = {},
+): Promise<AccommodationReview[]> {
+  const { sort = "recent", ...auth } = options;
+  const { data } = await apiFetch<{ data: AccommodationReview[] }>(
+    `/api/accommodations/${id}/reviews`,
+    { query: { sort }, ...auth },
+  );
+  return data;
+}
+
+export async function createAccommodationReview(
+  id: string,
+  input: { rating: number; comment?: string; photo?: File },
+  auth: Auth,
+): Promise<AccommodationReview> {
+  // The route runs through multer, so the body must be multipart even when
+  // there is no photo attached.
+  const form = new FormData();
+  form.set("rating", String(input.rating));
+  if (input.comment) form.set("comment", input.comment);
+  if (input.photo) form.set("photo", input.photo);
+
+  const { data } = await apiFetch<{ data: AccommodationReview }>(
+    `/api/accommodations/${id}/reviews`,
+    { ...auth, method: "POST", body: form },
+  );
+  return data;
+}
+
+export async function deleteAccommodationReview(
+  reviewId: string,
+  auth: Auth,
+) {
+  return apiFetch<{ deleted: boolean; id: string }>(
+    `/api/accommodations/reviews/${reviewId}`,
+    { ...auth, method: "DELETE" },
+  );
+}
+
+/* --------------------------------------------------- saved destinations --- */
+
+/**
+ * Flips the save on or off in one call — the API decides which, so the
+ * response is the state to trust rather than the one the caller assumed.
+ */
+export async function toggleSavedDestination(
+  destinationId: string,
+  auth: Auth,
+): Promise<{ saved: boolean }> {
+  return apiFetch<{ saved: boolean }>(
+    `/api/destinations/${destinationId}/save`,
+    { ...auth, method: "POST" },
+  );
+}
+
+export async function listSavedDestinations(
+  auth: Auth,
+): Promise<SavedDestination[]> {
+  const { data } = await apiFetch<{ data: SavedDestination[] }>(
+    "/api/saved-destinations",
+    auth,
+  );
+  return data;
+}
+
 /* ------------------------------------------------------------- reviews --- */
 
 export async function getReviews(
@@ -324,13 +464,47 @@ export type FlightBookingItemInput = {
  * One booking covers one passenger and one or two flights. Seats are held the
  * moment this succeeds, before any payment — see the route's Swagger note.
  */
+/**
+ * One ticket is issued per name per leg, so `passengerNames` also decides how
+ * many seats come out of inventory. The API requires 1–10 non-empty names.
+ */
 export async function createFlightBooking(
   items: FlightBookingItemInput[],
+  passengerNames: string[],
   auth: Auth,
 ): Promise<FlightBooking> {
   const { data } = await apiFetch<{ data: FlightBooking }>(
     "/api/flight-bookings",
-    { ...auth, method: "POST", body: { items } },
+    {
+      ...auth,
+      method: "POST",
+      body: { items, passenger_names: passengerNames },
+    },
+  );
+  return data;
+}
+
+/** Seat numbers already claimed on a flight, for greying out the seat map. */
+export async function getTakenSeats(flightId: string): Promise<string[]> {
+  const { taken_seats } = await apiFetch<{ taken_seats: string[] }>(
+    `/api/flights/${flightId}/seats`,
+  );
+  return taken_seats;
+}
+
+/**
+ * Claims one seat for one ticket. Only works while the booking is still
+ * active, so it has to run between creating the booking and paying for it.
+ */
+export async function claimFlightSeat(
+  bookingId: string,
+  ticketId: string,
+  seatNumber: string,
+  auth: Auth,
+): Promise<{ seat_number: string }> {
+  const { data } = await apiFetch<{ data: { seat_number: string } }>(
+    `/api/flight-bookings/${bookingId}/tickets/${ticketId}/seat`,
+    { ...auth, method: "POST", body: { seat_number: seatNumber } },
   );
   return data;
 }

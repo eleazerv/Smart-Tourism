@@ -1,7 +1,6 @@
 import Image from "next/image";
 import Link from "next/link";
 import { inspirations, photo } from "@/lib/home-data";
-import { FavoriteButton } from "@/components/home/favorite-button";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
 
@@ -18,7 +17,6 @@ export function InspirationRail() {
               data-rail-media
               className="relative aspect-[16/10] overflow-hidden rounded-2xl bg-brand-700"
             >
-              <FavoriteButton label={item.title} />
               <Image
                 src={photo(item.seed, 700, 440)}
                 alt=""

@@ -120,15 +120,16 @@
   }
 }
 
-/* Leaflet chrome for the crowd map on the landing page. Scoped to
-   `.crowd-map` — the class `MapContainer` renders — so the library's own
-   defaults stay untouched anywhere else it might be used later. */
-.crowd-map {
+/* Leaflet chrome shared by every map in the app — the crowd map on /peta and
+   the single-place maps on the detail pages. Scoped to `.map-surface`, a class
+   those components put on their container, so the library's own defaults stay
+   untouched anywhere else it might be used later. */
+.map-surface {
   font: inherit;
   background: hsl(var(--muted));
 }
 
-.crowd-map .leaflet-tooltip {
+.map-surface .leaflet-tooltip {
   border: 1px solid hsl(var(--border));
   border-radius: calc(var(--radius) - 4px);
   background: hsl(var(--popover));
@@ -140,26 +141,26 @@
   white-space: nowrap;
 }
 
-.crowd-map .leaflet-tooltip-top::before {
+.map-surface .leaflet-tooltip-top::before {
   border-top-color: hsl(var(--border));
 }
 
-.crowd-map .leaflet-bar a,
-.crowd-map .leaflet-control-attribution {
+.map-surface .leaflet-bar a,
+.map-surface .leaflet-control-attribution {
   background: hsl(var(--card));
   color: hsl(var(--card-foreground));
 }
 
-.crowd-map .leaflet-bar a:hover {
+.map-surface .leaflet-bar a:hover {
   background: hsl(var(--secondary));
 }
 
-.crowd-map .leaflet-bar,
-.crowd-map .leaflet-control-attribution {
+.map-surface .leaflet-bar,
+.map-surface .leaflet-control-attribution {
   border-color: hsl(var(--border));
 }
 
-.crowd-map .leaflet-control-attribution a {
+.map-surface .leaflet-control-attribution a {
   color: hsl(var(--muted-foreground));
 }
 
@@ -173,9 +174,26 @@
   filter: drop-shadow(0 0 2px #ffffff) drop-shadow(0 0 3px #0f172a);
 }
 
+/* The single pin on a detail page's place map. Leaflet's `divIcon` ships with
+   a white box and border of its own, cleared by the `.leaflet-div-icon` rule
+   above; this draws the dot itself. */
+.place-map-pin {
+  display: block;
+  width: 18px;
+  height: 18px;
+  border-radius: 9999px;
+  background: hsl(var(--brand-700));
+  border: 3px solid hsl(var(--card));
+  box-shadow: 0 1px 4px hsl(var(--brand-900) / 0.45);
+}
+
+.dark .place-map-pin {
+  background: hsl(var(--brand-100));
+}
+
 /* Numbered stop pins for the trip planner. Leaflet's `divIcon` ships with a
    white box and border of its own, so both are cleared before restyling. */
-.crowd-map .leaflet-div-icon {
+.map-surface .leaflet-div-icon {
   background: transparent;
   border: none;
 }

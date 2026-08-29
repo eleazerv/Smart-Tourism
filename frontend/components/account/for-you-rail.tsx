@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { getPersonalRecommendations } from "@/lib/api";
 import { getAccessToken } from "@/lib/api/session";
+import { loadSavedIds } from "@/lib/saved-destinations";
 import { DestinationCard } from "@/components/home/destination-card";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
@@ -49,6 +50,8 @@ export async function ForYouRail({
     );
   }
 
+  const savedIds = await loadSavedIds();
+
   return (
     <Section
       bare={bare}
@@ -63,6 +66,7 @@ export async function ForYouRail({
           <DestinationCard
             key={destination.id}
             destination={destination}
+            saved={savedIds.has(destination.id)}
             note={
               destination.matched_tags.length > 0
                 ? `Cocok: ${destination.matched_tags

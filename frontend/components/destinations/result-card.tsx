@@ -11,6 +11,8 @@ export type ResultProps = {
   destination: RecommendedDestination;
   /** Reviews behind the score; omitted when the count could not be loaded. */
   reviews?: number;
+  /** Whether the signed-in reader has already saved this destination. */
+  saved?: boolean;
   /** Skips lazy-loading for the covers above the fold. */
   priority?: boolean;
 };
@@ -21,28 +23,47 @@ function placeOf(destination: RecommendedDestination) {
     .join(", ");
 }
 
+/*
+ * Both variants use the stretched-link pattern: the title stays a real anchor,
+ * and its `::after` is blown up to cover the whole card, so clicking anywhere
+ * on the card follows it. That keeps one link per card in the accessibility
+ * tree — wrapping the card in an anchor instead would nest the bookmark button
+ * inside a link, which is invalid and unusable by keyboard.
+ *
+ * Anything else that must stay clickable has to sit above that overlay, hence
+ * the `relative z-10` on the bookmark.
+ */
+
 /**
  * Booking-style row: cover on the left, editorial detail in the middle, and
- * the decision column — reach and call to action — pinned right.
+ * the reach column pinned right.
  */
-export function ResultRow({ destination, reviews, priority }: ResultProps) {
+export function ResultRow({
+  destination,
+  reviews,
+  saved,
+  priority,
+}: ResultProps) {
   const place = placeOf(destination);
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
-        <FavoriteButton label={destination.name} />
-        <Link href={href} tabIndex={-1} aria-hidden="true">
-          <Image
-            src={coverImage(destination, 640, 480)}
-            alt=""
-            fill
-            priority={priority}
-            sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
-            className="object-cover"
-          />
-        </Link>
+        <FavoriteButton
+          destinationId={destination.id}
+          label={destination.name}
+          initialSaved={saved}
+          className="z-10"
+        />
+        <Image
+          src={coverImage(destination, 640, 480)}
+          alt=""
+          fill
+          priority={priority}
+          sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
+          className="object-cover"
+        />
         {destination.category && (
           <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
             {destination.category}
@@ -53,7 +74,10 @@ export function ResultRow({ destination, reviews, priority }: ResultProps) {
       <div className="flex flex-1 flex-col gap-4 p-4 sm:flex-row">
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-lg font-bold leading-snug tracking-tight">
-            <Link href={href} className="underline-offset-4 hover:underline">
+            <Link
+              href={href}
+              className="underline-offset-4 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
+            >
               {destination.name}
             </Link>
           </h3>
@@ -76,18 +100,15 @@ export function ResultRow({ destination, reviews, priority }: ResultProps) {
           </div>
         </div>
 
-        <div className="flex shrink-0 flex-row items-end justify-between gap-3 sm:w-44 sm:flex-col sm:items-stretch sm:border-l sm:border-border sm:pl-4">
+        <div className="flex shrink-0 flex-row items-center justify-between gap-3 sm:w-40 sm:flex-col sm:items-start sm:justify-center sm:border-l sm:border-border sm:pl-4">
           <ViewCount destination={destination} />
-          {/* Outlined rather than filled: this is the third link to the same
-              page on one card, and nothing is being committed to yet — the
-              solid button belongs to the booking step on the detail page. */}
-          <Link
-            href={href}
-            className="inline-flex shrink-0 items-center justify-center gap-1.5 rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
+          <span
+            aria-hidden="true"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 dark:text-brand-100"
           >
             Lihat detail
-            <ArrowRight className="h-4 w-4" />
-          </Link>
+            <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
+          </span>
         </div>
       </div>
     </article>
@@ -95,24 +116,32 @@ export function ResultRow({ destination, reviews, priority }: ResultProps) {
 }
 
 /** Compact variant for the grid view — same data, one column wide. */
-export function ResultTile({ destination, reviews, priority }: ResultProps) {
+export function ResultTile({
+  destination,
+  reviews,
+  saved,
+  priority,
+}: ResultProps) {
   const place = placeOf(destination);
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
       <div className="relative aspect-[4/3] overflow-hidden bg-brand-700">
-        <FavoriteButton label={destination.name} />
-        <Link href={href} tabIndex={-1} aria-hidden="true">
-          <Image
-            src={coverImage(destination, 600, 450)}
-            alt=""
-            fill
-            priority={priority}
-            sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 100vw"
-            className="object-cover"
-          />
-        </Link>
+        <FavoriteButton
+          destinationId={destination.id}
+          label={destination.name}
+          initialSaved={saved}
+          className="z-10"
+        />
+        <Image
+          src={coverImage(destination, 600, 450)}
+          alt=""
+          fill
+          priority={priority}
+          sizes="(min-width: 1024px) 22rem, (min-width: 640px) 45vw, 100vw"
+          className="object-cover"
+        />
         {destination.category && (
           <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
             {destination.category}
@@ -123,7 +152,10 @@ export function ResultTile({ destination, reviews, priority }: ResultProps) {
       <div className="flex flex-1 flex-col gap-3 p-4">
         <div className="min-w-0 flex-1">
           <h3 className="font-display text-base font-bold leading-snug tracking-tight">
-            <Link href={href} className="underline-offset-4 hover:underline">
+            <Link
+              href={href}
+              className="underline-offset-4 after:absolute after:inset-0 after:content-[''] group-hover:underline focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
+            >
               {destination.name}
             </Link>
           </h3>

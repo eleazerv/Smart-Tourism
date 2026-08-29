@@ -1,17 +1,20 @@
-import type { Review } from "@/lib/api";
 import { Rating } from "@/components/home/rating";
 import { formatCount, ratingLabel } from "@/lib/destination-data";
 
 /**
  * Average plus the 5→1 histogram, computed from the reviews the API returned.
- * `avg_rating` on the destination row is the authoritative average — the list
- * is capped at 50 — so the bars describe the shown sample, not the whole set.
+ * `avg_rating` on the row is the authoritative average — the list is capped —
+ * so the bars describe the shown sample, not the whole set.
+ *
+ * Takes only the star values it actually reads, so destination and
+ * accommodation reviews can both be summarised here despite their differing
+ * row shapes.
  */
 export function ReviewSummary({
   reviews,
   average,
 }: {
-  reviews: Review[];
+  reviews: { rating: number }[];
   average: number | null;
 }) {
   const counts = [5, 4, 3, 2, 1].map((star) => ({

@@ -11,6 +11,7 @@ import {
   type ProvinceRef,
   type SeasonalRecommendations,
 } from "@/lib/api";
+import { loadSavedIds } from "@/lib/saved-destinations";
 import type { RawSearchParams } from "@/lib/destinations-search";
 import {
   isDrySeason,
@@ -122,7 +123,10 @@ async function Timing({ searchParams }: PageProps) {
 
   const heatmap = await loadHeatmap();
   const { season_info: info, destinations } = recommendations;
-  const reviewCounts = await loadReviewCounts(destinations.map((d) => d.id));
+  const [reviewCounts, savedIds] = await Promise.all([
+    loadReviewCounts(destinations.map((d) => d.id)),
+    loadSavedIds(),
+  ]);
 
   const name = monthName(state.month);
   const timings = withCrowding(info, heatmap);
@@ -222,6 +226,7 @@ async function Timing({ searchParams }: PageProps) {
                   key={destination.id}
                   destination={destination}
                   reviews={reviewCounts[destination.id]}
+                  saved={savedIds.has(destination.id)}
                   priority={index < 3}
                 />
               ))}

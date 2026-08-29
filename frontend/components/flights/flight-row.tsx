@@ -16,6 +16,11 @@ import { formatIDR } from "@/lib/seeded-random";
  *
  * The detail panel is a native `<details>`, so the whole row stays
  * server-rendered and expands without any JavaScript.
+ *
+ * "Pilih" is a stretched link: its `::after` covers the card, so clicking
+ * anywhere on the row opens the booking page. The expander has to be lifted
+ * above that overlay, or opening it would navigate away instead. A sold-out
+ * flight renders no link at all, so its card is deliberately inert.
  */
 export function FlightRow({
   view,
@@ -32,7 +37,7 @@ export function FlightRow({
   const soldOut = flight.available_seats <= 0;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center">
         <div className="min-w-0 flex-1">
           <div className="flex items-center gap-2">
@@ -102,7 +107,7 @@ export function FlightRow({
           ) : (
             <Link
               href={bookHref}
-              className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+              className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition after:absolute after:inset-0 after:content-[''] hover:bg-brand-900 focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
             >
               Pilih
             </Link>
@@ -110,13 +115,12 @@ export function FlightRow({
         </div>
       </div>
 
-      <details className="group border-t border-border">
+      {/* Above the stretched overlay, so opening it toggles instead of
+          following the card's link. */}
+      <details className="relative z-10 border-t border-border [&_summary_svg]:transition-transform [&[open]_summary_svg]:rotate-180">
         <summary className="flex cursor-pointer list-none items-center justify-center gap-1 px-4 py-2.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-tint/10 dark:text-brand-100 dark:hover:bg-brand-tint/15 [&::-webkit-details-marker]:hidden">
           Detail penerbangan
-          <ChevronDown
-            aria-hidden="true"
-            className="h-3.5 w-3.5 transition-transform group-open:rotate-180"
-          />
+          <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
         </summary>
 
         <div className="grid gap-6 border-t border-border bg-muted/40 p-4 sm:grid-cols-2">
