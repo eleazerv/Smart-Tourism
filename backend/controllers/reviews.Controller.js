@@ -235,3 +235,58 @@ export const likeReview = async (req, res) => {
     }
 };
 
+
+// Batas jumlah id per permintaan. Katalog mengirim satu halaman (15 kartu)
+// sekaligus, jadi ini cuma pagar supaya query-nya tidak bisa dibikin liar.
+const MAX_COUNT_IDS = 60;
+
+// GET /api/destinations/review-counts?ids=a,b,c
+//
+// Kartu daftar butuh "(1.234)" di sebelah bintangnya, sementara RPC
+// search_destinations cuma mengembalikan avg_rating. Memanggil
+// /:id/reviews per kartu berarti 15 request sekali render, jadi hitungannya
+// dikumpulkan di sini dalam satu query.
+export const getReviewCounts = async (req, res) => {
+    try {
+        const ids = String(req.query.ids ?? '')
+            .split(',')
+            .map(id => id.trim())
+            .filter(Boolean);
+
+        if (ids.length === 0) {
+            return res.status(400).json({
+                error: 'missing_ids',
+                message: 'ids must be a comma-separated list of destination ids'
+            });
+        }
+
+        if (ids.length > MAX_COUNT_IDS) {
+            return res.status(400).json({
+                error: 'too_many_ids',
+                message: `ids must not exceed ${MAX_COUNT_IDS} entries`
+            });
+        }
+
+        // Supabase tidak mengekspos GROUP BY, jadi kolom kuncinya ditarik apa
+        // adanya lalu dihitung di sini — satu baris per ulasan, dibatasi ke
+        // destinasi yang sedang tampil.
+        const { data, error } = await supabase
+            .from('reviews')
+            .select('destination_id')
+            .in('destination_id', ids);
+
+        if (error) throw error;
+
+        // Destinasi tanpa ulasan tetap dijawab 0, supaya client bisa
+        // membedakan "belum ada ulasan" dari "belum sempat dihitung".
+        const counts = Object.fromEntries(ids.map(id => [id, 0]));
+        for (const row of data) {
+            counts[row.destination_id] = (counts[row.destination_id] ?? 0) + 1;
+        }
+
+        return res.json({ data: counts });
+    } catch (err) {
+        console.error('[getReviewCounts] error', err);
+        return res.status(500).json({ error: 'server_error' });
+    }
+};

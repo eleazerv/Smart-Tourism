@@ -5,12 +5,12 @@ import { cacheLife } from "next/cache";
 import { ArrowRight, Sparkles } from "lucide-react";
 import {
   getHeatmap,
+  getReviewCounts,
   getSeasonalRecommendations,
   type HeatmapEntry,
   type ProvinceRef,
   type SeasonalRecommendations,
 } from "@/lib/api";
-import { crowdLevel } from "@/lib/destination-data";
 import type { RawSearchParams } from "@/lib/destinations-search";
 import {
   isDrySeason,
@@ -56,6 +56,17 @@ async function loadHeatmap(): Promise<HeatmapEntry[]> {
     // Crowding is one badge among several — degrade to "no data" rather than
     // taking the page down with it.
     return [];
+  }
+}
+
+/** Review totals for the cards on screen; `{}` when the call fails. */
+async function loadReviewCounts(ids: string[]): Promise<Record<string, number>> {
+  try {
+    return await getReviewCounts(ids);
+  } catch {
+    // The count is a parenthetical next to the stars, not the page — drop it
+    // rather than fail the whole listing over it.
+    return {};
   }
 }
 
@@ -111,6 +122,7 @@ async function Timing({ searchParams }: PageProps) {
 
   const heatmap = await loadHeatmap();
   const { season_info: info, destinations } = recommendations;
+  const reviewCounts = await loadReviewCounts(destinations.map((d) => d.id));
 
   const name = monthName(state.month);
   const timings = withCrowding(info, heatmap);
@@ -209,7 +221,7 @@ async function Timing({ searchParams }: PageProps) {
                 <ResultTile
                   key={destination.id}
                   destination={destination}
-                  crowd={crowdLevel(destination.provinces?.code, heatmap)}
+                  reviews={reviewCounts[destination.id]}
                   priority={index < 3}
                 />
               ))}
