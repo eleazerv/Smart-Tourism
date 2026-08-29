@@ -9,10 +9,14 @@ const FOOD_PRICE_PER_DAY = {
 const VALID_TIERS = ['budget', 'mid', 'luxury'];
 
 async function getFlightPriceRange (originCityId, destinationCityId) { 
+    const nowIso = new Date().toISOString();
+
     const { data : outboundFlights , error : outboundFlightsError } = await supabase.from('flight_options')
                                                                                     .select('id,price,airline')
                                                                                     .eq('origin_city_id',originCityId)
                                                                                     .eq('destination_city_id', destinationCityId)
+                                                                                    .gt('available_seats', 0)
+                                                                                    .gte('departure_time', nowIso)
                                                                                     .order('price', {ascending:true})
 
     if (outboundFlightsError) throw outboundFlightsError
@@ -21,6 +25,8 @@ async function getFlightPriceRange (originCityId, destinationCityId) {
                                                                                     .select('id,price,airline')
                                                                                     .eq('origin_city_id',destinationCityId)
                                                                                     .eq('destination_city_id', originCityId)
+                                                                                    .gt('available_seats', 0)
+                                                                                    .gte('departure_time', nowIso)
                                                                                     .order('price', {ascending:true})
 
     if (inboundFlightsError) throw inboundFlightsError
@@ -134,14 +140,14 @@ export const estimateBudget = async (req,res) => {
         if (!destination_id || !origin_city_id || !tier) {
         return res.status(400).json({
             error: 'invalid_body',
-            message: 'destination_id, origin_city_id, dan tier wajib diisi',
+            message: 'destination_id, origin_city_id, and tier must be filled',
         });
         }
     
         if (!VALID_TIERS.includes(tier)) {
         return res.status(400).json({
             error: 'invalid_tier',
-            message: 'tier harus budget, mid, atau luxury',
+            message: 'tier must be in [budget, mid, luxury]',
         });
         }
     
@@ -149,11 +155,11 @@ export const estimateBudget = async (req,res) => {
         const travelersCount = parseInt(travelers);
     
         if (!Number.isInteger(durationDays) || durationDays < 1) {
-            return res.status(400).json({ error: 'invalid_duration', message: 'duration_days minimal 1' });
+            return res.status(400).json({ error: 'invalid_duration', message: 'duration_days minimum 1 day' });
         }
     
         if (!Number.isInteger(travelersCount) || travelersCount < 1) {
-            return res.status(400).json({ error: 'invalid_travelers', message: 'travelers minimal 1' });
+            return res.status(400).json({ error: 'invalid_travelers', message: 'travelers minimum 1 person' });
         }
 
         const { data : destination , error : destError} = await supabase.from('destinations')

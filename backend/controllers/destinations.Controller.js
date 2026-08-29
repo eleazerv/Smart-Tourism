@@ -15,18 +15,31 @@ async function getSavedIdSet(db, userId, destinationIds) {
 
 export const getDestinations = async (req,res) => { 
     try{ 
-        const {q,tags,province_id,city_id,page} = req.query;
+        const {q,tags,province_id,city_id,min_rating,page} = req.query;
         const currentPage = Math.max(parseInt(page) ||1,1)
         const from = (currentPage - 1) * PAGE_SIZE 
         const to = currentPage * PAGE_SIZE - 1
 
+        let minRatingNum = null;
+        if (min_rating !== undefined) {
+            minRatingNum = Number(min_rating);
+            if (Number.isNaN(minRatingNum) || minRatingNum < 0 || minRatingNum > 5) {
+                return res.status(400).json({
+                    error: 'invalid_min_rating',
+                    message: 'min_rating must be a number between 0 and 5',
+                });
+            }
+        }
+
         let DestinationIdsFromTags = null 
         const tagSlugs = tags ? tags.split(',').map(t => t.trim()).filter(Boolean) : null;
+
         const { data, error } = await supabase.rpc('search_destinations', {
             q: q || null,
             tag_slugs: tagSlugs,
             filter_province_id: province_id ? Number(province_id) : null,
             filter_city_id: city_id ? Number(city_id) : null,
+            filter_min_rating: minRatingNum,
             page_number: currentPage,
             page_size: PAGE_SIZE,
             });

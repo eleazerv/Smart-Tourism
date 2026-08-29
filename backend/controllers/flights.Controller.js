@@ -155,6 +155,63 @@ export const getFlightsByDate = async (req, res) => {
     }
 };
  
+// GET /api/flights/search?flight_number=JT-781&date=YYYY-MM-DD
+export const searchFlightsByCode = async (req, res) => {
+    try {
+        const { flight_number, date } = req.query;
+
+        if (!flight_number || !flight_number.trim()) {
+            return res.status(400).json({
+                error: 'invalid_query',
+                message: 'flight_number is required'
+            });
+        }
+
+        let query = supabase
+            .from('flight_options')
+            .select(FLIGHT_DETAIL_FIELDS)
+            .ilike('flight_number', flight_number.trim())
+            .order('departure_time', { ascending: true });
+
+        if (date) {
+            const datePattern = /^\d{4}-\d{2}-\d{2}$/;
+            if (!datePattern.test(date)) {
+                return res.status(400).json({
+                    error: 'invalid_date',
+                    message: 'date must be in YYYY-MM-DD format'
+                });
+            }
+            query = query.gte('departure_time', `${date}T00:00:00`).lte('departure_time', `${date}T23:59:59`);
+        } else {
+            // Tanpa tanggal: cuma yang belum berangkat, dibatasi 20 baris
+            // terdekat -- bukan seluruh riwayat nomor itu di 150 hari seed.
+            query = query.gte('departure_time', new Date().toISOString()).limit(20);
+        }
+
+        const { data, error } = await query;
+        if (error) throw error;
+
+        if (!data || data.length === 0) {
+            return res.status(404).json({
+                error: 'not_found',
+                message: date
+                    ? 'There is no Flight with that flight number and date'
+                    : 'There is no Flight with that flight number'
+            });
+        }
+
+        return res.json({
+            flight_number: flight_number.trim(),
+            date: date || null,
+            count: data.length,
+            data,
+        });
+    } catch (err) {
+        console.error('[searchFlightsByCode] error', err);
+        return res.status(500).json({ error: 'server_error' });
+    }
+};
+
 // GET /api/flights/:id 
 export const getFlightById = async (req, res) => {
     try {
@@ -181,4 +238,25 @@ export const getFlightById = async (req, res) => {
         return res.status(500).json({ error: 'server_error' });
     }
 };
- 
+
+// GET /api/flights/:id/seats
+export const getTakenSeats = async (req, res) => {
+    try {
+        const flightId = req.params.id;
+
+        const { data, error } = await supabase
+            .from('flight_seats')
+            .select('seat_number')
+            .eq('flight_id', flightId);
+
+        if (error) throw error;
+
+        return res.json({
+            flight_id: flightId,
+            taken_seats: (data || []).map((s) => s.seat_number),
+        });
+    } catch (err) {
+        console.error('[getTakenSeats] error', err);
+        return res.status(500).json({ error: 'server_error' });
+    }
+};

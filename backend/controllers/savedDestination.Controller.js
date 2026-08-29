@@ -13,7 +13,7 @@ export const toggleSaveDestination = async (req, res) => {
         const destinationId = req.params.id;
         const userId = req.user.id;
  
-        const { data: existing } = await req.db
+        const { data: existing , error: existingError } = await req.db
             .from('saved_destinations')
             .select('id')
             .eq('destination_id', destinationId)
@@ -23,7 +23,7 @@ export const toggleSaveDestination = async (req, res) => {
         if (existingError) throw existingError;
 
         if (existing) {
-            await req.db.from('saved_destinations').delete().eq('id', existing.id);
+            const {error :delError} = await req.db.from('saved_destinations').delete().eq('id', existing.id);
             if (delError) throw delError;
             return res.json({ saved: false });
         }

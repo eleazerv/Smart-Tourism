@@ -11,6 +11,7 @@ const RPC_ERRORS = {
   FLIGHT_NOT_FOUND:        [404, 'Flight not found'],
   FLIGHT_ALREADY_DEPARTED: [409, 'Flight has already departed'],
   NO_SEATS_AVAILABLE:      [409, 'No seats available'],
+  INVALID_PASSENGER_NAMES: [400, 'passenger_names must be an array of 1-10 non-empty names'],
 
   INVALID_DATES:           [400, 'check_in and check_out are required'],
   CHECKOUT_BEFORE_CHECKIN: [400, 'check_out must be after check_in'],
@@ -18,6 +19,14 @@ const RPC_ERRORS = {
   INVALID_GUESTS:          [400, 'guests must be at least 1'],
   EXCEEDS_MAX_GUESTS:      [400, 'Number of guests exceeds the accommodation capacity'],
   ACCOMMODATION_NOT_FOUND: [404, 'Accommodation not found'],
+  NO_ROOMS_AVAILABLE:      [409, 'No rooms available for these dates'],
+  INVALID_ROOMS:           [400, 'rooms must be a non-empty array'],
+  TOO_MANY_ROOMS:          [400, 'A single booking can request at most 5 rooms'],
+
+  TICKET_NOT_FOUND:        [404, 'Ticket not found'],
+  INVALID_SEAT_NUMBER:     [400, 'seat_number is required'],
+  SEAT_TAKEN:              [409, 'This seat is already taken'],
+  BOOKING_NOT_PAYABLE:     [409, 'This booking is no longer active'],
 
   BOOKING_NOT_FOUND:       [404, 'Booking not found'],
   NOT_BOOKING_OWNER:       [403, 'This booking does not belong to you'],
@@ -226,5 +235,3 @@ export async function startPayment ({ req,res,table,tag,describe}) {
         },
     })
 }
-
-    

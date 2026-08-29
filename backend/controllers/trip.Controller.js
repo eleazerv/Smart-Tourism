@@ -50,7 +50,7 @@ export const getTripCanvas = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const canvas = await loadCanvas(req.db, trip.id);
@@ -67,7 +67,7 @@ export const patchTrip = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { name, start_date, end_date, travelers, origin_city_id } = req.body;
@@ -78,7 +78,7 @@ export const patchTrip = async (req, res) => {
     for (const [field, value] of [['start_date', start_date], ['end_date', end_date]]) {
       if (value === undefined) continue;
       if (value !== null && !DATE_RE.test(value)) {
-        return res.status(400).json({ error: 'invalid_date', message: `${field} harus format YYYY-MM-DD` });
+        return res.status(400).json({ error: 'invalid_date', message: `${field} must be in YYYY-MM-DD format` });
       }
       patch[field] = value;
     }
@@ -86,13 +86,13 @@ export const patchTrip = async (req, res) => {
     const finalStart = patch.start_date !== undefined ? patch.start_date : trip.start_date;
     const finalEnd = patch.end_date !== undefined ? patch.end_date : trip.end_date;
     if (finalStart && finalEnd && finalEnd < finalStart) {
-      return res.status(400).json({ error: 'invalid_date_range', message: 'end_date tidak boleh sebelum start_date' });
+      return res.status(400).json({ error: 'invalid_date_range', message: 'end_date cannot be before start_date' });
     }
 
     if (travelers !== undefined) {
       const n = Number(travelers);
       if (!Number.isInteger(n) || n < 1) {
-        return res.status(400).json({ error: 'invalid_travelers', message: 'travelers minimal 1' });
+        return res.status(400).json({ error: 'invalid_travelers', message: 'travelers must be at least 1' });
       }
       patch.travelers = n;
     }
@@ -102,7 +102,7 @@ export const patchTrip = async (req, res) => {
     }
 
     if (Object.keys(patch).length === 0) {
-      return res.status(400).json({ error: 'nothing_to_update', message: 'Tidak ada field yang diubah' });
+      return res.status(400).json({ error: 'nothing_to_update', message: 'No fields were changed' });
     }
 
     const { error } = await req.db.from('trips').update(patch).eq('id', trip.id);
@@ -121,12 +121,12 @@ export const addTripItem = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { destination_id, notes } = req.body;
     if (!destination_id) {
-      return res.status(400).json({ error: 'invalid_body', message: 'destination_id wajib diisi' });
+      return res.status(400).json({ error: 'invalid_body', message: 'destination_id is required' });
     }
 
     const { data: dest, error: destError } = await supabase
@@ -136,7 +136,7 @@ export const addTripItem = async (req, res) => {
       .maybeSingle();
     if (destError) throw destError;
     if (!dest) {
-      return res.status(404).json({ error: 'not_found', message: 'Destinasi tidak ditemukan' });
+      return res.status(404).json({ error: 'not_found', message: 'Destination not found' });
     }
 
     // Sudah pernah masuk rencana: jangan buat baris baru dan jangan geser
@@ -151,7 +151,7 @@ export const addTripItem = async (req, res) => {
 
     if (existing) {
       if (existing.status === 'booked') {
-        return res.status(409).json({ error: 'already_booked', message: `${dest.name} sudah dipesan` });
+        return res.status(409).json({ error: 'already_booked', message: `${dest.name} is already booked` });
       }
 
       if (existing.status !== 'removed') {
@@ -201,7 +201,7 @@ export const patchTripItem = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { data: item, error: itemError } = await req.db
@@ -212,12 +212,12 @@ export const patchTripItem = async (req, res) => {
       .maybeSingle();
     if (itemError) throw itemError;
     if (!item) {
-      return res.status(404).json({ error: 'not_found', message: 'Item tidak ada dalam rencana ini' });
+      return res.status(404).json({ error: 'not_found', message: 'Item does not exist in this trip' });
     }
     if (item.status === 'booked') {
       return res.status(409).json({
         error: 'already_booked',
-        message: 'Item ini sudah dipesan. Batalkan bookingnya dulu sebelum mengubah.',
+        message: 'This item is already booked. Cancel the booking before changing it.',
       });
     }
 
@@ -226,7 +226,7 @@ export const patchTripItem = async (req, res) => {
 
     if (status !== undefined) {
       if (!['suggested', 'confirmed'].includes(status)) {
-        return res.status(400).json({ error: 'invalid_status', message: 'status harus suggested atau confirmed' });
+        return res.status(400).json({ error: 'invalid_status', message: 'status must be suggested or confirmed' });
       }
       patch.status = status;
     }
@@ -234,7 +234,7 @@ export const patchTripItem = async (req, res) => {
     for (const [field, value] of [['check_in', check_in], ['check_out', check_out]]) {
       if (value === undefined) continue;
       if (value !== null && !DATE_RE.test(value)) {
-        return res.status(400).json({ error: 'invalid_date', message: `${field} harus format YYYY-MM-DD` });
+        return res.status(400).json({ error: 'invalid_date', message: `${field} must be in YYYY-MM-DD format` });
       }
       patch[field] = value;
     }
@@ -244,7 +244,7 @@ export const patchTripItem = async (req, res) => {
     const finalIn = patch.check_in !== undefined ? patch.check_in : item.check_in;
     const finalOut = patch.check_out !== undefined ? patch.check_out : item.check_out;
     if (finalIn && finalOut && finalOut <= finalIn) {
-      return res.status(400).json({ error: 'invalid_date_range', message: 'check_out harus setelah check_in' });
+      return res.status(400).json({ error: 'invalid_date_range', message: 'check_out must be after check_in' });
     }
 
     if (accommodation_id !== undefined) {
@@ -258,14 +258,14 @@ export const patchTripItem = async (req, res) => {
           .maybeSingle();
         if (accError) throw accError;
         if (!acc) {
-          return res.status(404).json({ error: 'not_found', message: 'Penginapan tidak ditemukan' });
+          return res.status(404).json({ error: 'not_found', message: 'Accommodation not found' });
         }
 
         const finalGuests = guests !== undefined ? Number(guests) : null;
         if (finalGuests && finalGuests > acc.max_guests) {
           return res.status(400).json({
             error: 'exceeds_max_guests',
-            message: `Kapasitas ${acc.name} hanya ${acc.max_guests} orang per kamar`,
+            message: `${acc.name} only has capacity for ${acc.max_guests} guests per room`,
           });
         }
 
@@ -276,7 +276,7 @@ export const patchTripItem = async (req, res) => {
     if (guests !== undefined) {
       const n = Number(guests);
       if (!Number.isInteger(n) || n < 1) {
-        return res.status(400).json({ error: 'invalid_guests', message: 'guests minimal 1' });
+        return res.status(400).json({ error: 'invalid_guests', message: 'guests must be at least 1' });
       }
       patch.guests = n;
     }
@@ -284,7 +284,7 @@ export const patchTripItem = async (req, res) => {
     if (notes !== undefined) patch.notes = notes ? String(notes).slice(0, 500) : null;
 
     if (Object.keys(patch).length === 0) {
-      return res.status(400).json({ error: 'nothing_to_update', message: 'Tidak ada field yang diubah' });
+      return res.status(400).json({ error: 'nothing_to_update', message: 'No fields were changed' });
     }
 
     const { error } = await req.db
@@ -307,7 +307,7 @@ export const removeTripItem = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { data: item, error: itemError } = await req.db
@@ -318,12 +318,12 @@ export const removeTripItem = async (req, res) => {
       .maybeSingle();
     if (itemError) throw itemError;
     if (!item) {
-      return res.status(404).json({ error: 'not_found', message: 'Item tidak ada dalam rencana ini' });
+      return res.status(404).json({ error: 'not_found', message: 'Item does not exist in this trip' });
     }
     if (item.status === 'booked') {
       return res.status(409).json({
         error: 'already_booked',
-        message: 'Item ini sudah dipesan dan tidak bisa dikeluarkan dari rencana.',
+        message: 'This item is already booked and cannot be removed from the trip.',
       });
     }
 
@@ -350,12 +350,12 @@ export const reorderTripItems = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { ordered_item_ids } = req.body;
     if (!Array.isArray(ordered_item_ids) || ordered_item_ids.length === 0) {
-      return res.status(400).json({ error: 'invalid_body', message: 'ordered_item_ids harus berisi minimal satu id' });
+      return res.status(400).json({ error: 'invalid_body', message: 'ordered_item_ids must contain at least one id' });
     }
 
     let updated = 0;
@@ -384,16 +384,16 @@ export const setTripFlight = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const { flight_option_id, flight_type } = req.body;
 
     if (!['outbound', 'return'].includes(flight_type)) {
-      return res.status(400).json({ error: 'invalid_flight_type', message: 'flight_type harus outbound atau return' });
+      return res.status(400).json({ error: 'invalid_flight_type', message: 'flight_type must be outbound or return' });
     }
     if (!flight_option_id) {
-      return res.status(400).json({ error: 'invalid_body', message: 'flight_option_id wajib diisi' });
+      return res.status(400).json({ error: 'invalid_body', message: 'flight_option_id is required' });
     }
 
     const { data: flight, error: flightError } = await supabase
@@ -403,10 +403,10 @@ export const setTripFlight = async (req, res) => {
       .maybeSingle();
     if (flightError) throw flightError;
     if (!flight) {
-      return res.status(404).json({ error: 'not_found', message: 'Penerbangan tidak ditemukan' });
+      return res.status(404).json({ error: 'not_found', message: 'Flight not found' });
     }
     if ((flight.available_seats ?? 0) < 1) {
-      return res.status(409).json({ error: 'no_seats', message: 'Kursi penerbangan ini sudah habis' });
+      return res.status(409).json({ error: 'no_seats', message: 'This flight is fully booked' });
     }
 
     // Leg yang sudah dipesan tidak boleh ditimpa: bookingnya sungguhan dan
@@ -422,7 +422,7 @@ export const setTripFlight = async (req, res) => {
     if (existing?.booked_at) {
       return res.status(409).json({
         error: 'already_booked',
-        message: `Penerbangan ${flight_type} sudah dipesan. Batalkan bookingnya dulu di halaman pesanan.`,
+        message: `The ${flight_type} flight is already booked. Cancel the booking on the orders page first.`,
       });
     }
 
@@ -448,12 +448,12 @@ export const removeTripFlight = async (req, res) => {
   try {
     const trip = await loadOwnedTrip(req);
     if (!trip) {
-      return res.status(404).json({ error: 'not_found', message: 'Rencana tidak ditemukan atau bukan milik Anda' });
+      return res.status(404).json({ error: 'not_found', message: 'Trip not found or does not belong to you' });
     }
 
     const type = req.params.type;
     if (!['outbound', 'return'].includes(type)) {
-      return res.status(400).json({ error: 'invalid_flight_type', message: 'type harus outbound atau return' });
+      return res.status(400).json({ error: 'invalid_flight_type', message: 'type must be outbound or return' });
     }
 
     const { data: existing, error: existingError } = await req.db
@@ -465,12 +465,12 @@ export const removeTripFlight = async (req, res) => {
     if (existingError) throw existingError;
 
     if (!existing) {
-      return res.status(404).json({ error: 'not_found', message: `Belum ada penerbangan ${type} di rencana ini` });
+      return res.status(404).json({ error: 'not_found', message: `No ${type} flight in this trip yet` });
     }
     if (existing.booked_at) {
       return res.status(409).json({
         error: 'already_booked',
-        message: `Penerbangan ${type} sudah dipesan dan tidak bisa dihapus dari sini.`,
+        message: `The ${type} flight is already booked and cannot be removed from here.`,
       });
     }
 

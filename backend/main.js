@@ -21,6 +21,7 @@ import { sweepOverdueBookings } from './lib/bookingPayment.js';
 import chatRouter from './router/chat.Route.js';
 import cityRouter from './router/cities.Route.js';
 import tripRouter from './router/trip.Route.js';
+import routeRouter from './router/Route.Route.js';
 
 const app = express();
 app.set('trust proxy', 1);
@@ -49,6 +50,8 @@ app.use("/api/saved-destinations", savedDestinationsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/cities", cityRouter);
 app.use("/api/trips", tripRouter);
+app.use("/api/route", routeRouter);
+app.use("/api/public-config", (req, res) => res.json({ supabase_url: process.env.SUPABASE_URL, supabase_anon_key: process.env.SUPABASE_ANON_KEY }));
 app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 
 app.get('/', (req, res) => {
