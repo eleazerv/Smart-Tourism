@@ -1,7 +1,7 @@
 import express from 'express'; 
 import swaggerUi from 'swagger-ui-express';
 import {swaggerSpec } from './swagger.js'
-import cors from 'cors';
+import helmet from 'helmet';
 import 'dotenv/config';
 import authRoutes from './router/auth.Route.js';
 import heatmapRoutes from './router/heatmap.Route.js';
@@ -25,13 +25,8 @@ import routeRouter from './router/Route.Route.js';
 
 const app = express();
 app.set('trust proxy', 1);
+app.use(helmet());
 app.use(express.json());
-
-app.use(cors({
-  origin: "*",
-  credentials: true,
-  allowedHeaders: ["Content-Type", "Authorization"]
-}));
 
 app.use("/api/auth", authRoutes);
 app.use("/api/heatmap", heatmapRoutes);
@@ -52,7 +47,22 @@ app.use("/api/cities", cityRouter);
 app.use("/api/trips", tripRouter);
 app.use("/api/route", routeRouter);
 app.use("/api/public-config", (req, res) => res.json({ supabase_url: process.env.SUPABASE_URL, supabase_anon_key: process.env.SUPABASE_ANON_KEY }));
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger UI memuat script dan style inline, yang diblokir CSP bawaan helmet.
+// Longgarkan kebijakannya di path ini saja, bukan di seluruh aplikasi.
+app.use(
+  '/api-docs',
+  helmet({
+    contentSecurityPolicy: {
+      directives: {
+        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+        'script-src': ["'self'", "'unsafe-inline'"],
+        'style-src': ["'self'", "'unsafe-inline'"],
+      },
+    },
+  }),
+  swaggerUi.serve,
+  swaggerUi.setup(swaggerSpec),
+);
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from Express backend!' });

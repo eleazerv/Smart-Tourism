@@ -2,6 +2,7 @@ import type { NextConfig } from "next";
 import { REMOTE_IMAGE_PATTERNS } from "./lib/image-hosts";
 
 const nextConfig: NextConfig = {
+  output: "standalone",
   cacheComponents: true,
   images: {
     // Shared with `coverImage()`, which falls back to a placeholder for any
