@@ -1,11 +1,10 @@
 import { supabase } from '../lib/supabase.js';
 import { callDeepseek, startTokenTurn, getTokenTurn } from '../lib/deepseek.js';
 import { TOOL_DEFINITIONS, executeTool } from '../lib/aiTools.js';
-
-const MAX_TOOL_ROUNDS = 4;   // batas putaran tool per giliran chat
+import { loadCanvas } from '../lib/tripStops.helper.js';
+const MAX_TOOL_ROUNDS = 6;   // batas putaran tool per giliran chat
 const HISTORY_LIMIT = 10;    // berapa pesan terakhir yang dikirim ke model
-const TOOL_RESULT_LIMIT = 1500; // panjang maksimum hasil tool yang dikirim balik ke model
-const MAX_FLIGHT_LEGS = 2;   // batas RPC create_flight_booking: 1 atau 2 penerbangan
+const TOOL_RESULT_LIMIT = 2500; // panjang maksimum hasil tool yang dikirim balik ke model
 
 
 
@@ -131,38 +130,6 @@ async function attachCoverImages(blocks) {
   return blocks;
 }
 
-async function loadCanvas(db, tripId) {
-  const [tripRes, itemsRes, flightsRes] = await Promise.all([
-    db.from('trips')
-      .select('id, name, start_date, end_date, travelers, status, origin_city_id, cities:origin_city_id(name)')
-      .eq('id', tripId).maybeSingle(),
-    db.from('trip_items')
-      .select(`
-        id, sequence_order, status, notes, check_in, check_out, guests, added_by,
-        destinations ( id, name, category, latitude, longitude, cities ( id, name ) ),
-        accommodations ( id, name, tier, price_per_night, max_guests, latitude, longitude )
-      `)
-      .eq('trip_id', tripId).neq('status', 'removed').order('sequence_order'),
-    db.from('trip_flights')
-      .select(`
-        id, flight_type, booked_at,
-        flight_options ( id, airline, flight_number, departure_time, arrival_time, price )
-      `)
-      .eq('trip_id', tripId),
-  ]);
-
-  const firstError = tripRes.error || itemsRes.error || flightsRes.error;
-  if (firstError) {
-    console.error('[loadCanvas] gagal membaca canvas', firstError);
-    throw firstError;
-  }
-
-  return {
-    trip: tripRes.data || null,
-    items: itemsRes.data || [],
-    flights: flightsRes.data || [],
-  };
-}
 
 function buildSystemPrompt(canvas, cityList) {
   const today = new Date().toISOString().slice(0, 10);
@@ -178,7 +145,7 @@ function buildSystemPrompt(canvas, cityList) {
 
   let canvasText = 'Rencana masih kosong.';
 
-  if (canvas.items.length || canvas.flights.length) {
+  if (canvas.stops?.length) {
     const lines = [];
 
     if (canvas.trip) {
@@ -191,27 +158,41 @@ function buildSystemPrompt(canvas, cityList) {
       );
     }
 
-    if (canvas.items.length) {
-      lines.push('\nDestinasi dalam rencana (urut kunjungan):');
-      for (const it of canvas.items) {
-        const acc = it.accommodations
-          ? ` | menginap di ${it.accommodations.name} (${it.accommodations.tier})`
-          : ' | belum pilih penginapan';
-        const tanggal = it.check_in ? ` | ${it.check_in} s/d ${it.check_out || '?'}` : '';
-        const asal = it.added_by === 'user' ? ' | DIPILIH SENDIRI OLEH PENGGUNA' : '';
-        lines.push(
-          `  ${it.sequence_order}. [${it.status}] ${it.destinations?.name} ` +
-          `di ${it.destinations?.cities?.name}${acc}${tanggal}${asal} | item_id=${it.id}`
-        );
-      }
-    }
+    lines.push('\nKota yang disinggahi (urut kunjungan):');
+    const accStatusLabel = {
+      none: 'belum dipilih',
+      suggested: 'DIUSULKAN, BELUM disetujui pengguna',
+      pending: 'disetujui, siap checkout',
+      booked: 'sudah dibayar',
+    };
+    for (const stop of canvas.stops) {
+      const city = stop.cities?.name || '(kota tidak diketahui)';
+      const hotel = stop.accommodations
+        ? `menginap di ${stop.accommodations.name} (${stop.accommodations.tier}) -- ${accStatusLabel[stop.accommodation_status] || stop.accommodation_status}`
+        : 'belum pilih penginapan';
+      const tanggal = stop.check_in ? `${stop.check_in} s/d ${stop.check_out || '?'}` : 'tanggal belum diisi';
 
-    if (canvas.flights.length) {
-      lines.push('\nPenerbangan terpilih:');
-      for (const f of canvas.flights) {
-        const o = f.flight_options;
-        const tanda = f.booked_at ? ' [SUDAH DIPESAN]' : '';
-        lines.push(`  ${f.flight_type}: ${o?.airline} ${o?.flight_number}, ${o?.departure_time}, Rp${o?.price}${tanda}`);
+      lines.push(`\n  ${stop.sequence_order}. ${city} | ${hotel} | ${tanggal} | stop_id=${stop.id}`);
+
+      const arrival = (stop.trip_flights || []).find((f) => f.flight_role === 'arrival');
+      const departure = (stop.trip_flights || []).find((f) => f.flight_role === 'departure');
+      const flightLine = (label, leg) => {
+        if (!leg) return `     ${label}: belum dipilih`;
+        const o = leg.flight_options;
+        const tanda = leg.booked_at ? ' [SUDAH DIPESAN]' : (leg.confirmed ? ' [disetujui, siap checkout]' : ' [DIUSULKAN, BELUM disetujui]');
+        return `     ${label}: ${o?.airline} ${o?.flight_number}, ${o?.departure_time}, Rp${o?.price}${tanda}`;
+      };
+      lines.push(flightLine('Penerbangan masuk', arrival));
+      lines.push(flightLine('Penerbangan keluar', departure));
+
+      const items = stop.trip_items || [];
+      if (items.length) {
+        for (const it of items) {
+          const asal = it.added_by === 'user' ? ' | DIPILIH SENDIRI OLEH PENGGUNA' : '';
+          lines.push(`     - [${it.status}] ${it.destinations?.name}${asal} | item_id=${it.id}`);
+        }
+      } else {
+        lines.push('     (belum ada destinasi di kota ini)');
       }
     }
 
@@ -248,26 +229,24 @@ JANGAN MENGULANG PERTANYAAN
 - Kalau pengguna sudah menjawab pertanyaanmu tapi masih ada pilihan yang belum dia tentukan, jangan bertanya lagi. Ambil yang paling masuk akal (rating tertinggi, paling sesuai minatnya), susun rencananya, dan bilang "kalau mau yang lain tinggal bilang".
 
 SUSUN RENCANANYA, JANGAN BERHENTI DI DAFTAR PILIHAN
-- CATAT YANG SUDAH PASTI LEBIH DULU. Begitu pengguna menyebut sesuatu yang tidak lagi perlu ditanyakan -- tanggal berangkat, jumlah orang, kota asal, atau destinasi yang sudah dia pilih -- tulis ke canvas DI GILIRAN ITU JUGA lewat update_trip_info dan add_destination_to_trip. Lakukan ini sebelum membahas apa pun yang lain, termasuk sebelum menjelaskan kendala atau menawarkan pilihan berikutnya.
-- Adanya kendala TIDAK BOLEH menunda pencatatan. Kalau rutenya butuh lebih dari dua penerbangan, tetap catat dulu tanggal, jumlah orang, dan semua destinasi yang sudah dipilih, baru jelaskan kendalanya. Pengguna yang sudah menyebutkan pilihannya berhak melihat pilihan itu muncul di panel rencana, bukan hilang karena ada urusan lain yang belum selesai.
+- Rencana disusun per KOTA. Setiap kota adalah satu "stop" dengan stop_id sendiri. CATAT YANG SUDAH PASTI LEBIH DULU: begitu pengguna menyebut tanggal, jumlah orang, kota asal, atau destinasi yang sudah dia pilih, tulis ke canvas DI GILIRAN ITU JUGA lewat update_trip_info dan add_destination_to_trip.
+- add_destination_to_trip otomatis menaruh destinasi ke stop kota yang benar, dan membuat stop baru kalau kota itu belum disinggahi. Kalau hasilnya menyebut new_stop_created: true, beritahu pengguna ada kota baru yang masuk rencana.
 - Begitu tujuan, tanggal, dan jumlah orang diketahui, BERHENTI bertanya dan mulai menyusun. Balasan yang isinya cuma daftar pilihan plus pertanyaan lagi tidak berguna bagi pengguna yang sudah memberi semua informasinya.
-- Menyusun berarti benar-benar menulis ke canvas, bukan menyebut di teks: add_destination_to_trip untuk tiap destinasi, update_trip_info untuk tanggal dan jumlah orang, set_flight_for_trip untuk penerbangan, set_accommodation_for_item untuk penginapan. Yang tidak ditulis ke canvas tidak ada di rencana pengguna.
-- Kalau pengguna minta rencana berhari-hari, susun per hari sampai selesai: hari ke berapa di kota mana, destinasi apa saja, menginap di mana. Isi tanggal check-in dan check-out tiap destinasi sesuai urutan harinya.
-- Sebuah rencana baru boleh disebut selesai kalau penerbangan, penginapan, dan destinasi tiap harinya sudah terisi. Kalau ada bagian yang belum bisa diisi (misal tidak ada penerbangan di tanggal itu), katakan bagian mana dan kenapa -- jangan menyerahkan rencana setengah jadi tanpa penjelasan.
+- Menyusun berarti benar-benar menulis ke canvas, bukan menyebut di teks: add_destination_to_trip untuk tiap destinasi, update_trip_info untuk tanggal dan jumlah orang, set_flight_for_stop untuk penerbangan per kota, set_accommodation_for_stop untuk penginapan per kota (SEKALI per kota, bukan per destinasi -- semua destinasi di kota yang sama berbagi satu penginapan). set_accommodation_for_stop baru membuat USULAN (status "suggested") -- begitu pengguna bilang setuju dengan penginapan itu, panggil confirm_accommodation_for_stop supaya statusnya naik jadi "disetujui, siap checkout". Penginapan yang masih berstatus "suggested" TIDAK akan ikut checkout, jadi jangan biarkan menggantung kalau pengguna sudah jelas setuju.
+- Kalau pengguna minta rencana berhari-hari yang melewati beberapa kota, susun per stop: kota apa, destinasi apa saja di kota itu, menginap di mana, dan penerbangan masuk/keluar kota itu kalau perlu naik pesawat.
+- Sebuah rencana baru boleh disebut selesai kalau tiap stop yang butuh penerbangan sudah terisi, penginapannya sudah dipilih, dan destinasinya sudah dikonfirmasi. Kalau ada bagian yang belum bisa diisi, katakan bagian mana dan kenapa.
 
-BATAS DUA PENERBANGAN, SAMPAIKAN DI AWAL
-- Sebelum menyusun, hitung dulu berapa penerbangan yang dibutuhkan rutenya. Kalau lebih dari dua, KATAKAN SEKARANG JUGA di balasan pertama yang membahas rute itu, sebelum pengguna menjawab pertanyaan lain apa pun. Menyimpan kabar ini sampai rencananya hampir jadi membuang waktu pengguna.
+PENERBANGAN PER KOTA, BUKAN PER TRIP
+- Penerbangan menempel ke STOP, bukan ke trip secara keseluruhan. Tiap kota bisa punya penerbangan masuk (arrival) dan keluar (departure) sendiri-sendiri -- trip 3 kota (Jakarta -> Bali -> Lombok) wajar punya beberapa penerbangan, bukan cuma sekali pergi-pulang.
+- Sebelum menyusun rute, cek dulu perpindahan mana yang butuh pesawat (antarpulau) dan mana yang bisa jalan darat (estimate_route, satu daratan). Jangan memaksakan penerbangan untuk perpindahan yang sebenarnya bisa ditempuh darat.
+- Panggil set_flight_for_stop untuk tiap perpindahan yang butuh pesawat, sebutkan stop_id kota yang dituju/ditinggalkan dan flight_role yang sesuai. Ini baru USULAN (confirmed: false) sampai kamu memanggil confirm_flight_for_stop setelah pengguna bilang setuju di chat. Penerbangan yang belum dikonfirmasi TIDAK akan ikut checkout -- kalau pengguna sudah jelas setuju (misal soal harga dan jadwalnya), langsung konfirmasi, jangan dibiarkan menggantung.
 
 MENGUBAH RENCANA
-- Saat pengguna sudah memilih, tambahkan destinasinya ke canvas dengan add_destination_to_trip supaya muncul di panel rencana, jangan hanya disebut di teks jawaban.
-- Begitu pula penginapan dan penerbangan: kalau pengguna sudah setuju, tulis ke canvas dengan set_accommodation_for_item dan set_flight_for_trip. Menyebutkannya di teks saja tidak membuatnya masuk rencana.
 - Pengguna juga bisa menambah, menghapus, dan mengubah isi rencana sendiri lewat panel di layarnya. Isi canvas terbaru selalu ada di bawah, jadi jangan heran kalau ada yang berubah tanpa kamu yang melakukannya, dan jangan menjelaskan ulang tempat yang dia pilih sendiri seolah-olah itu usulanmu.
 - Kalau tanggal atau penginapan sudah diisi dan kamu ingin menggantinya, TANYA DULU. Sebut apa yang akan berubah, tunggu persetujuan, baru ubah. Jangan menimpa diam-diam.
-- Satu rencana boleh berisi beberapa kota. Urutan kunjungan diatur lewat sequence_order; pakai reorder_trip_items kalau urutannya perlu diubah.
-- Penerbangan dibatasi dua: satu berangkat (outbound) dan satu pulang (return). Perpindahan antarkota di tengah perjalanan diperlakukan sebagai perjalanan darat, bukan penerbangan tambahan.
-- Kalau rencana pengguna butuh LEBIH dari dua penerbangan (misal tiga pulau: kota A ke B naik pesawat, B ke C juga naik pesawat, baru C balik ke A), JANGAN memaksakan lewat set_flight_for_trip -- sistem hanya punya dua slot dan slot ketiga akan menimpa salah satu yang sudah ada tanpa pemberitahuan. Katakan dengan jelas ke pengguna bahwa satu rencana di sini maksimal dua penerbangan, dan sarankan dia membuat percakapan baru untuk segmen tambahan itu (misal satu percakapan untuk A-B, satu lagi untuk B-C-A). Jangan diam-diam hanya menyimpan dua dari tiga penerbangan yang diminta.
+- Urutan kunjungan destinasi DI DALAM satu kota diatur lewat reorder_trip_items (butuh stop_id). Urutan antar-kota diatur lewat reorder_trip_stops.
+- Akomodasi yang status-nya "booked" sudah dibayar dan tidak boleh diganti/dihapus dari sini -- minta pengguna membatalkan lewat halaman pesanan dulu kalau mau ubah.
 - estimate_route hanya untuk dua tempat yang berdekatan di daratan yang sama. Untuk perpindahan antarpulau, cari penerbangan.
-- Item berstatus "booked" sudah dipesan dan tidak boleh diubah atau dihapus. Kalau pengguna ingin mengubahnya, minta dia membatalkan bookingnya lebih dulu lewat halaman pesanan.
 - Pengguna berhak menolak usulanmu. Kalau dia bilang tidak mau ke suatu tempat, panggil remove_trip_item, jangan membujuk.
 - Jangan memanggil tool pengubah canvas untuk hal yang tidak diminta. Kalau pengguna hanya bertanya-tanya, jawab saja tanpa mengubah rencana.
 
@@ -580,7 +559,6 @@ export const sendMessage = async (req, res) => {
     }
 
     const interactive = await attachCoverImages(buildInteractiveBlocks(toolTrace, answer));
-
     const { error: answerError } = await req.db.from('chat_messages').insert({
       room_id: room.id,
       role: 'assistant',
@@ -616,135 +594,6 @@ export const sendMessage = async (req, res) => {
       });
     }
     console.error('[sendMessage] error', err);
-    return res.status(500).json({ error: 'server_error' });
-  }
-};
-
-// POST /api/chat/rooms/:id/checkout
-// Mengubah isi canvas menjadi booking sungguhan.
-
-export const checkoutTrip = async (req, res) => {
-  try {
-    const { data: room, error: roomError } = await req.db
-      .from('chat_rooms')
-      .select('id, trip_id')
-      .eq('id', req.params.id)
-      .eq('user_id', req.user.id)
-      .maybeSingle();
-    if (roomError) throw roomError;
-
-    if (!room) {
-      return res.status(404).json({ error: 'not_found', message: 'Ruang chat tidak ditemukan' });
-    }
-
-    const canvas = await loadCanvas(req.db, room.trip_id);
-
-    // Hanya yang confirmed, lengkap, dan BELUM pernah dipesan.
-    const bookableItems = canvas.items.filter(
-      (i) => i.status === 'confirmed' && i.accommodations && i.check_in && i.check_out
-    );
-    const bookableFlights = canvas.flights.filter((f) => !f.booked_at && f.flight_options?.id);
-
-    if (bookableItems.length === 0 && bookableFlights.length === 0) {
-      const adaYangSudah =
-        canvas.items.some((i) => i.status === 'booked') || canvas.flights.some((f) => f.booked_at);
-
-      if (adaYangSudah) {
-        return res.status(409).json({
-          error: 'already_booked',
-          message: 'Semua yang siap dipesan di rencana ini sudah pernah dipesan. Cek halaman pesanan kamu.',
-        });
-      }
-
-      return res.status(400).json({
-        error: 'nothing_to_book',
-        message: 'Belum ada penginapan atau penerbangan yang siap dipesan. Konfirmasi dulu pilihannya.',
-      });
-    }
-
-    const results = { accommodation_bookings: [], flight_booking: null, errors: [] };
-
-    // Penerbangan dipesan sebagai satu booking berisi outbound dan return.
-    // RPC create_flight_booking hanya menerima 1 atau 2 penerbangan, jadi
-    // kelebihannya ditolak di sini dengan pesan yang bisa dibaca pengguna,
-    // bukan dilempar ke RPC dan kembali sebagai error mentah.
-    if (bookableFlights.length > MAX_FLIGHT_LEGS) {
-      results.errors.push({
-        kind: 'flight',
-        message: `Rencana ini punya ${bookableFlights.length} penerbangan, sementara satu pemesanan hanya bisa memuat ${MAX_FLIGHT_LEGS} (berangkat dan pulang). Hapus dulu penerbangan yang berlebih.`,
-      });
-    } else if (bookableFlights.length) {
-      const items = bookableFlights.map((f) => ({
-        flight_option_id: f.flight_options.id,
-        flight_type: f.flight_type,
-      }));
-
-      const { data, error } = await req.db.rpc('create_flight_booking', {
-        p_user_id: req.user.id,
-        p_items: items,
-      });
-
-      if (error) {
-        results.errors.push({ kind: 'flight', message: error.message });
-      } else {
-        results.flight_booking = data;
-
-        // Tandai supaya checkout kedua tidak memesan ulang penerbangan yang sama.
-        const { error: markError } = await req.db
-          .from('trip_flights')
-          .update({ booked_at: new Date().toISOString() })
-          .in('id', bookableFlights.map((f) => f.id));
-        if (markError) console.error('[checkoutTrip] gagal menandai penerbangan terpesan', markError);
-      }
-    }
-
-    // Tiap penginapan jadi booking terpisah, karena tanggal dan tempatnya
-    // berbeda-beda. Kegagalan satu penginapan tidak membatalkan yang lain;
-    // yang gagal dilaporkan supaya pengguna bisa memperbaikinya sendiri.
-    for (const item of bookableItems) {
-      const { data, error } = await req.db.rpc('create_accommodation_booking', {
-        p_user_id: req.user.id,
-        p_accommodation_id: item.accommodations.id,
-        p_check_in: item.check_in,
-        p_check_out: item.check_out,
-        p_guests: item.guests || 1,
-      });
-
-      if (error) {
-        results.errors.push({
-          kind: 'accommodation',
-          destination: item.destinations?.name,
-          message: error.message,
-        });
-        continue;
-      }
-
-      results.accommodation_bookings.push({
-        destination: item.destinations?.name,
-        ...data,
-      });
-
-      const { error: markError } = await req.db
-        .from('trip_items')
-        .update({ status: 'booked' })
-        .eq('id', item.id)
-        .eq('trip_id', room.trip_id);
-      if (markError) console.error('[checkoutTrip] gagal menandai item terpesan', item.id, markError);
-    }
-
-    const anySuccess = results.flight_booking || results.accommodation_bookings.length > 0;
-
-    if (anySuccess) {
-      const { error: tripError } = await req.db
-        .from('trips')
-        .update({ status: 'booked' })
-        .eq('id', room.trip_id);
-      if (tripError) console.error('[checkoutTrip] gagal memperbarui status trip', tripError);
-    }
-
-    return res.status(anySuccess ? 201 : 409).json({ data: results });
-  } catch (err) {
-    console.error('[checkoutTrip] error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

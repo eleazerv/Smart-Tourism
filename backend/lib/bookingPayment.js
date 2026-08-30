@@ -31,6 +31,9 @@ const RPC_ERRORS = {
   BOOKING_NOT_FOUND:       [404, 'Booking not found'],
   NOT_BOOKING_OWNER:       [403, 'This booking does not belong to you'],
   UNKNOWN_BOOKING_CODE:    [400, 'Booking code is not recognized'],
+
+  TRIP_NOT_FOUND:          [404, 'Trip not found or does not belong to you'],
+  NOTHING_TO_BOOK:         [400, 'Nothing in this trip is ready to be booked'],
 };
 
 export function handleRpcError (res,error,tag) { 
@@ -125,7 +128,8 @@ export async function settleOverdue (bookings, tag) {
     return changed;
 }
 
-const SWEEP_TABLES = ['flight_bookings', 'accommodation_bookings'];
+
+const SWEEP_TABLES = ['flight_bookings', 'accommodation_bookings', 'trip_bookings'];
 
 /**
  * Menyapu semua booking pending yang sudah lewat batas, bukan cuma yang
@@ -152,7 +156,7 @@ export async function sweepOverdueBookings () {
 export async function startPayment ({ req,res,table,tag,describe}) {
     const bookingId = req.params.id;
 
-    
+
     const { data: booking, error } = await req.db
         .from(table)
         .select('*')
@@ -181,8 +185,11 @@ export async function startPayment ({ req,res,table,tag,describe}) {
     }
 
     // Lewat batas waktu berarti tagihannya sudah mati di sisi Xendit dan
-    // kursinya dilepas. Booking-nya ditutup di sini, bukan dibuatkan invoice
-    // baru, supaya tenggat pembayaran benar-benar berarti.
+    // kursinya dilepas. Booking-nya ditutup di sini (lewat settleOverdue,
+    // bukan dicek manual pakai tanggal), supaya kursi/kamar ikut dilepas dan
+    // statusnya konsisten dengan jalur webhook -- bukan cuma menolak request
+    // ini tanpa membereskan booking-nya.
+
     if (await settleOverdue(booking, tag)) {
         return res.status(409).json({
             error: 'booking_expired',

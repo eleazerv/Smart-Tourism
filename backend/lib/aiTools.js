@@ -1,5 +1,18 @@
 import { supabase } from './supabase.js';
 import { estimateDrivingRoute } from './openroute.js';
+import {
+  getDestinationCity, resolveOrCreateStop,
+  createStop, nextItemSequence, loadOwnedStop,
+} from './tripStops.helper.js'; // sesuaikan path relatifnya
+
+// Validasi ringan sebelum query ke database -- kalau model salah kirim
+// (nama tempat, string kosong, dsb) alih-alih UUID, ini mengembalikan
+// pesan yang bisa diperbaiki model sendiri, bukan error Postgres mentah
+// (invalid input syntax for type uuid) yang cuma bikin bingung.
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
+function isUuid(value) {
+  return typeof value === 'string' && UUID_RE.test(value);
+}
 
 export const TOOL_DEFINITIONS = [
   {
@@ -45,10 +58,18 @@ export const TOOL_DEFINITIONS = [
     type: 'function',
     function: {
       name: 'get_destination_detail',
-      description: 'Ambil detail lengkap satu destinasi, termasuk koordinat dan kotanya.',
+      description:
+        'Ambil detail lengkap satu destinasi, termasuk koordinat dan kotanya. ' +
+        'destination_id WAJIB berupa UUID persis seperti field "id" pada hasil ' +
+        'search_destinations -- JANGAN kirim nama destinasinya.',
       parameters: {
         type: 'object',
-        properties: { destination_id: { type: 'string' } },
+        properties: {
+          destination_id: {
+            type: 'string',
+            description: 'UUID destinasi, ambil dari field id hasil search_destinations. Bukan nama tempatnya.',
+          },
+        },
         required: ['destination_id'],
       },
     },
@@ -184,11 +205,13 @@ export const TOOL_DEFINITIONS = [
     function: {
       name: 'add_destination_to_trip',
       description:
-        'Tambahkan satu destinasi ke rencana perjalanan. Panggil sekali per destinasi. Statusnya "suggested" sampai pengguna menyetujui.',
+        'Tambahkan satu destinasi ke rencana perjalanan. Panggil sekali per destinasi. ' +
+        'Kota tujuannya otomatis ditentukan dari kota destinasi itu -- kalau kota itu belum ' +
+        'disinggahi, stop baru dibuat otomatis. Statusnya "suggested" sampai pengguna menyetujui.',
       parameters: {
         type: 'object',
         properties: {
-          destination_id: { type: 'string' },
+          destination_id: { type: 'string', description: 'UUID dari hasil search_destinations, bukan nama tempatnya.' },
           notes: { type: 'string', description: 'Alasan singkat kenapa tempat ini cocok' },
         },
         required: ['destination_id'],
@@ -228,48 +251,108 @@ export const TOOL_DEFINITIONS = [
     function: {
       name: 'reorder_trip_items',
       description:
-        'Ubah urutan kunjungan. Kirim seluruh item_id sesuai urutan yang diinginkan.',
+        'Ubah urutan kunjungan destinasi DI DALAM satu kota. Kirim stop_id kota itu ' +
+        'beserta seluruh item_id di dalamnya sesuai urutan yang diinginkan. ' +
+        'Untuk mengubah urutan antar-kota, pakai reorder_trip_stops.',
       parameters: {
         type: 'object',
         properties: {
+          stop_id: { type: 'string' },
           ordered_item_ids: { type: 'array', items: { type: 'string' } },
         },
-        required: ['ordered_item_ids'],
+        required: ['stop_id', 'ordered_item_ids'],
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'set_accommodation_for_item',
+      name: 'reorder_trip_stops',
       description:
-        'Pilih penginapan untuk satu destinasi dalam rencana, sekaligus tanggal menginapnya.',
+        'Ubah urutan kota yang disinggahi. Kirim seluruh stop_id sesuai urutan ' +
+        'perjalanan yang diinginkan.',
       parameters: {
         type: 'object',
         properties: {
-          item_id: { type: 'string' },
+          ordered_stop_ids: { type: 'array', items: { type: 'string' } },
+        },
+        required: ['ordered_stop_ids'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_accommodation_for_stop',
+      description:
+        'Usulkan penginapan dan tanggal menginap untuk satu KOTA dalam rencana. ' +
+        'Satu penginapan berlaku untuk semua destinasi di kota itu, jadi cukup ' +
+        'dipanggil sekali per kota -- bukan per destinasi. Ini baru USULAN -- panggil ' +
+        'confirm_accommodation_for_stop setelah pengguna setuju, baru ikut checkout.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stop_id: { type: 'string' },
           accommodation_id: { type: 'string' },
           check_in: { type: 'string', description: 'YYYY-MM-DD' },
           check_out: { type: 'string', description: 'YYYY-MM-DD' },
-          guests: { type: 'integer' },
         },
-        required: ['item_id', 'accommodation_id'],
+        required: ['stop_id', 'accommodation_id'],
       },
     },
   },
   {
     type: 'function',
     function: {
-      name: 'set_flight_for_trip',
+      name: 'confirm_accommodation_for_stop',
       description:
-        'Pilih penerbangan untuk rencana ini. flight_type "outbound" untuk berangkat, "return" untuk pulang.',
+        'Tandai penginapan yang diusulkan untuk satu kota sebagai disetujui pengguna. ' +
+        'Hanya yang disetujui yang akan diproses saat checkout. Panggil ini SETELAH ' +
+        'pengguna bilang setuju di chat, jangan langsung setelah set_accommodation_for_stop.',
       parameters: {
         type: 'object',
         properties: {
-          flight_option_id: { type: 'string' },
-          flight_type: { type: 'string', enum: ['outbound', 'return'] },
+          stop_id: { type: 'string' },
         },
-        required: ['flight_option_id', 'flight_type'],
+        required: ['stop_id'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'set_flight_for_stop',
+      description:
+        'Usulkan penerbangan untuk satu KOTA dalam rencana. flight_role "arrival" untuk ' +
+        'penerbangan MENUJU kota itu, "departure" untuk penerbangan MENINGGALKAN kota itu. ' +
+        'Trip dengan banyak kota butuh ini dipanggil untuk tiap perpindahan, bukan cuma sekali. ' +
+        'Ini baru USULAN -- panggil confirm_flight_for_stop setelah pengguna setuju.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stop_id: { type: 'string' },
+          flight_option_id: { type: 'string' },
+          flight_role: { type: 'string', enum: ['arrival', 'departure'] },
+        },
+        required: ['stop_id', 'flight_option_id', 'flight_role'],
+      },
+    },
+  },
+  {
+    type: 'function',
+    function: {
+      name: 'confirm_flight_for_stop',
+      description:
+        'Tandai penerbangan yang diusulkan untuk satu kota+role sebagai disetujui pengguna. ' +
+        'Hanya yang disetujui yang akan diproses saat checkout. Panggil ini SETELAH pengguna ' +
+        'bilang setuju di chat, jangan langsung setelah set_flight_for_stop.',
+      parameters: {
+        type: 'object',
+        properties: {
+          stop_id: { type: 'string' },
+          flight_role: { type: 'string', enum: ['arrival', 'departure'] },
+        },
+        required: ['stop_id', 'flight_role'],
       },
     },
   },
@@ -305,20 +388,6 @@ const DEST_FIELDS = `
   cities ( id, name )
 `;
 
-async function nextSequence(db, tripId) {
-  const { data, error } = await db
-    .from('trip_items')
-    .select('sequence_order')
-    .eq('trip_id', tripId)
-    .order('sequence_order', { ascending: false })
-    .limit(1)
-    .maybeSingle();
-
-  if (error) throw error;
-
-  return (data?.sequence_order ?? 0) + 1;
-}
-
 // Kolom departure_time bertipe `timestamp without time zone`, jadi
 // pembandingnya harus waktu LOKAL, bukan `new Date().toISOString()` yang
 // selalu UTC. Ini bug yang sama seperti yang pernah muncul di alur booking:
@@ -336,7 +405,7 @@ function maxTimestamp(a, b) {
   return a > b ? a : b;
 }
 
-// Jarak garis lurus antara dua koordinat, dalam km. Sama dengan rumus yang
+// Jarak garis lurus antara dua koordinat, dalam km.
 function haversineKm(lat1, lon1, lat2, lon2) {
   const toRad = (deg) => (deg * Math.PI) / 180;
   const dLat = toRad(lat2 - lat1);
@@ -352,22 +421,20 @@ function haversineKm(lat1, lon1, lat2, lon2) {
 async function assertItemEditable(db, itemId, tripId) {
   const { data, error } = await db
     .from('trip_items')
-    .select('id, status, destinations(name)')
+    .select(`
+      id, status, trip_stop_id,
+      destinations ( name ),
+      trip_stops!inner ( id, trip_id, city_id, accommodation_id, accommodation_status )
+    `)
     .eq('id', itemId)
-    .eq('trip_id', tripId)
+    .eq('trip_stops.trip_id', tripId)
     .maybeSingle();
 
   if (error) throw error;
   if (!data) return { ok: false, reason: 'Item tidak ditemukan dalam rencana ini' };
-  if (data.status === 'booked') {
-    return {
-      ok: false,
-      reason: `${data.destinations?.name || 'Item ini'} sudah dipesan, jadi tidak bisa diubah dari sini. Batalkan bookingnya dulu di halaman pesanan.`,
-    };
-  }
   return { ok: true, row: data };
 }
-// cuma json 
+
 const HANDLERS = {
   async list_cities({ query }) {
     let q = supabase.from('cities').select('id, name, is_major_hub, provinces(name)');
@@ -378,10 +445,7 @@ const HANDLERS = {
   },
 
   // Menjalankan semua kata kunci sekaligus lalu menggabungkan hasilnya.
-  // Ini yang menghilangkan alasan model memanggil tool berulang kali:
-  // satu panggilan sudah mencakup semua padanan kata yang ingin dia coba.
   async search_destinations({ queries, query, tags, city_id, province_id }) {
-
     const keywords = Array.isArray(queries) && queries.length
       ? queries.slice(0, 4)
       : (query ? [query] : [null]);
@@ -419,8 +483,8 @@ const HANDLERS = {
     });
 
     const merged = [...byId.values()].sort((a, b) => {
-      if (b.hits !== a.hits) return b.hits - a.hits;      
-      return a.firstAt - b.firstAt;                     
+      if (b.hits !== a.hits) return b.hits - a.hits;
+      return a.firstAt - b.firstAt;
     });
 
     return {
@@ -445,6 +509,10 @@ const HANDLERS = {
   },
 
   async get_destination_detail({ destination_id }) {
+    if (!isUuid(destination_id)) {
+      return { error: `destination_id harus UUID dari hasil search_destinations, bukan "${destination_id}". Cari dulu lewat search_destinations untuk dapat id-nya.` };
+    }
+
     const { data, error } = await supabase
       .from('destinations')
       .select(DEST_FIELDS)
@@ -496,6 +564,10 @@ const HANDLERS = {
   },
 
   async search_accommodations({ destination_id, tier }) {
+    if (!isUuid(destination_id)) {
+      return { error: `destination_id harus UUID dari hasil search_destinations, bukan "${destination_id}".` };
+    }
+
     const { data: dest } = await supabase
       .from('destinations')
       .select('city_id, name, latitude, longitude')
@@ -512,9 +584,6 @@ const HANDLERS = {
     const { data, error } = await q.order('price_per_night').limit(10);
     if (error) throw error;
 
-    // Jarak dihitung di sini supaya model bisa menyebutkannya ke pengguna.
-    // Tanpa ini, UI bisa menampilkan jarak tapi AI tidak tahu apa-apa soal
-    // seberapa dekat penginapan itu dari destinasinya.
     const withDistance = (data || []).map((a) => ({
       id: a.id,
       name: a.name,
@@ -540,8 +609,6 @@ const HANDLERS = {
 
   async get_flight_calendar({ origin_city_id, destination_city_id, month }) {
     const target = month || new Date().toISOString().slice(0, 7);
-    // Untuk bulan berjalan, mulai dari sekarang — bukan tanggal 1 — supaya
-    // model tidak menawarkan tanggal yang sudah lewat.
     const monthStart = `${target}-01T00:00:00`;
     const now = nowLocalTimestamp();
     const start = monthStart > now ? monthStart : now;
@@ -608,6 +675,10 @@ const HANDLERS = {
   },
 
   async estimate_route({ from_destination_id, to_destination_id }) {
+    if (!isUuid(from_destination_id) || !isUuid(to_destination_id)) {
+      return { error: 'from_destination_id dan to_destination_id harus UUID dari hasil search_destinations.' };
+    }
+
     const { data, error } = await supabase
       .from('destinations')
       .select('id, name, latitude, longitude')
@@ -621,12 +692,16 @@ const HANDLERS = {
     const { geometry, ...result } = await estimateDrivingRoute({
       fromLat: from.latitude, fromLng: from.longitude,
       toLat: to.latitude, toLng: to.longitude,
-    });  
-    
+    });
+
     return { from: from.name, to: to.name, ...result };
   },
 
   async estimate_budget({ destination_id, origin_city_id, tier, duration_days, travelers }) {
+    if (!isUuid(destination_id)) {
+      return { error: `destination_id harus UUID dari hasil search_destinations, bukan "${destination_id}".` };
+    }
+
     const { data: dest } = await supabase
       .from('destinations')
       .select('id, name, city_id')
@@ -687,31 +762,36 @@ const HANDLERS = {
   // ---------- pengubah canvas ----------
 
   async add_destination_to_trip({ destination_id, notes }, ctx) {
-    const { data: dest } = await supabase
-      .from('destinations')
-      .select('id, name')
-      .eq('id', destination_id)
-      .maybeSingle();
+    if (!isUuid(destination_id)) {
+      return { error: `destination_id harus UUID dari hasil search_destinations, bukan "${destination_id}". Cari dulu lewat search_destinations untuk dapat id-nya.` };
+    }
+
+    const dest = await getDestinationCity(destination_id);
     if (!dest) return { error: 'Destinasi tidak ditemukan' };
+
+    // Kota tujuan ditentukan dari kota destinasinya sendiri -- stop dibuat
+    // otomatis kalau kota itu belum pernah disinggahi di trip ini.
+    const { stop, created: stopCreated } = await resolveOrCreateStop(
+      ctx.db, ctx.tripId, dest.city_id
+    );
 
     const { data: existing, error: existingError } = await ctx.db
       .from('trip_items')
       .select('id, status, sequence_order')
-      .eq('trip_id', ctx.tripId)
+      .eq('trip_stop_id', stop.id)
       .eq('destination_id', destination_id)
       .maybeSingle();
     if (existingError) throw existingError;
 
     if (existing) {
-      if (existing.status === 'booked') {
-        return { error: `${dest.name} sudah dipesan, jadi tetap ada di rencana.` };
-      }
-
-      // Sudah ada dan masih aktif: tidak perlu diubah apa-apa.
+      // trip_items tidak lagi punya status 'booked' -- destinasi individual
+      // tidak pernah dipesan sendiri, yang dipesan adalah akomodasi di stop.
       if (existing.status !== 'removed') {
         return {
           already_in_trip: dest.name,
           item_id: existing.id,
+          stop_id: stop.id,
+          city: dest.cities?.name,
           order: existing.sequence_order,
         };
       }
@@ -721,20 +801,27 @@ const HANDLERS = {
         .from('trip_items')
         .update({ status: 'suggested', notes: notes || null })
         .eq('id', existing.id)
-        .eq('trip_id', ctx.tripId)
+        .eq('trip_stop_id', stop.id)
         .select('id, sequence_order, status')
         .single();
       if (reviveError) throw reviveError;
 
-      return { added: dest.name, item_id: revived.id, order: revived.sequence_order, revived: true };
+      return {
+        added: dest.name,
+        item_id: revived.id,
+        stop_id: stop.id,
+        city: dest.cities?.name,
+        order: revived.sequence_order,
+        revived: true,
+      };
     }
 
-    const order = await nextSequence(ctx.db, ctx.tripId);
+    const order = await nextItemSequence(ctx.db, stop.id);
 
     const { data, error } = await ctx.db
       .from('trip_items')
       .insert({
-        trip_id: ctx.tripId,
+        trip_stop_id: stop.id,
         destination_id,
         notes: notes || null,
         status: 'suggested',
@@ -744,10 +831,24 @@ const HANDLERS = {
       .single();
 
     if (error) throw error;
-    return { added: dest.name, item_id: data.id, order: data.sequence_order };
+
+    return {
+      added: dest.name,
+      item_id: data.id,
+      stop_id: stop.id,
+      city: dest.cities?.name,
+      order: data.sequence_order,
+      // Model perlu tahu ini supaya bisa bilang "sekalian nambah singgah di
+      // X" alih-alih diam-diam membuat stop baru tanpa penjelasan.
+      new_stop_created: stopCreated,
+    };
   },
 
   async remove_trip_item({ item_id }, ctx) {
+    if (!isUuid(item_id)) {
+      return { error: `item_id harus UUID dari canvas, bukan "${item_id}".` };
+    }
+
     const editable = await assertItemEditable(ctx.db, item_id, ctx.tripId);
     if (!editable.ok) return { error: editable.reason };
 
@@ -755,7 +856,7 @@ const HANDLERS = {
       .from('trip_items')
       .update({ status: 'removed' })
       .eq('id', item_id)
-      .eq('trip_id', ctx.tripId)
+      .eq('trip_stop_id', editable.row.trip_stop_id)
       .select('id, destinations(name)')
       .maybeSingle();
     if (error) throw error;
@@ -768,23 +869,32 @@ const HANDLERS = {
       return { error: 'item_ids harus berisi minimal satu id' };
     }
 
-    // Item yang sudah dipesan dilewati, bukan ditolak seluruhnya: model
-    // sering mengirim ulang seluruh daftar item saat mengonfirmasi.
+    const { data: stops, error: stopsError } = await ctx.db
+      .from('trip_stops')
+      .select('id')
+      .eq('trip_id', ctx.tripId);
+    if (stopsError) throw stopsError;
+
+    const stopIds = (stops || []).map((s) => s.id);
+    if (stopIds.length === 0) return { confirmed_count: 0 };
+
     const { data, error } = await ctx.db
       .from('trip_items')
       .update({ status: 'confirmed' })
       .in('id', item_ids)
-      .eq('trip_id', ctx.tripId)
-      .neq('status', 'booked')
+      .in('trip_stop_id', stopIds)
       .select('id');
     if (error) throw error;
     return { confirmed_count: data.length };
   },
 
-  async reorder_trip_items({ ordered_item_ids }, ctx) {
+  async reorder_trip_items({ stop_id, ordered_item_ids }, ctx) {
     if (!Array.isArray(ordered_item_ids) || ordered_item_ids.length === 0) {
       return { error: 'ordered_item_ids harus berisi minimal satu id' };
     }
+
+    const stop = await loadOwnedStop(ctx.db, ctx.tripId, stop_id);
+    if (!stop) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
 
     let updated = 0;
     for (let i = 0; i < ordered_item_ids.length; i++) {
@@ -792,70 +902,139 @@ const HANDLERS = {
         .from('trip_items')
         .update({ sequence_order: i + 1 })
         .eq('id', ordered_item_ids[i])
-        .eq('trip_id', ctx.tripId)
+        .eq('trip_stop_id', stop.id)
         .select('id');
       if (error) throw error;
       updated += data?.length ?? 0;
     }
 
-    // Kalau ada id yang tidak cocok, laporkan apa adanya supaya model tidak
-    // mengira urutannya sudah berubah padahal sebagian gagal.
     if (updated !== ordered_item_ids.length) {
       return {
         reordered: updated,
-        warning: `${ordered_item_ids.length - updated} item tidak ditemukan dalam rencana ini dan urutannya tidak berubah.`,
+        warning: `${ordered_item_ids.length - updated} item bukan bagian dari kota ini dan urutannya tidak berubah.`,
       };
     }
 
     return { reordered: updated };
   },
 
-  async set_accommodation_for_item({ item_id, accommodation_id, check_in, check_out, guests }, ctx) {
+  async reorder_trip_stops({ ordered_stop_ids }, ctx) {
+    if (!Array.isArray(ordered_stop_ids) || ordered_stop_ids.length === 0) {
+      return { error: 'ordered_stop_ids harus berisi minimal satu id' };
+    }
+
+    let updated = 0;
+    for (let i = 0; i < ordered_stop_ids.length; i++) {
+      const { data, error } = await ctx.db
+        .from('trip_stops')
+        .update({ sequence_order: i + 1 })
+        .eq('id', ordered_stop_ids[i])
+        .eq('trip_id', ctx.tripId)
+        .select('id');
+      if (error) throw error;
+      updated += data?.length ?? 0;
+    }
+
+    if (updated !== ordered_stop_ids.length) {
+      return {
+        reordered: updated,
+        warning: `${ordered_stop_ids.length - updated} kota tidak ditemukan dalam rencana ini.`,
+      };
+    }
+
+    return { reordered: updated };
+  },
+
+  async set_accommodation_for_stop({ stop_id, accommodation_id, check_in, check_out }, ctx) {
+    const stop = await loadOwnedStop(ctx.db, ctx.tripId, stop_id);
+    if (!stop) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
+
+    // Akomodasi yang sudah dibayar tidak boleh diganti/geser tanggal dari sini.
+    if (stop.accommodation_status === 'booked') {
+      return { error: 'Akomodasi kota ini sudah dipesan. Batalkan dulu bookingnya di halaman pesanan sebelum mengganti penginapan atau tanggal.' };
+    }
+
     const { data: acc } = await supabase
       .from('accommodations')
-      .select('id, name, price_per_night, max_guests')
+      .select('id, name, price_per_night, max_guests, city_id')
       .eq('id', accommodation_id)
       .maybeSingle();
     if (!acc) return { error: 'Akomodasi tidak ditemukan' };
 
-    if (guests && guests > acc.max_guests) {
-      return { error: `Kapasitas ${acc.name} hanya ${acc.max_guests} orang per kamar.` };
+    if (acc.city_id !== stop.city_id) {
+      return { error: `${acc.name} tidak berada di kota ini.` };
     }
 
-    const editable = await assertItemEditable(ctx.db, item_id, ctx.tripId);
-    if (!editable.ok) return { error: editable.reason };
-
-    // Tanggal divalidasi di sini supaya kesalahan ketahuan saat model
-    // menyusun rencana, bukan nanti saat checkout ketika RPC menolaknya.
     const datePattern = /^\d{4}-\d{2}-\d{2}$/;
     for (const [label, value] of [['check_in', check_in], ['check_out', check_out]]) {
       if (value && !datePattern.test(value)) {
         return { error: `${label} harus format YYYY-MM-DD` };
       }
     }
-    if (check_in && check_out && check_out <= check_in) {
+
+    const finalIn = check_in ?? stop.check_in;
+    const finalOut = check_out ?? stop.check_out;
+    if (finalIn && finalOut && finalOut <= finalIn) {
       return { error: 'check_out harus setelah check_in' };
     }
 
-    const patch = { accommodation_id };
+    // BEDA dengan endpoint REST (patchTripStop): dipanggil dari sini artinya
+    // AI yang mengusulkan, jadi statusnya 'suggested' -- BELUM ikut checkout
+    // sampai user setuju dan AI memanggil confirm_accommodation_for_stop.
+    const patch = {
+      accommodation_id,
+      accommodation_status: 'suggested',
+      accommodation_booking_id: null,
+    };
     if (check_in) patch.check_in = check_in;
     if (check_out) patch.check_out = check_out;
-    if (guests) patch.guests = guests;
 
     const { data, error } = await ctx.db
-      .from('trip_items')
+      .from('trip_stops')
       .update(patch)
-      .eq('id', item_id)
+      .eq('id', stop.id)
       .eq('trip_id', ctx.tripId)
       .select('id')
       .maybeSingle();
     if (error) throw error;
-    if (!data) return { error: 'Item tidak ditemukan dalam rencana ini' };
+    if (!data) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
 
-    return { item_id, accommodation: acc.name, price_per_night: acc.price_per_night };
+    return {
+      stop_id: stop.id,
+      accommodation: acc.name,
+      price_per_night: acc.price_per_night,
+      check_in: finalIn,
+      check_out: finalOut,
+      status: 'suggested',
+      note: 'Penginapan ini masih usulan -- panggil confirm_accommodation_for_stop setelah pengguna setuju, baru akan ikut checkout.',
+    };
   },
 
-  async set_flight_for_trip({ flight_option_id, flight_type }, ctx) {
+  async confirm_accommodation_for_stop({ stop_id }, ctx) {
+    const stop = await loadOwnedStop(ctx.db, ctx.tripId, stop_id);
+    if (!stop) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
+
+    if (stop.accommodation_status === 'booked') {
+      return { error: 'Akomodasi kota ini sudah dipesan, tidak perlu dikonfirmasi lagi.' };
+    }
+    if (stop.accommodation_status !== 'suggested') {
+      return { error: 'Belum ada penginapan yang diusulkan untuk kota ini.' };
+    }
+
+    const { error } = await ctx.db
+      .from('trip_stops')
+      .update({ accommodation_status: 'pending' })
+      .eq('id', stop.id)
+      .eq('trip_id', ctx.tripId);
+    if (error) throw error;
+
+    return { stop_id: stop.id, confirmed: true };
+  },
+
+  async set_flight_for_stop({ stop_id, flight_option_id, flight_role }, ctx) {
+    const stop = await loadOwnedStop(ctx.db, ctx.tripId, stop_id);
+    if (!stop) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
+
     const { data: flight } = await supabase
       .from('flight_options')
       .select('id, airline, flight_number, departure_time, price, available_seats')
@@ -864,49 +1043,65 @@ const HANDLERS = {
     if (!flight) return { error: 'Penerbangan tidak ditemukan' };
     if ((flight.available_seats ?? 0) < 1) return { error: 'Kursi penerbangan ini sudah habis.' };
 
-    // Leg yang sudah dipesan tidak boleh ditimpa: bookingnya sungguhan dan
-    // kursinya sudah terpotong, jadi mengganti barisnya hanya membuat canvas
-    // berbohong soal apa yang benar-benar dipesan.
     const { data: existingLeg, error: legError } = await ctx.db
       .from('trip_flights')
       .select('id, booked_at')
-      .eq('trip_id', ctx.tripId)
-      .eq('flight_type', flight_type)
+      .eq('trip_stop_id', stop.id)
+      .eq('flight_role', flight_role)
       .maybeSingle();
     if (legError) throw legError;
 
     if (existingLeg?.booked_at) {
       return {
-        error: `Penerbangan ${flight_type} sudah dipesan, jadi tidak bisa diganti dari sini. Batalkan dulu bookingnya di halaman pesanan.`,
+        error: `Penerbangan ${flight_role} untuk kota ini sudah dipesan, jadi tidak bisa diganti dari sini. Batalkan dulu bookingnya di halaman pesanan.`,
       };
     }
 
-    // flight_type cuma punya dua nilai (outbound/return), jadi tidak ada
-    // "slot ketiga" -- memanggil ini lagi untuk flight_type yang sama
-    // MENIMPA pilihan sebelumnya, bukan menambah baris baru. Kalau memang
-    // ada pilihan lama yang beda, itu dicatat di sini supaya modelnya
-    // menyebutkan penggantian itu ke pengguna, bukan diam-diam menghilang.
     const replaced = existingLeg && existingLeg.id && !existingLeg.booked_at;
 
     const { error } = await ctx.db
       .from('trip_flights')
       .upsert(
-        { trip_id: ctx.tripId, flight_option_id, flight_type },
-        { onConflict: 'trip_id,flight_type' }
+        { trip_id: ctx.tripId, trip_stop_id: stop.id, flight_option_id, flight_role, confirmed: false },
+        { onConflict: 'trip_stop_id,flight_role' }
       );
     if (error) throw error;
 
     return {
-      flight_type,
+      stop_id: stop.id,
+      flight_role,
       airline: flight.airline,
       flight_number: flight.flight_number,
-      departure_time: flight.departure_time,
       price: flight.price,
-      replaced_previous_choice: !!replaced,
-      note: replaced
-        ? `Pilihan ${flight_type} sebelumnya diganti dengan penerbangan ini. Rencana hanya bisa menyimpan satu ${flight_type}.`
-        : undefined,
+      replaced,
+      confirmed: false,
+      note: 'Penerbangan ini masih usulan -- panggil confirm_flight_for_stop setelah pengguna setuju, baru akan ikut checkout.',
     };
+  },
+
+  async confirm_flight_for_stop({ stop_id, flight_role }, ctx) {
+    const stop = await loadOwnedStop(ctx.db, ctx.tripId, stop_id);
+    if (!stop) return { error: 'Kota (stop) tidak ditemukan dalam rencana ini' };
+
+    const { data: leg, error: legError } = await ctx.db
+      .from('trip_flights')
+      .select('id, booked_at, confirmed')
+      .eq('trip_stop_id', stop.id)
+      .eq('flight_role', flight_role)
+      .maybeSingle();
+    if (legError) throw legError;
+
+    if (!leg) return { error: `Belum ada penerbangan ${flight_role} yang dipilih untuk kota ini.` };
+    if (leg.booked_at) return { error: 'Penerbangan ini sudah dipesan, tidak perlu dikonfirmasi lagi.' };
+    if (leg.confirmed) return { stop_id: stop.id, flight_role, already_confirmed: true };
+
+    const { error } = await ctx.db
+      .from('trip_flights')
+      .update({ confirmed: true })
+      .eq('id', leg.id);
+    if (error) throw error;
+
+    return { stop_id: stop.id, flight_role, confirmed: true };
   },
 
   async update_trip_info(args, ctx) {
@@ -928,8 +1123,9 @@ const HANDLERS = {
 };
 
 /**
- * Menjalankan satu tool. Error dari tool sengaja TIDAK dilempar ke atas,tapi sbg pesan error
-*/
+ * Menjalankan satu tool. Error dari tool sengaja TIDAK dilempar ke atas, tapi
+ * dikembalikan sebagai pesan error biasa.
+ */
 export async function executeTool(name, args, ctx) {
   const handler = HANDLERS[name];
   if (!handler) return { error: `Tool ${name} tidak dikenal` };

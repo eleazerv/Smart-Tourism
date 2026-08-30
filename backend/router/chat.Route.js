@@ -6,7 +6,6 @@ import {
   listRooms,
   getRoom,
   sendMessage,
-  checkoutTrip,
 } from '../controllers/Chat.Controller.js';
 
 const router = express.Router();
@@ -95,31 +94,5 @@ router.get('/rooms/:id', globalLimiter, getRoom);
 // strictLimiter dipakai karena satu pesan bisa memicu beberapa panggilan
 // ke Groq sekaligus beberapa kueri database.
 router.post('/rooms/:id/messages', chatLimiter, sendMessage);
-
-/**
- * @swagger
- * /api/chat/rooms/{id}/checkout:
- *   post:
- *     summary: Ubah isi rencana menjadi booking sungguhan
- *     description: >
- *       Hanya destinasi berstatus confirmed yang sudah punya penginapan
- *       dan tanggal yang diproses. Penerbangan yang dipilih dijadikan satu
- *       booking. Kalau sebagian gagal, yang berhasil tetap tersimpan dan
- *       yang gagal dilaporkan di errors.
- *     tags: [AI Chat]
- *     security:
- *       - bearerAuth: []
- *     parameters:
- *       - in: path
- *         name: id
- *         required: true
- *         schema: { type: string, format: uuid }
- *     responses:
- *       201:
- *         description: Sebagian atau seluruh booking berhasil dibuat
- *       400:
- *         description: Belum ada yang siap dipesan
- */
-router.post('/rooms/:id/checkout', strictLimiter, checkoutTrip);
 
 export default router;
