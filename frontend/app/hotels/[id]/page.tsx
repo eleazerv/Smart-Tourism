@@ -137,7 +137,7 @@ async function StayDetail({ params, searchParams }: PageProps) {
             <Rating value={rating} reviews={stay.review_count} className="text-sm" />
           )}
           {place && <span>{place}</span>}
-          <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-700/40 dark:text-brand-50">
+          <span className="rounded-full bg-brand-tint/10 px-2.5 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-700/40 dark:text-brand-50">
             {tierLabel(stay.tier)}
           </span>
         </div>
@@ -212,7 +212,7 @@ function Facts({ stay }: { stay: Accommodation }) {
     <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4">
       {facts.map(({ icon: Icon, label, value }) => (
         <div key={label} className="flex items-start gap-2.5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
             <Icon className="h-4 w-4" />
           </span>
           <div className="min-w-0">

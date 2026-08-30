@@ -11,7 +11,7 @@ export default function DestinationNotFound() {
 
       <main className="flex-1">
         <div className="container-page flex flex-col items-center py-24 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
             <Compass className="h-6 w-6" />
           </span>
           <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">

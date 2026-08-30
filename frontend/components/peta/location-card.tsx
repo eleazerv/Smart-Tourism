@@ -41,7 +41,7 @@ export function LocationCard({
       </h2>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
-        <div className="relative h-56 bg-brand-50 dark:bg-brand-700/30">
+        <div className="relative h-56 bg-brand-tint/10 dark:bg-brand-700/30">
           {mapped ? (
             <PlaceMapEmbed
               lat={place.latitude!}

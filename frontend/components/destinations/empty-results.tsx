@@ -55,7 +55,7 @@ export function EmptyResults({
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
         aria-hidden="true"
-        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-50 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
       >
         <Compass className="h-6 w-6" />
       </span>

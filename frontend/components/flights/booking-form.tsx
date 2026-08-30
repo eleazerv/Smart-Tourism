@@ -243,7 +243,7 @@ export function BookingForm({
           <button
             type="button"
             onClick={() => setSeatOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
           >
             <ArmchairIcon className="h-4 w-4" />
             {seatedCount > 0 ? "Ubah kursi" : "Pilih kursi"}

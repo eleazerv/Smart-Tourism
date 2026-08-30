@@ -43,7 +43,7 @@ export function FlightRow({
           <div className="flex items-center gap-2">
             <span
               aria-hidden="true"
-              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-50 text-[11px] font-bold text-brand-900 dark:bg-brand-700/50 dark:text-brand-50"
+              className="grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-brand-tint/10 text-[11px] font-bold text-brand-900 dark:bg-brand-700/50 dark:text-brand-50"
             >
               {carrierCode(flight.flight_number, flight.airline)}
             </span>
