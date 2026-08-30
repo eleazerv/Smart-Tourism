@@ -1,0 +1,18 @@
+# CADANGAN. Debian dan Ubuntu sudah punya /etc/nginx/proxy_params bawaan --
+# di sana file ini tidak perlu disalin. Gunakan hanya kalau distromu
+# (Alma, Rocky, Arch) tidak menyediakannya, karena deploy/nginx.conf
+# meng-include path itu dan nginx menolak start kalau file-nya tidak ada.
+#
+# Empat header pertama wajib: main.js memakai `trust proxy` dan rate limiter
+# di middleware/RateLimit.js mengunci berdasarkan IP klien -- tanpa header ini
+# semua request terlihat datang dari 127.0.0.1 dan satu pengunjung bisa
+# menghabiskan kuota semua orang.
+proxy_set_header Host              $http_host;
+proxy_set_header X-Real-IP         $remote_addr;
+proxy_set_header X-Forwarded-For   $proxy_add_x_forwarded_for;
+proxy_set_header X-Forwarded-Proto $scheme;
+
+# Keepalive ke upstream. Tidak ada WebSocket di project ini -- backend hanya
+# melayani JSON biasa, dan Next.js baru butuh upgrade saat `next dev`, bukan
+# di production -- jadi header Upgrade/Connection sengaja tidak dipasang.
+proxy_http_version 1.1;

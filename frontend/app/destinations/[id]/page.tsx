@@ -193,7 +193,7 @@ async function Guide({ params }: PageProps) {
               )}
               {place && <span>{place}</span>}
               {destination.category && (
-                <span className="rounded-full bg-brand-50 px-2.5 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-700/40 dark:text-brand-50">
+                <span className="rounded-full bg-brand-tint/10 px-2.5 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-700/40 dark:text-brand-50">
                   {destination.category}
                 </span>
               )}

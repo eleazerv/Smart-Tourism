@@ -87,7 +87,7 @@ export function ConfirmDialog({
               "mb-3 grid h-11 w-11 place-items-center rounded-full",
               destructive
                 ? "bg-destructive/10 text-destructive"
-                : "bg-brand-50 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50",
+                : "bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50",
             )}
           >
             {icon}

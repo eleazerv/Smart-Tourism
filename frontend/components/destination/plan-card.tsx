@@ -91,7 +91,7 @@ export function PlanCard({
           bestMonths.length === 0
             ? "bg-muted text-muted-foreground"
             : suits
-              ? "bg-brand-50 text-brand-900 dark:bg-brand-700/40 dark:text-brand-50"
+              ? "bg-brand-tint/10 text-brand-900 dark:bg-brand-700/40 dark:text-brand-50"
               : "bg-muted text-muted-foreground",
         )}
       >

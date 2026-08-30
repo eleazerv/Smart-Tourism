@@ -7,11 +7,11 @@
  *
  * Four layers, drawn bottom to top so the interactive ones stay clickable:
  *
- * 1. One `CircleMarker` per province, sized and graded by visitor count.
- *    Circles rather than a tile-baked heat layer: the API gives one number per
- *    province, so a dot per province says what the data knows and nothing more.
- *    They read as a wash under everything else — the crowding is context for
- *    the route, not a thing to click through.
+ * 1. One filled polygon per province, graded by visitor count. The outlines
+ *    come from `/geo/provinces-idn.geojson` — see `public/geo/README.md` for
+ *    the source and for why four provinces share their parent's shape. They
+ *    read as a wash under everything else: the crowding is context for the
+ *    route, not a thing to click through.
  * 2. The route's dashed legs.
  * 3. One dot per city in the catalogue, added after the provinces so a click
  *    lands on the city rather than the province circle beneath it.
@@ -37,13 +37,21 @@ import {
   DENSITY_LEVELS,
   NATIONAL_BOUNDS,
   formatVisitorsShort,
-  markerRadius,
   type Bounds,
   type DensityPoint,
   type RegionKey,
 } from "@/lib/heatmap-data";
+import {
+  loadProvinceShapes,
+  shapeDatum,
+  type ProvinceShapes,
+} from "@/lib/province-shapes";
 import type { CityStop } from "@/lib/trip-data";
-import { MAP_ATTRIBUTION, tileUrl } from "@/lib/map-tiles";
+import {
+  BOUNDARY_ATTRIBUTION,
+  MAP_ATTRIBUTION,
+  tileUrl,
+} from "@/lib/map-tiles";
 
 /**
  * Camera target. `token` changes whenever the map should actually move, so a
@@ -95,6 +103,15 @@ function tooltipHtml(title: string, detail: string): string {
   return `<span class="font-semibold">${escapeHtml(title)}</span><br />${escapeHtml(detail)}`;
 }
 
+/** Title plus one line per province, for a polygon covering several. */
+function tooltipList(title: string, lines: string[], note: string): string {
+  return [
+    `<span class="font-semibold">${escapeHtml(title)}</span>`,
+    ...lines.map(escapeHtml),
+    `<span class="opacity-70">${escapeHtml(note)}</span>`,
+  ].join("<br />");
+}
+
 export default function CrowdMapView({
   points,
   stops,
@@ -126,6 +143,18 @@ export default function CrowdMapView({
   const mapRef = useRef<L.Map | null>(null);
   /** Bumped whenever a new map exists, so every dependent effect re-runs. */
   const [generation, setGeneration] = useState(0);
+  /** Null until the outlines arrive, and if they never do. */
+  const [shapes, setShapes] = useState<ProvinceShapes | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    loadProvinceShapes().then((loaded) => {
+      if (alive) setShapes(loaded);
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   // Handlers change identity on every render of the parent. Reading them
   // through a ref keeps them out of the layer-building dependencies, so a
@@ -170,7 +199,7 @@ export default function CrowdMapView({
     if (!map) return;
 
     const layer = L.tileLayer(tileUrl(theme), {
-      attribution: MAP_ATTRIBUTION,
+      attribution: `${MAP_ATTRIBUTION} | ${BOUNDARY_ATTRIBUTION}`,
     }).addTo(map);
 
     return () => {
@@ -194,30 +223,51 @@ export default function CrowdMapView({
     const layers = L.layerGroup().addTo(map);
 
     // 1. Province crowding, first so it sits beneath everything else.
-    for (const point of points) {
-      if (!point.place) continue;
+    const byCode = new Map(points.map((point) => [point.code, point]));
 
-      const inRegion = region === "semua" || point.region === region;
-      const isSelected = point.code === selectedCode;
-      const level = DENSITY_LEVELS[point.level];
+    for (const shape of shapes?.features ?? []) {
+      const datum = shapeDatum(shape, byCode);
+      if (!datum) continue;
 
-      L.circleMarker([point.place.lat, point.place.lng], {
-        radius: markerRadius(point.intensity),
-        color: isSelected ? selectedStroke : level.color,
-        weight: isSelected ? 3 : 1,
-        opacity: inRegion ? 1 : 0.25,
-        fillColor: level.color,
-        // Lighter than the city dots on purpose: this layer is the backdrop.
-        fillOpacity: isSelected ? 0.8 : inRegion ? 0.5 : 0.1,
-      })
+      const inRegion =
+        region === "semua" ||
+        datum.members.some((member) => member.region === region);
+      const isSelected =
+        selectedCode !== null &&
+        datum.members.some((member) => member.code === selectedCode);
+      const level = DENSITY_LEVELS[datum.level];
+
+      const layer = L.geoJSON(shape as GeoJSON.Feature, {
+        style: {
+          color: isSelected ? selectedStroke : level.color,
+          weight: isSelected ? 2 : 0.6,
+          opacity: inRegion ? 1 : 0.3,
+          fillColor: level.color,
+          // Lighter than the city dots on purpose: this layer is the backdrop.
+          fillOpacity: isSelected ? 0.75 : inRegion ? 0.45 : 0.1,
+        },
+      });
+
+      layer
         .bindTooltip(
-          tooltipHtml(
-            point.name,
-            `${formatVisitorsShort(point.visitorCount)} pengunjung · ${level.label}`,
-          ),
-          { ...TOOLTIP_OPTIONS, offset: [0, -4] },
+          datum.merged
+            ? tooltipList(
+                `${datum.lead.name} dan sekitarnya`,
+                datum.members.map(
+                  (member) =>
+                    `${member.name}: ${formatVisitorsShort(member.visitorCount)} pengunjung`,
+                ),
+                "Digambar sebagai satu wilayah — batas pemekaran 2022 belum tersedia.",
+              )
+            : tooltipHtml(
+                datum.lead.name,
+                `${formatVisitorsShort(datum.lead.visitorCount)} pengunjung · ${level.label}`,
+              ),
+          { ...TOOLTIP_OPTIONS, sticky: true },
         )
-        .on("click", () => handlers.current.onSelect(point.code))
+        // A merged area answers for its busiest province, which is also the
+        // one its colour came from.
+        .on("click", () => handlers.current.onSelect(datum.lead.code))
         .addTo(layers);
     }
 
@@ -288,6 +338,7 @@ export default function CrowdMapView({
     };
   }, [
     generation,
+    shapes,
     points,
     stops,
     trip,

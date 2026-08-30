@@ -27,6 +27,14 @@ export const MAP_TILES = {
 export const MAP_ATTRIBUTION =
   'Tiles &copy; <a href="https://www.esri.com/">Esri</a>, HERE, Garmin, &copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors';
 
+/**
+ * Added on top of the tile attribution wherever province outlines are drawn.
+ * geoBoundaries is ODbL, which requires the credit — see
+ * `public/geo/README.md`.
+ */
+export const BOUNDARY_ATTRIBUTION =
+  'Batas wilayah: <a href="https://www.geoboundaries.org/">geoBoundaries.org</a> (ODbL)';
+
 export function tileUrl(theme: "light" | "dark"): string {
   return theme === "dark" ? MAP_TILES.dark : MAP_TILES.light;
 }
