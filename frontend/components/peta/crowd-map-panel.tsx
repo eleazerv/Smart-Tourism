@@ -246,10 +246,10 @@ export function CrowdMapPanel({
                 onClick={() => pickRegion(entry.key)}
                 aria-pressed={region === entry.key}
                 className={cn(
-                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold shadow-card backdrop-blur transition supports-[backdrop-filter]:bg-background/75",
+                  "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
                   region === entry.key
-                    ? "border-brand-700 bg-brand-700 text-white supports-[backdrop-filter]:bg-brand-700 dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900 dark:supports-[backdrop-filter]:bg-brand-100"
-                    : "border-border bg-background/90 hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                    ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                    : "border-border bg-background hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
                 )}
               >
                 {entry.label}
@@ -258,18 +258,20 @@ export function CrowdMapPanel({
           </div>
 
           {routeStops.length > 0 && (
-            <p className="pointer-events-auto whitespace-nowrap rounded-full border border-border bg-background/90 px-3 py-1.5 text-xs font-semibold text-muted-foreground shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
+            <p className="pointer-events-auto whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
               {routeStops.length} perhentian ·{" "}
               {formatKm(routeDistanceKm(routeStops))}
             </p>
           )}
         </div>
 
-        {/* Legend. Size carries the same information as colour, so the bands
-            stay readable for anyone who cannot separate the hues. The second
-            row explains the layer sitting on top of them. */}
+        {/* Legend. The second row explains the layer sitting on top of the
+            provinces. Since the crowding moved from sized circles to filled
+            regions, colour is the only channel carrying it — noted here
+            because that makes the bands the sole cue for anyone who cannot
+            separate the hues. */}
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1100] p-3 pr-24">
-          <div className="pointer-events-auto inline-flex max-w-full flex-col gap-1 rounded-2xl border border-border bg-background/90 px-3 py-2 shadow-card backdrop-blur supports-[backdrop-filter]:bg-background/75">
+          <div className="pointer-events-auto inline-flex max-w-full flex-col gap-1 rounded-2xl border border-border bg-background px-3 py-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
               {DENSITY_LEVELS.map((level) => (
                 <span
@@ -285,7 +287,7 @@ export function CrowdMapPanel({
                 </span>
               ))}
               <span className="text-xs text-muted-foreground">
-                Ukuran = jumlah pengunjung provinsi
+                Warna wilayah = jumlah pengunjung provinsi
               </span>
             </div>
 

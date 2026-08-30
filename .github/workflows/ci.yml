@@ -1,0 +1,61 @@
+name: CI
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  frontend:
+    name: Frontend (lint + typecheck)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+
+      - run: npm run lint
+
+      - run: npx tsc --noEmit
+
+      # Sengaja TIDAK ada `npm run build` di sini. Halaman / dan /peta
+      # di-prerender saat build sambil memanggil Express lewat "use cache",
+      # jadi `next build` menuntut API production hidup dan bisa dijangkau.
+      # Menaruhnya di CI berarti pull request ikut gagal setiap kali API mati.
+      # Build sungguhan terjadi di deploy.yml.
+
+  backend:
+    name: Backend (syntax)
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: backend
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: backend/package-lock.json
+
+      - run: npm ci
+
+      # Belum ada test suite di backend. Sampai ada, minimal pastikan tidak
+      # ada file yang gagal di-parse -- ini menangkap typo yang kalau lolos
+      # baru ketahuan sebagai container yang crash-loop setelah deploy.
+      - name: Parse semua file
+        run: find . -name '*.js' -not -path './node_modules/*' -print0 | xargs -0 -n1 node --check

@@ -1,0 +1,43 @@
+# Dipakai di VPS oleh .github/workflows/deploy.yml.
+#
+# Bedanya dengan docker-compose.yml: di sini tidak ada `build:` sama sekali.
+# Image sudah jadi di GitHub Actions dan tinggal ditarik, jadi VPS tidak
+# perlu Node, tidak perlu toolchain, dan tidak pernah menjalankan next build.
+#
+# Jalan manual (misalnya untuk rollback ke commit lama):
+#   IMAGE_TAG=<sha commit> docker compose -f docker-compose.prod.yml up -d
+#
+# Sekali saja sebelum deploy pertama, di VPS:
+#   docker login ghcr.io -u <username github> --password-stdin  (PAT read:packages)
+
+services:
+  api:
+    image: ghcr.io/eleazerv/smart-tourism-api:${IMAGE_TAG:-latest}
+    # File ini hidup di VPS dan tidak pernah masuk git maupun image.
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    ports:
+      - "127.0.0.1:4000:4000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    image: ghcr.io/eleazerv/smart-tourism-web:${IMAGE_TAG:-latest}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      # 3000 sudah dipakai layanan lain di VPS ini (clipfame-frontend),
+      # jadi yang digeser sisi host-nya saja; di dalam container tetap 3000.
+      - "127.0.0.1:3100:3000"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy

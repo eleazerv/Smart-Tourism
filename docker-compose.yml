@@ -1,0 +1,57 @@
+# Deploy VPS: dua container di belakang nginx milik host.
+#
+# URUTAN PENTING saat pertama kali deploy:
+#   1. docker compose up -d --build api     -> API hidup dulu
+#   2. pasang nginx + certbot di host        -> https://domain kamu sudah melayani /api/
+#   3. docker compose up -d --build web      -> baru build frontend
+#
+# Alasannya: halaman / dan /peta di-prerender saat build dan ikut memanggil
+# API lewat "use cache". Kalau API belum bisa dijangkau dari mesin yang
+# membangun image, `next build` gagal, bukan sekadar menghasilkan halaman
+# kosong. Setelah itu, update biasa cukup `docker compose up -d --build`.
+#
+# nginx dan certbot sengaja TIDAK dikontainerkan -- perpanjangan otomatis
+# sertifikat jauh lebih repot di dalam compose. Pakai deploy/nginx.conf apa
+# adanya; kedua service di bawah hanya membuka port ke 127.0.0.1, jadi hanya
+# nginx yang bisa menjangkaunya dan port 3000/4000 tidak terbuka ke internet.
+
+services:
+  api:
+    build:
+      context: ./backend
+    # Secret backend (service key Supabase, Xendit) dibaca runtime, tidak
+    # pernah masuk ke dalam image.
+    env_file: ./backend/.env
+    environment:
+      NODE_ENV: production
+      PORT: 4000
+    ports:
+      - "127.0.0.1:4000:4000"
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://127.0.0.1:4000/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
+
+  web:
+    build:
+      context: ./frontend
+      # Build-time, bukan runtime -- lihat komentar di frontend/Dockerfile.
+      # Diambil dari file .env di folder ini (lihat .env.example).
+      args:
+        NEXT_PUBLIC_API_URL: ${NEXT_PUBLIC_API_URL:?wajib diisi di .env}
+        NEXT_PUBLIC_SUPABASE_URL: ${NEXT_PUBLIC_SUPABASE_URL:?wajib diisi di .env}
+        NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: ${NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY:?wajib diisi di .env}
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+    ports:
+      # 3000 sudah dipakai layanan lain di VPS ini (clipfame-frontend),
+      # jadi yang digeser sisi host-nya saja; di dalam container tetap 3000.
+      - "127.0.0.1:3100:3000"
+    restart: unless-stopped
+    depends_on:
+      api:
+        condition: service_healthy
