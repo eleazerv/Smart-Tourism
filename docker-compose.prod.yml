@@ -34,7 +34,9 @@ services:
       NODE_ENV: production
       PORT: 3000
     ports:
-      - "127.0.0.1:3000:3000"
+      # 3000 sudah dipakai layanan lain di VPS ini (clipfame-frontend),
+      # jadi yang digeser sisi host-nya saja; di dalam container tetap 3000.
+      - "127.0.0.1:3100:3000"
     restart: unless-stopped
     depends_on:
       api:
