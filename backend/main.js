@@ -24,7 +24,6 @@ import tripRouter from './router/trip.Route.js';
 import routeRouter from './router/Route.Route.js';
 import tripBookingRoutes from './router/tripbooking.Route.js';
 
-
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
