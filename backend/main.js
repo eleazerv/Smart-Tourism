@@ -21,7 +21,7 @@ import { sweepOverdueBookings } from './lib/bookingPayment.js';
 import chatRouter from './router/chat.Route.js';
 import cityRouter from './router/cities.Route.js';
 import tripRouter from './router/trip.Route.js';
-import tripBookingRoutes from './router/tripbooking.route.js';
+import tripBookingRoutes from './router/tripbooking.Route.js';
 import routeRouter from './router/Route.Route.js';
 
 const app = express();
