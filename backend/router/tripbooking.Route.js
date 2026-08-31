@@ -6,7 +6,7 @@ import {
   listTripBookings,
   payTripBooking,
   cancelTripBooking,
-} from '../controllers/tripBooking.Controller.js';
+} from '../controllers/tripbooking.Controller.js';
 
 const router = express.Router();
 
