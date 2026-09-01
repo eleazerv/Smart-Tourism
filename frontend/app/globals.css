@@ -8,9 +8,9 @@
        #19443C  deep pine   #194441  pine teal   #11302e  forest ink
        #d7fffc  ice mint    #aefffa  glow mint                       */
     --brand-900: 176 48% 13%;
-    --brand-700: 169 46% 18%;
+    --brand-700: 200 46% 32%; /* 169 46% 18% awal */
     --brand-600: 176 46% 18%;
-    --brand-100: 176 100% 84%;
+    --brand-100: 90 46% 60%; /* 176 100% 84% awal */
     --brand-50: 176 100% 92%;
     /* Leaf green for hover washes. Deliberately greener than the teal
        palette: diluting --brand-700 reads as grey, not green. Tune the
@@ -231,4 +231,26 @@
   box-shadow:
     0 0 0 4px rgb(174 255 250 / 0.35),
     0 1px 4px rgb(0 0 0 / 0.35);
+}
+
+
+/* Chrome, Edge, Safari (WebKit-based) */
+::-webkit-scrollbar {
+  width: 5px;   
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: hsl(var(--brand-100) / 0.4);
+  border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: hsl(var(--brand-100) / 0.6);
+}
+
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: hsl(var(--brand-100) / 0.4) transparent;
 }

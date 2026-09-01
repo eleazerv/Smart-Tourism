@@ -1,5 +1,5 @@
 import { Rating } from "@/components/home/rating";
-import { formatCount, ratingLabel } from "@/lib/destination-data";
+import { formatCount } from "@/lib/destination-data";
 
 /**
  * Average plus the 5→1 histogram, computed from the reviews the API returned.
@@ -35,7 +35,7 @@ export function ReviewSummary({
         {shown !== null && (
           <>
             <Rating value={shown} className="mt-1" />
-            <p className="mt-1 text-sm font-medium">{ratingLabel(shown)}</p>
+            {/* <p className="mt-1 text-sm font-medium">{ratingLabel(shown)}</p>  frontend-lele*/}
           </>
         )}
         <p className="mt-0.5 text-xs text-muted-foreground">

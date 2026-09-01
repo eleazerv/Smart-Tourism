@@ -9,7 +9,7 @@ import {
   MONTHS,
   formatCount,
   mapsUrl,
-  ratingLabel,
+  // ratingLabel, frontend-lele
   type CrowdLevel,
 } from "@/lib/destination-data";
 import { cn } from "@/lib/utils";
@@ -52,11 +52,11 @@ export function PlanCard({
               /5
             </span>
           </p>
-          <p className="text-xs text-muted-foreground">
+          {/* <p className="text-xs text-muted-foreground"> frontend-lele
             {destination.avg_rating !== null
               ? `${ratingLabel(destination.avg_rating)} menurut pengunjung`
               : "Belum ada penilaian"}
-          </p>
+          </p> */}
         </div>
         {destination.avg_rating !== null && (
           <Rating value={destination.avg_rating} className="shrink-0" />

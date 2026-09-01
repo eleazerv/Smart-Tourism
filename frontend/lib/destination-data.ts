@@ -61,14 +61,14 @@ export function formatCount(value: number | null | undefined) {
   return (value ?? 0).toLocaleString("id-ID");
 }
 
-/** Human label for a rating, in the register booking sites use. */
-export function ratingLabel(value: number) {
-  if (value >= 4.5) return "Istimewa";
-  if (value >= 4) return "Sangat baik";
-  if (value >= 3.5) return "Baik";
-  if (value >= 3) return "Cukup";
-  return "Biasa";
-}
+/** Human label for a rating, in the register booking sites use. frontend-lele */ 
+// export function ratingLabel(value: number) {
+//   if (value >= 4.5) return "Istimewa";
+//   if (value >= 4) return "Sangat baik";
+//   if (value >= 3.5) return "Baik";
+//   if (value >= 3) return "Cukup";
+//   return "Biasa";
+// }
 
 export type CrowdLevel = {
   label: string;

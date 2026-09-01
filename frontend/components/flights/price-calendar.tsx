@@ -30,17 +30,20 @@ export function PriceCalendar({
 
   return (
     <section aria-label="Harga termurah per tanggal">
-      <ul className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+      {/* frontend lele 
+      awal :       <ul className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 pb-1">
+       */}
+        <ul className="no-scrollbar -mx-1 grid grid-cols-7 sm:gap-2 md: gap-2 lg:gap-0 overflow-x-auto px-1 pb-1">
         {window.map((day) => {
           const active = day.date === selected;
           const best = day.price !== null && day.price === cheapest;
 
           const content = (
-            <>
-              <span className="block text-[11px] font-medium uppercase tracking-wide">
+            <div className="margin-auto items-center content-center pt-2">
+              <span className="block text-[12px] font-medium uppercase tracking-wide">
                 {weekday(day.date)}
               </span>
-              <span className="mt-0.5 block text-sm font-bold tabular-nums">
+              <span className="mt-0.5 block text-[15px] font-bold tabular-nums">
                 {dayOfMonth(day.date)}
               </span>
               <span
@@ -49,13 +52,13 @@ export function PriceCalendar({
                   active
                     ? "text-current"
                     : best
-                      ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                      ? "font-bold text-emerald-700 dark:text-emerald-400 text-[11px]"
                       : "text-muted-foreground",
                 )}
               >
                 {day.price === null ? "—" : shortIDR(day.price)}
               </span>
-            </>
+            </div>
           );
 
           return (
@@ -64,7 +67,7 @@ export function PriceCalendar({
                 <span
                   aria-current={active ? "date" : undefined}
                   className={cn(
-                    "block w-[4.75rem] rounded-xl border px-2 py-2 text-center",
+                    "block w-full min-w-[3.5rem] max-w-[5.5rem] rounded-xl border px-2 py-1 text-center aspect-[3/3]",
                     active
                       ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
                       : "border-dashed border-border text-muted-foreground",
@@ -75,7 +78,7 @@ export function PriceCalendar({
               ) : (
                 <Link
                   href={hrefFor(day.date)}
-                  className="block w-[4.75rem] rounded-xl border border-border bg-card px-2 py-2 text-center transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+                  className="block w-full  min-w-[3.5rem] max-w-[5.5rem] aspect-[3/3] rounded-xl border border-border bg-card px-2 py-1 text-center transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
                 >
                   {content}
                 </Link>

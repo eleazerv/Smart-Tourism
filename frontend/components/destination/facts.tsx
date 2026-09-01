@@ -20,15 +20,16 @@ export function Facts({ destination }: { destination: DestinationDetail }) {
       label: "Provinsi",
       value: destination.provinces?.name ?? "—",
     },
-    {
-      icon: TrendingUp,
-      label: "Popularitas",
-      value: `${formatCount(destination.view_count)} kunjungan halaman`,
-    },
+    // frontend-lele
+    // {
+    //   icon: TrendingUp,
+    //   label: "Popularitas",
+    //   value: `${formatCount(destination.view_count)} kunjungan halaman`,
+    // },
   ];
 
   return (
-    <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-4">
+    <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-3">
       {facts.map(({ icon: Icon, label, value }) => (
         <div key={label} className="flex items-start gap-2.5">
           <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">

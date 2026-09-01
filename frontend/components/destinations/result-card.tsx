@@ -3,7 +3,7 @@ import Link from "next/link";
 import { ArrowRight, Eye, MapPin } from "lucide-react";
 import type { RecommendedDestination } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
-import { formatCount, ratingLabel } from "@/lib/destination-data";
+import { formatCount } from "@/lib/destination-data";
 import { FavoriteButton } from "@/components/home/favorite-button";
 import { Rating } from "@/components/home/rating";
 
@@ -201,7 +201,7 @@ function RatingLine({
   return (
     <div className="flex flex-wrap items-center gap-x-2 gap-y-1">
       <Rating value={rating} reviews={reviews} />
-      <span className="text-xs font-semibold">{ratingLabel(rating)}</span>
+      {/* <span className="text-xs font-semibold">{ratingLabel(rating)}</span> */}
     </div>
   );
 }
