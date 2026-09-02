@@ -28,9 +28,11 @@ export function PromoBanner() {
             Telusuri lebih dari 40.000 pengalaman di seluruh Nusantara dan pesan
             melalui kami.
           </p>
+          {/* Stays light on hover. Darkening it to brand-900 would sink the
+              button into the panel behind it, which is only a shade lighter. */}
           <Link
             href="/destinations"
-            className="w-fit rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-900 hover:text-white dark:bg-brand-50 dark:text-brand-900 dark:hover:bg-brand-100"
+            className="w-fit rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700 dark:focus-visible:ring-offset-brand-600"
           >
             Pesan sekarang
           </Link>

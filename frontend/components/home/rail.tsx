@@ -149,7 +149,7 @@ function RailButton({
       tabIndex={hidden ? -1 : 0}
       style={center === null ? undefined : { top: center }}
       className={cn(
-        "absolute top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border bg-background text-brand-900 shadow-pop transition duration-200 hover:scale-105 hover:border-brand-700 hover:bg-brand-700 hover:text-brand-50 active:scale-95 dark:bg-card dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-100 dark:hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:focus-visible:ring-brand-100 md:grid",
+        "absolute top-1/2 hidden h-10 w-10 -translate-y-1/2 place-items-center rounded-full border border-border bg-background text-brand-900 shadow-pop transition hover:border-brand-700 hover:bg-brand-700 hover:text-white dark:bg-card dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-100 dark:hover:text-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:focus-visible:ring-brand-100 md:grid",
         side === "left" ? "-left-4" : "-right-4",
         hidden && "pointer-events-none opacity-0",
       )}
