@@ -1,4 +1,5 @@
-import express from 'express'; 
+import express from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import {swaggerSpec } from './swagger.js'
 import helmet from 'helmet';
@@ -28,6 +29,23 @@ import routeRouter from './router/Route.Route.js';
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
+
+// The browser only ever hits the API directly for authenticated calls (the
+// save/wishlist toggle), and the Authorization header on those makes every
+// request non-simple — so without CORS the preflight fails and the fetch
+// rejects silently. Allowed origins come from CORS_ORIGINS (comma-separated),
+// defaulting to the local Next dev server.
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);

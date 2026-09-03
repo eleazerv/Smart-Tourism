@@ -127,6 +127,12 @@
 .map-surface {
   font: inherit;
   background: hsl(var(--muted));
+  /* Leaflet's panes and controls sit at z-index 400–1000, which is well above
+     the sticky site header (z-50) — so a map mid-page paints its tiles and
+     zoom buttons over the navbar on scroll. Isolating the container traps all
+     of that internal stacking inside this box, which itself stays at the
+     normal flow level below the header. */
+  isolation: isolate;
 }
 
 .map-surface .leaflet-tooltip {
