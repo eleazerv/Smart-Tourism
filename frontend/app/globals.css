@@ -10,12 +10,12 @@
     --brand-900: 176 48% 13%;
     --brand-700: 200 46% 32%; /* 169 46% 18% awal */
     --brand-600: 176 46% 18%;
-    --brand-100: 90 46% 60%; /* 176 100% 84% awal */
+    --brand-100: 0 0% 82%; /* neutral grey — was lime 90 46% 60%, teal 176 100% 84% awal */
     --brand-50: 176 100% 92%;
-    /* Leaf green for hover washes. Deliberately greener than the teal
-       palette: diluting --brand-700 reads as grey, not green. Tune the
-       hover tint here rather than at the call sites. */
-    --brand-tint: 142 71% 45%;
+    /* Hover-wash tint, keyed to the brand blue rather than diluting
+       --brand-700 (which reads as grey at low opacity). Tune the hover
+       tint here rather than at the call sites. */
+    --brand-tint: 200 71% 45%;
 
     --background: 0 0% 100%;
     --foreground: 176 48% 13%;
