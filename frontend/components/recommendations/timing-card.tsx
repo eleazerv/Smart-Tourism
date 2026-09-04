@@ -1,6 +1,6 @@
 import Link from "next/link";
 import { ArrowRight, CloudRain, Sun, Users } from "lucide-react";
-import { formatCount } from "@/lib/destination-data";
+import { formatCount, type CrowdLevel } from "@/lib/destination-data";
 import {
   formatActivities,
   isDrySeason,
@@ -16,6 +16,39 @@ const TONE = {
   moderate: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
   busy: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
 } as const;
+
+const BADGE =
+  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold";
+
+/** Musim provinsi ini: kemarau kuning matahari, hujan biru langit. */
+export function SeasonBadge({ season }: { season: string }) {
+  const dry = isDrySeason(season);
+  const Icon = dry ? Sun : CloudRain;
+
+  return (
+    <span
+      className={cn(
+        BADGE,
+        dry
+          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
+          : "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+      )}
+    >
+      <Icon className="h-3 w-3" />
+      {seasonLabel(season)}
+    </span>
+  );
+}
+
+/** Ramai-tidaknya provinsi pada periode statistik terakhir. */
+export function CrowdBadge({ crowd }: { crowd: CrowdLevel }) {
+  return (
+    <span className={cn(BADGE, TONE[crowd.tone])}>
+      <Users className="h-3 w-3" />
+      {crowd.label}
+    </span>
+  );
+}
 
 /**
  * One province, answering both halves of the question: what the weather is
@@ -33,8 +66,6 @@ export function TimingCard({
   rank?: number;
 }) {
   const { info, crowd, visitors } = timing;
-  const dry = isDrySeason(info.season);
-  const SeasonIcon = dry ? Sun : CloudRain;
 
   return (
     <article className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-card">
@@ -49,28 +80,8 @@ export function TimingCard({
             {info.province.name}
           </h3>
           <p className="mt-1 flex flex-wrap items-center gap-1.5">
-            <span
-              className={cn(
-                "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
-                dry
-                  ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-                  : "bg-sky-500/10 text-sky-700 dark:text-sky-300",
-              )}
-            >
-              <SeasonIcon className="h-3 w-3" />
-              {seasonLabel(info.season)}
-            </span>
-            {crowd && (
-              <span
-                className={cn(
-                  "inline-flex items-center gap-1 rounded-full px-2 py-0.5 text-xs font-semibold",
-                  TONE[crowd.tone],
-                )}
-              >
-                <Users className="h-3 w-3" />
-                {crowd.label}
-              </span>
-            )}
+            <SeasonBadge season={info.season} />
+            {crowd && <CrowdBadge crowd={crowd} />}
           </p>
         </div>
       </div>

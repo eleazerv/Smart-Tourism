@@ -14,6 +14,7 @@ import {
 import { loadSavedIds } from "@/lib/saved-destinations";
 import type { RawSearchParams } from "@/lib/destinations-search";
 import {
+  drySeasonMonths,
   isDrySeason,
   monthName,
   parseTiming,
@@ -25,6 +26,7 @@ import { LoadError } from "@/components/home/load-error";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { ResultTile } from "@/components/destinations/result-card";
+import { ProvinceOutlook } from "@/components/recommendations/province-outlook";
 import { SeasonBoard } from "@/components/recommendations/season-board";
 import { TimingCard } from "@/components/recommendations/timing-card";
 import { TimingHero } from "@/components/recommendations/timing-hero";
@@ -46,6 +48,34 @@ async function loadTiming(
     month: state.month,
     province_id: state.provinceId ?? undefined,
   });
+}
+
+/**
+ * The selected province's season in all twelve months.
+ *
+ * `GET /api/recommendations` answers one month at a time, so a year costs
+ * twelve calls — but filtered to one province each is a single climate row,
+ * they run in parallel, and the whole thing is cached for days alongside the
+ * month view. Only reached when a province is actually selected.
+ */
+async function loadProvinceYear(provinceId: number): Promise<Map<number, string>> {
+  "use cache";
+  cacheLife("days");
+
+  const months = Array.from({ length: 12 }, (_, i) => i + 1);
+  const rows = await Promise.all(
+    months.map((month) =>
+      getSeasonalRecommendations({ month, province_id: provinceId })
+        .then((result) => result.season_info[0]?.season ?? null)
+        // One missing month should narrow the answer, not lose the other
+        // eleven — the panel handles a partial year.
+        .catch(() => null),
+    ),
+  );
+
+  return new Map(
+    rows.flatMap((season, i) => (season ? [[i + 1, season] as const] : [])),
+  );
 }
 
 async function loadHeatmap(): Promise<HeatmapEntry[]> {
@@ -123,15 +153,19 @@ async function Timing({ searchParams }: PageProps) {
 
   const heatmap = await loadHeatmap();
   const { season_info: info, destinations } = recommendations;
-  const [reviewCounts, savedIds] = await Promise.all([
+  const [reviewCounts, savedIds, provinceYear] = await Promise.all([
     loadReviewCounts(destinations.map((d) => d.id)),
     loadSavedIds(),
+    state.provinceId !== null
+      ? loadProvinceYear(state.provinceId)
+      : Promise.resolve(new Map<number, string>()),
   ]);
 
   const name = monthName(state.month);
   const timings = withCrowding(info, heatmap);
   const quiet = rankQuietAndDry(timings);
   const dryCount = info.filter((entry) => isDrySeason(entry.season)).length;
+  const dryMonths = drySeasonMonths(provinceYear);
 
   // With a province filter the API answers with just that one climate row, so
   // it doubles as the label for the whole page.
@@ -164,15 +198,24 @@ async function Timing({ searchParams }: PageProps) {
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
                 {province
-                  ? "Musim dan tingkat kepadatan provinsi ini pada periode terakhir."
+                  ? "Musim dan tingkat kepadatan provinsi ini pada periode terakhir, beserta bulan-bulan yang cuacanya paling bersahabat."
                   : "Provinsi yang sedang musim kemarau, diurutkan dari yang kunjungannya paling sedikit. Provinsi yang sedang musim hujan tidak masuk daftar ini."}
               </p>
 
-              {quiet.length === 0 ? (
+              {/* Satu provinsi terpilih selalu punya kartunya sendiri, kemarau
+                  atau tidak: menyembunyikannya hanya menyisakan satu baris
+                  teks di halaman yang datanya sudah lengkap di tangan. */}
+              {province && timings[0] ? (
+                <div className="mt-4">
+                  <ProvinceOutlook
+                    timing={timings[0]}
+                    state={state}
+                    dryMonths={dryMonths}
+                  />
+                </div>
+              ) : quiet.length === 0 ? (
                 <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  {province
-                    ? `${province.name} sedang musim hujan di bulan ${name}.`
-                    : `Tidak ada provinsi yang sedang kemarau di bulan ${name}.`}
+                  {`Tidak ada provinsi yang sedang kemarau di bulan ${name}.`}
                 </p>
               ) : (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -181,7 +224,7 @@ async function Timing({ searchParams }: PageProps) {
                       key={timing.info.province.code}
                       timing={timing}
                       state={state}
-                      rank={province ? undefined : index + 1}
+                      rank={index + 1}
                     />
                   ))}
                 </div>
@@ -237,19 +280,23 @@ async function Timing({ searchParams }: PageProps) {
         {/* The page answers "when"; the map answers "where". */}
         <Link
           href="/peta"
-          className="flex flex-col gap-2 rounded-2xl bg-brand-900 p-5 text-brand-50 transition hover:bg-brand-700 sm:flex-row sm:items-center sm:justify-between"
+          // Putih, bukan --brand-50: nilai itu masih mint pekat (176 100% 92%)
+          // dari palet lama, sementara --brand-100 di sekelilingnya sudah
+          // dinetralkan jadi abu-abu. Judul kehijauan di antara ikon dan
+          // paragraf abu-abu itu yang bikin kartunya terlihat salah warna.
+          className="flex flex-col gap-2 rounded-2xl bg-brand-900 p-5 text-white transition hover:bg-brand-700 sm:flex-row sm:items-center sm:justify-between"
         >
           <span>
             <span className="flex items-center gap-2 font-display text-base font-bold">
-              <Sparkles className="h-4 w-4 text-brand-100" />
+              <Sparkles className="h-4 w-4" />
               Susun rutenya di peta
             </span>
-            <span className="mt-1 block text-sm leading-relaxed text-brand-100/85">
+            <span className="mt-1 block text-sm leading-relaxed text-white/75">
               Rangkai provinsi-provinsi ini jadi satu rencana perjalanan,
               lengkap dengan rekomendasi tiap perhentian.
             </span>
           </span>
-          <ArrowRight className="h-5 w-5 shrink-0 text-brand-100" />
+          <ArrowRight className="h-5 w-5 shrink-0 text-white/70" />
         </Link>
 
         <p className="text-center text-xs leading-relaxed text-muted-foreground">

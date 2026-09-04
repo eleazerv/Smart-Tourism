@@ -120,6 +120,10 @@ export function TimingHero({
             role="group"
             aria-label="Pilih bulan"
           >
+            {/* Penanda bulan kemarau sengaja tidak dipasang di sini: panel
+                provinsi di bawah sudah menggambarkannya sebagai strip dua
+                belas bulan berikut legendanya. Ini cukup jadi pemindah bulan
+                saja. */}
             {MONTHS.map((label, index) => {
               const month = index + 1;
               const current = month === state.month;
