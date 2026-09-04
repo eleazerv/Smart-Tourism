@@ -6,6 +6,8 @@
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
   Accommodation,
+  Album,
+  AlbumDetail,
   AccommodationAvailability,
   AccommodationReview,
   AccommodationTier,
@@ -344,6 +346,89 @@ export async function listSavedDestinations(
     auth,
   );
   return data;
+}
+
+/* -------------------------------------------------------------- albums --- */
+
+/**
+ * The reader's albums, newest first.
+ *
+ * Pass `destinationId` and each album also reports whether it already holds
+ * that destination — what the album picker needs to tick the right boxes
+ * without pulling every album's contents.
+ */
+export async function listAlbums(
+  options: { destinationId?: string } & Auth = {},
+): Promise<Album[]> {
+  const { destinationId, ...auth } = options;
+  const { data } = await apiFetch<{ data: Album[] }>("/api/albums", {
+    query: { destination_id: destinationId },
+    ...auth,
+  });
+  return data ?? [];
+}
+
+export async function createAlbum(name: string, auth: Auth): Promise<Album> {
+  const { data } = await apiFetch<{ data: Album }>("/api/albums", {
+    ...auth,
+    method: "POST",
+    body: { name },
+  });
+  return data;
+}
+
+export async function getAlbum(
+  id: string,
+  auth: Auth,
+): Promise<AlbumDetail | null> {
+  const result = await apiFetch<{ data: AlbumDetail }>(`/api/albums/${id}`, {
+    ...auth,
+    nullOn404: true,
+  });
+  return result?.data ?? null;
+}
+
+export async function renameAlbum(
+  id: string,
+  name: string,
+  auth: Auth,
+): Promise<Album> {
+  const { data } = await apiFetch<{ data: Album }>(`/api/albums/${id}`, {
+    ...auth,
+    method: "PATCH",
+    body: { name },
+  });
+  return data;
+}
+
+/** Removes the album, not the destinations — those stay saved. */
+export async function deleteAlbum(id: string, auth: Auth) {
+  return apiFetch<{ deleted: boolean; id: string }>(`/api/albums/${id}`, {
+    ...auth,
+    method: "DELETE",
+  });
+}
+
+/**
+ * Replaces which albums hold this destination, in one call.
+ *
+ * The API takes the final state rather than add/remove deltas, so the picker
+ * can send whatever is ticked and pressing twice changes nothing. An empty
+ * array takes the destination out of every album while leaving it saved.
+ */
+export async function setDestinationAlbums(
+  destinationId: string,
+  albumIds: string[],
+  auth: Auth,
+): Promise<string[]> {
+  const { data } = await apiFetch<{
+    data: { destination_id: string; album_ids: string[] };
+  }>(`/api/destinations/${destinationId}/albums`, {
+    ...auth,
+    method: "PUT",
+    body: { album_ids: albumIds },
+  });
+  return data.album_ids;
 }
 
 /* ------------------------------------------------------------- reviews --- */

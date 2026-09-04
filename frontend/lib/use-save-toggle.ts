@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { useRouter } from "next/navigation";
 import { toggleSavedDestination } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
@@ -16,10 +16,15 @@ import { getBrowserAccessToken } from "@/lib/api/session-browser";
  *
  * Signed-out readers are sent to the login form with `next` pointing back
  * here, so the save can be finished after signing in.
+ *
+ * A successful save also raises `pickerOpen`, the cue for the album chooser.
+ * Unsaving never raises it: offering to file something the reader just threw
+ * away reads as the app arguing with them.
  */
 export function useSaveToggle(destinationId: string, initialSaved: boolean) {
   const [saved, setSaved] = useState(initialSaved);
   const [pending, setPending] = useState(false);
+  const [pickerOpen, setPickerOpen] = useState(false);
   const router = useRouter();
 
   const toggle = async () => {
@@ -38,6 +43,7 @@ export function useSaveToggle(destinationId: string, initialSaved: boolean) {
     try {
       const result = await toggleSavedDestination(destinationId, { token });
       setSaved(result.saved);
+      if (result.saved) setPickerOpen(true);
       // The saved list is a server-rendered page; without this it keeps
       // showing a destination the reader just removed.
       router.refresh();
@@ -48,5 +54,7 @@ export function useSaveToggle(destinationId: string, initialSaved: boolean) {
     }
   };
 
-  return { saved, pending, toggle };
+  const closePicker = useCallback(() => setPickerOpen(false), []);
+
+  return { saved, pending, toggle, pickerOpen, closePicker };
 }

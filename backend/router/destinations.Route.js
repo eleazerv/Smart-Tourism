@@ -144,6 +144,45 @@ router.post("/:id/view", globalLimiter, optionalAuth, dedupView, postView);
  *         description: Destinasi tidak ditemukan
  */
 router.post('/:id/save', authMiddleware, moderateLimiter, toggleSaveDestination);
+
+/**
+ * @swagger
+ * /api/destinations/{id}/albums:
+ *   put:
+ *     summary: Tetapkan album mana saja yang memuat destinasi ini
+ *     description: >
+ *       Mengirim keadaan akhir, bukan menambah satu per satu -- array kosong
+ *       berarti keluarkan dari semua album. Idempoten. Memasukkan destinasi
+ *       ke album otomatis menandainya tersimpan, karena membatalkan simpan
+ *       akan mengeluarkannya dari seluruh album.
+ *     tags: [Albums]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema: { type: string, format: uuid }
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required: [album_ids]
+ *             properties:
+ *               album_ids:
+ *                 type: array
+ *                 items: { type: string, format: uuid }
+ *     responses:
+ *       200:
+ *         description: Keanggotaan album diperbarui
+ *       400:
+ *         description: album_ids bukan array
+ *       404:
+ *         description: Destinasi atau salah satu album tidak ditemukan
+ */
+router.put('/:id/albums', authMiddleware, moderateLimiter, setDestinationAlbums);
  
 /**
  * @swagger
