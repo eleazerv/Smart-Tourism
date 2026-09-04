@@ -134,6 +134,29 @@ export type Profile = {
  * One row of `GET /api/saved-destinations` — the destination columns the
  * controller selects, flattened out of the join, plus when it was saved.
  */
+export type Album = {
+  id: string;
+  name: string;
+  created_at: string;
+  updated_at: string;
+  item_count: number;
+  /** Only present when the listing was asked about one destination. */
+  contains?: boolean;
+};
+
+export type AlbumDetail = Omit<Album, "contains"> & {
+  destinations: AlbumDestination[];
+};
+
+export type AlbumDestination = Pick<
+  Destination,
+  "id" | "name" | "category" | "cover_image_url" | "avg_rating" | "view_count"
+> & {
+  provinces: ProvinceRef | null;
+  cities: CityRef | null;
+  added_at: string;
+};
+
 export type SavedDestination = Pick<
   Destination,
   "id" | "name" | "category" | "cover_image_url" | "avg_rating" | "view_count"
@@ -142,7 +165,11 @@ export type SavedDestination = Pick<
   cities: CityRef | null;
   saved_id: string;
   saved_at: string;
+  /** Albums holding this destination; empty when it is saved loose. */
+  albums: AlbumRef[];
 };
+
+export type AlbumRef = { id: string; name: string };
 
 /** Author block joined onto every review by `REVIEW_FIELDS` in the controller. */
 export type ReviewAuthor = {

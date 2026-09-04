@@ -1,4 +1,5 @@
-import express from 'express'; 
+import express from 'express';
+import cors from 'cors';
 import swaggerUi from 'swagger-ui-express';
 import {swaggerSpec } from './swagger.js'
 import helmet from 'helmet';
@@ -17,6 +18,7 @@ import flightBookingsRouter from './router/flightbooking.Route.js';
 import accommodationBookingsRouter from './router/accomodationBooking.Route.js';
 import webhooksRouter from './router/webhook.Route.js';
 import savedDestinationsRouter from './router/saved-destinations.Route.js';
+import albumsRouter from './router/albums.Route.js';
 import { sweepOverdueBookings } from './lib/bookingPayment.js';
 import chatRouter from './router/chat.Route.js';
 import cityRouter from './router/cities.Route.js';
@@ -28,6 +30,23 @@ import routeRouter from './router/Route.Route.js';
 const app = express();
 app.set('trust proxy', 1);
 app.use(helmet());
+
+// The browser only ever hits the API directly for authenticated calls (the
+// save/wishlist toggle), and the Authorization header on those makes every
+// request non-simple — so without CORS the preflight fails and the fetch
+// rejects silently. Allowed origins come from CORS_ORIGINS (comma-separated),
+// defaulting to the local Next dev server.
+const allowedOrigins = (process.env.CORS_ORIGINS || 'http://localhost:3000')
+  .split(',')
+  .map((origin) => origin.trim())
+  .filter(Boolean);
+app.use(
+  cors({
+    origin: allowedOrigins,
+    credentials: true,
+  }),
+);
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
@@ -44,6 +63,7 @@ app.use("/api/flight-bookings", flightBookingsRouter);
 app.use("/api/accommodation-bookings", accommodationBookingsRouter);
 app.use("/api/webhooks", webhooksRouter);
 app.use("/api/saved-destinations", savedDestinationsRouter);
+app.use("/api/albums", albumsRouter);
 app.use("/api/chat", chatRouter);
 app.use("/api/cities", cityRouter);
 app.use("/api/trips", tripRouter);

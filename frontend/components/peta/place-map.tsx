@@ -23,6 +23,24 @@ import { MAP_ATTRIBUTION, tileUrl } from "@/lib/map-tiles";
 /** Close enough to read the surrounding streets without losing the district. */
 const ZOOM = 14;
 
+/**
+ * Zoomed out past this the pin sits in an empty grey field: the place is no
+ * longer locatable and the map has stopped answering the question it was put
+ * on the page to answer.
+ */
+const MIN_ZOOM = 11;
+
+/** Esri's gray canvas stops serving tiles here; past it Leaflet upscales. */
+const MAX_NATIVE_ZOOM = 16;
+const MAX_ZOOM = 17;
+
+/**
+ * Width of the pannable box around the pin, in metres. Must stay comfortably
+ * wider than the viewport at MIN_ZOOM (~53 km across this card) or Leaflet
+ * spends every frame shoving the centre back and the map judders.
+ */
+const PAN_BOX_M = 300_000;
+
 export default function PlaceMap({
   lat,
   lng,
@@ -53,6 +71,15 @@ export default function PlaceMap({
       // A map sitting mid-article must not swallow the page scroll. Dragging,
       // double-click, and the zoom buttons all still work.
       scrollWheelZoom: false,
+      minZoom: MIN_ZOOM,
+      maxZoom: MAX_ZOOM,
+      // This map shows one place. Without a leash the reader can drag the pin
+      // off screen and zoom out to the whole planet, ending up somewhere that
+      // tells them nothing and offers no way back.
+      maxBounds: L.latLng(lat, lng).toBounds(PAN_BOX_M),
+      // Elastic rather than a hard wall: a flick past the edge eases back
+      // instead of stopping dead against an invisible barrier.
+      maxBoundsViscosity: 0.8,
     });
 
     L.control.zoom({ position: "topright" }).addTo(map);
@@ -72,6 +99,11 @@ export default function PlaceMap({
 
     const layer = L.tileLayer(tileUrl(theme), {
       attribution: MAP_ATTRIBUTION,
+      // Beyond MAX_NATIVE_ZOOM the provider 404s; capping it here makes
+      // Leaflet stretch the last real tile instead of showing blank squares.
+      maxNativeZoom: MAX_NATIVE_ZOOM,
+      maxZoom: MAX_ZOOM,
+      noWrap: true,
     }).addTo(map);
 
     return () => {

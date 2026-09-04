@@ -155,6 +155,36 @@ export function rankQuietAndDry(timings: ProvinceTiming[]): ProvinceTiming[] {
     .sort((a, b) => (a.visitors ?? 0) - (b.visitors ?? 0));
 }
 
+/**
+ * Months the province is in the dry season, from a year's worth of climate
+ * rows keyed by month.
+ *
+ * The season board answers "where should I go in September". This answers the
+ * question a reader asks the moment they pick a province and find it raining:
+ * "then when *should* I come".
+ */
+export function drySeasonMonths(byMonth: Map<number, string>): number[] {
+  return [...byMonth.entries()]
+    .filter(([, season]) => isDrySeason(season))
+    .map(([month]) => month)
+    .sort((a, b) => a - b);
+}
+
+/**
+ * Nearest month from `from` (inclusive) that appears in `months`, wrapping
+ * past December — the reader is standing in one month and wants the next
+ * chance, not the lowest-numbered one.
+ */
+export function nextMonthIn(months: number[], from: number): number | null {
+  if (months.length === 0) return null;
+  const set = new Set(months);
+  for (let step = 0; step < 12; step += 1) {
+    const month = ((from - 1 + step) % 12) + 1;
+    if (set.has(month)) return month;
+  }
+  return null;
+}
+
 /** Activity slugs read better as a sentence than as chips repeated per card. */
 export function formatActivities(activities: string[]): string {
   if (activities.length === 0) return "";

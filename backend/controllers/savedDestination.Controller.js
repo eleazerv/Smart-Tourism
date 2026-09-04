@@ -64,9 +64,27 @@ export const listSavedDestinations = async (req, res) => {
  
         if (error) throw error;
  
+        // Album tiap baris diambil terpisah: album_items tidak punya foreign
+        // key ke saved_destinations, jadi tidak bisa ikut di-nest oleh
+        // PostgREST. Dua kueri, digabung di sini.
+        const { data: memberships, error: memberError } = await req.db
+            .from('album_items')
+            .select('destination_id, albums!inner ( id, name, user_id )')
+            .eq('albums.user_id', req.user.id);
+
+        if (memberError) throw memberError;
+
+        const albumsByDestination = new Map();
+        for (const row of memberships || []) {
+            const list = albumsByDestination.get(row.destination_id) || [];
+            list.push({ id: row.albums.id, name: row.albums.name });
+            albumsByDestination.set(row.destination_id, list);
+        }
+
         const result = data.map(row => ({
             saved_id: row.id,
             saved_at: row.created_at,
+            albums: albumsByDestination.get(row.destinations?.id) || [],
             ...row.destinations,
         }));
  

@@ -39,6 +39,43 @@ export const MONTHS_SHORT = [
   "Des",
 ] as const;
 
+/**
+ * "April–Oktober" out of a set of month numbers (1–12), joining runs that wrap
+ * past December — Indonesia's wet season is November–Maret, which reads as two
+ * broken stretches if the year boundary is treated as a wall.
+ */
+export function monthRangeLabel(months: number[]): string {
+  const sorted = [...new Set(months)].sort((a, b) => a - b);
+  if (sorted.length === 0) return "";
+  if (sorted.length === 12) return "Sepanjang tahun";
+
+  const runs: number[][] = [];
+  for (const month of sorted) {
+    const last = runs[runs.length - 1];
+    if (last && month === last[last.length - 1] + 1) last.push(month);
+    else runs.push([month]);
+  }
+
+  // Desember bersambung ke Januari: gabungkan run terakhir ke run pertama.
+  if (
+    runs.length > 1 &&
+    runs[runs.length - 1].at(-1) === 12 &&
+    runs[0][0] === 1
+  ) {
+    runs[0] = [...runs.pop()!, ...runs[0]];
+  }
+
+  const labels = runs.map((run) =>
+    run.length === 1
+      ? MONTHS[run[0] - 1]
+      : `${MONTHS[run[0] - 1]}–${MONTHS[run[run.length - 1] - 1]}`,
+  );
+
+  // "Januari dan Maret dan Mei" -> "Januari, Maret, dan Mei".
+  if (labels.length <= 2) return labels.join(" dan ");
+  return `${labels.slice(0, -1).join(", ")}, dan ${labels.at(-1)}`;
+}
+
 /** Number of frames in the hero gallery, cover included. */
 const GALLERY_SIZE = 5;
 
