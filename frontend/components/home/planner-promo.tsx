@@ -16,18 +16,18 @@ import { MapPin, MessageSquareText, Sparkles, Ticket } from "lucide-react";
 const STEPS = [
   {
     icon: MessageSquareText,
-    title: "Ceritakan maumu",
-    body: "Suasana yang kamu cari, berapa lama, dari kota mana berangkat.",
+    title: "Ceritakan rencanamu",
+    body: "Mau suasana pantai atau gunung, berapa hari, dan berangkat dari kota mana.",
   },
   {
     icon: MapPin,
-    title: "Dicarikan dari katalog",
-    body: "Destinasi, penginapan, dan penerbangan yang benar-benar ada — bukan karangan.",
+    title: "Pilihan yang nyata",
+    body: "Destinasi wisata, penginapan, dan jadwal penerbangan diambil dari katalog, lengkap dengan harga dan ratingnya.",
   },
   {
     icon: Ticket,
-    title: "Pesan sekaligus",
-    body: "Rencana yang sudah lengkap bisa langsung dijadikan pesanan.",
+    title: "Pesan sekali jalan",
+    body: "Tiket pesawat dan kamar hotel di rencanamu dipesan bersamaan, tanpa pindah situs.",
   },
 ];
 
@@ -40,12 +40,13 @@ export function PlannerPromo() {
         <div className="relative grid gap-10 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center">
           <div>
             <h2 className="max-w-xl font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
-              Bingung mau ke mana? Ceritakan saja, biar disusunkan.
+              Susun rencana perjalanan liburan tanpa buka belasan tab.
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">
-              Rencana AI menyusun perjalananmu dari awal — mencari tempatnya,
-              memilihkan penginapan, sampai penerbangannya. Kamu tetap yang
-              memutuskan apa yang jadi dipilih.
+              Sebutkan mau ke mana, berapa hari, dan berangkat dari kota mana.
+              Rencana AI mengumpulkan destinasi wisata, penginapan, dan tiket
+              pesawat jadi satu itinerary yang bisa langsung dipesan. Setiap
+              pilihan masih bisa kamu ganti sebelum bayar.
             </p>
 
             <ul className="mt-7 grid gap-4 sm:grid-cols-3">
