@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import { cacheLife } from "next/cache";
-import { Info, Sparkles } from "lucide-react";
 import {
   getDestination,
   getHeatmap,
@@ -219,8 +218,7 @@ async function Guide({ params }: PageProps) {
             <Facts destination={destination} />
 
             <section>
-              <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-                <Info className="h-5 w-5 text-brand-700 dark:text-brand-100" />
+              <h2 className="font-display text-xl font-bold tracking-tight">
                 Tentang destinasi ini
               </h2>
               <p className="mt-2 whitespace-pre-line leading-relaxed text-foreground/90">
@@ -229,24 +227,24 @@ async function Guide({ params }: PageProps) {
               </p>
 
               {destination.tags.length > 0 && (
-                <>
-                  <h3 className="mt-5 flex items-center gap-2 text-sm font-semibold">
-                    <Sparkles className="h-4 w-4 text-brand-700 dark:text-brand-100" />
-                    Cocok untuk
-                  </h3>
-                  <ul className="mt-2 flex flex-wrap gap-2">
-                    {destination.tags.map((tag) => (
-                      <li key={tag.id}>
-                        <a
-                          href={`/destinations?tags=${tag.slug}`}
-                          className="inline-block rounded-full border border-border px-3.5 py-1.5 text-xs font-medium transition hover:border-brand-700 hover:text-brand-700 dark:hover:border-brand-100 dark:hover:text-brand-100"
-                        >
-                          {tag.name}
-                        </a>
-                      </li>
-                    ))}
-                  </ul>
-                </>
+                // Label "Cocok untuk" hanya untuk pembaca layar: tanpa judul
+                // yang terlihat, daftar ini kalau tidak diberi nama cuma
+                // terdengar sebagai deretan tautan tanpa keterangan.
+                <ul
+                  aria-label="Cocok untuk"
+                  className="mt-4 flex flex-wrap gap-2"
+                >
+                  {destination.tags.map((tag) => (
+                    <li key={tag.id}>
+                      <a
+                        href={`/destinations?tags=${tag.slug}`}
+                        className="inline-block rounded-full border border-border px-3.5 py-1.5 text-xs font-medium transition hover:border-brand-700 hover:text-brand-700 dark:hover:border-brand-100 dark:hover:text-brand-100"
+                      >
+                        {tag.name}
+                      </a>
+                    </li>
+                  ))}
+                </ul>
               )}
             </section>
 
