@@ -63,7 +63,7 @@ Alih-alih memaksa pengguna membuka lima tab berbeda untuk mencari destinasi, men
 
 **Temukan → Rencanakan → Estimasi Biaya → Pesan**
 
-Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, Papua, dan Sumatera berdasarkan preferensi pengguna (jenis wisata, budget, durasi), bukan berdasarkan popularitas semata. Perencanaan trip mendukung format multi-kota, sehingga pengguna bisa merangkai perjalanan lintas daerah dalam satu itinerary , misalnya Medan → Danau Toba → Bukittinggi — lengkap dengan penerbangan antar-kota dan akomodasi per titik singgah, lalu membayarnya dalam satu invoice.
+Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, Papua, dan Sumatera berdasarkan preferensi pengguna (jenis wisata, budget, durasi), bukan berdasarkan popularitas semata. Perencanaan trip mendukung format multi-kota, sehingga pengguna bisa merangkai perjalanan lintas daerah dalam satu itinerary , misalnya Medan → Danau Toba → Bukittinggi, lengkap dengan penerbangan antar-kota dan akomodasi per titik singgah, lalu membayarnya dalam satu invoice.
 
 ### Tujuan Proyek
 
@@ -102,9 +102,8 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
 
 ### Live Demo
 
-🔗 **[Kunjungi Website](https://jelantara.example.com)**
+🔗 **[Kunjungi Website](https://jelantara.iitech.id)**
 
-📖 **[Dokumentasi API (Swagger UI)](https://jelantara.example.com/api-docs)**
 
 ### Screenshot Aplikasi
 
@@ -161,8 +160,9 @@ Config       : dotenv
 
 ```
 Database Host : Supabase
-Deployment    : Vercel (frontend) + VM/Railway (backend)
-API Testing   : Postman Collection
+Deployment    : Vercel (frontend) + VM (backend)
+CI/CD         : Github action
+API Testing   : Swagger UI
 Version Ctrl  : Git & GitHub
 ```
 
