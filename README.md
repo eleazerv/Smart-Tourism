@@ -43,15 +43,15 @@
 
 ### Latar Belakang
 
-Tanya siapa pun — turis mancanegara maupun orang Indonesia sendiri — destinasi wisata Indonesia apa yang mereka tahu. Jawabannya hampir selalu berhenti di satu nama: **Bali**.
+Tanya siapa pun baik turis mancanegara maupun orang Indonesia sendiri, destinasi wisata Indonesia apa aja yang mereka tau. Jawabannya hampir selalu berhenti di satu nama: **Bali**.
 
-Padahal Indonesia punya 17.000+ pulau dan 38 provinsi. Di **Kalimantan** ada hutan hujan tropis tertua di dunia, sungai-sungai besar, dan habitat orangutan. Di **Papua** ada Raja Ampat yang diakui sebagai salah satu titik biodiversitas laut terkaya di planet ini, plus Lembah Baliem dengan budaya yang masih terjaga. Di **Sumatera** ada Danau Toba (danau vulkanik terbesar di dunia), Bukit Lawang, dan situs-situs budaya Minangkabau.
+Padahal Indonesia punya lebih dari 17.000 pulau dan 38 provinsi. Di **Kalimantan** ada hutan hujan tropis tertua di dunia, sungai-sungai besar, dan habitat orangutan. Di **Papua** ada Raja Ampat yang diakui sebagai salah satu titik biodiversitas laut terkaya di planet ini, plus Lembah Baliem dengan budaya yang masih terjaga. Di **Sumatera** ada Danau Toba (danau vulkanik terbesar di dunia), Bukit Lawang, dan situs-situs budaya Minangkabau.
 
 Masalahnya bukan destinasinya tidak ada. Masalahnya adalah:
 
-1. **Ketimpangan eksposur** — Bali mendominasi hasil pencarian, konten media sosial, dan paket travel agent, sementara destinasi lain nyaris tak terlihat.
-2. **Friksi perencanaan** — Merencanakan trip ke luar Bali jauh lebih ribet. Informasi akomodasi, penerbangan, dan estimasi biaya tersebar di banyak platform yang tidak saling terhubung.
-3. **Ketidakpastian budget** — Calon wisatawan sering mundur karena tidak punya gambaran biaya total sebelum benar-benar mulai memesan.
+1. **Ketimpangan eksposur**,  Bali mendominasi hasil pencarian, konten media sosial, dan paket travel agent, sementara destinasi lain nyaris tak terlihat.
+2. **Friksi perencanaan**, Merencanakan trip ke luar Bali jauh lebih ribet. Informasi akomodasi, penerbangan, dan estimasi biaya tersebar di banyak platform yang tidak saling terhubung.
+3. **Ketidakpastian budget**, Calon wisatawan sering mundur karena tidak punya gambaran biaya total sebelum benar-benar mulai memesan.
 
 Dampaknya bukan cuma soal "kurang terkenal". Daerah dengan potensi wisata besar kehilangan peluang ekonomi, sementara Bali menanggung beban *over-tourism*.
 
@@ -63,7 +63,7 @@ Alih-alih memaksa pengguna membuka lima tab berbeda untuk mencari destinasi, men
 
 **Temukan → Rencanakan → Estimasi Biaya → Pesan**
 
-Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, Papua, dan Sumatera berdasarkan preferensi pengguna (jenis wisata, budget, durasi), bukan berdasarkan popularitas semata. Perencanaan trip mendukung format multi-kota, sehingga pengguna bisa merangkai perjalanan lintas daerah dalam satu itinerary — misalnya Medan → Danau Toba → Bukittinggi — lengkap dengan penerbangan antar-kota dan akomodasi per titik singgah, lalu membayarnya dalam satu invoice.
+Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, Papua, dan Sumatera berdasarkan preferensi pengguna (jenis wisata, budget, durasi), bukan berdasarkan popularitas semata. Perencanaan trip mendukung format multi-kota, sehingga pengguna bisa merangkai perjalanan lintas daerah dalam satu itinerary , misalnya Medan → Danau Toba → Bukittinggi — lengkap dengan penerbangan antar-kota dan akomodasi per titik singgah, lalu membayarnya dalam satu invoice.
 
 ### Tujuan Proyek
 
@@ -87,14 +87,14 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
 
 ### Fitur Tambahan
 
-- **Saved Destinations** — Simpan destinasi yang menarik untuk dirujuk kembali saat menyusun trip.
-- **Filter Berbasis Tag** — Telusuri destinasi berdasarkan kategori minat seperti alam, budaya, bahari, atau petualangan.
-- **Heatmap Destinasi** — Visualisasi persebaran destinasi secara geografis untuk membantu pengguna melihat opsi di luar pulau Jawa dan Bali.
-- **Direktori Kota** — Jelajahi destinasi, akomodasi, dan penerbangan yang terhubung ke setiap kota.
-- **Kalender Event** — Informasi acara dan festival yang berlangsung di sekitar destinasi, berguna untuk menentukan waktu berkunjung.
-- **Chat Assistant** — Antarmuka percakapan untuk membantu pengguna mengeksplorasi destinasi dan menyusun rencana perjalanan.
-- **Pencarian Rute** — Pencarian jalur perjalanan antar titik untuk membantu perencanaan pergerakan dalam trip.
-- **Auto-Release Booking Kedaluwarsa** — Booking yang tidak dibayar hingga batas waktu otomatis dilepas oleh scheduler berkala, sehingga ketersediaan tidak tertahan selamanya.
+- **Saved Destinations** , Simpan destinasi yang menarik untuk dirujuk kembali saat menyusun trip.
+- **Filter Berbasis Tag**, Telusuri destinasi berdasarkan kategori minat seperti alam, budaya, bahari, atau petualangan.
+- **Heatmap Destinasi**, Visualisasi persebaran destinasi secara geografis untuk membantu pengguna melihat opsi di luar pulau Jawa dan Bali.
+- **Direktori Kota**, Jelajahi destinasi, akomodasi, dan penerbangan yang terhubung ke setiap kota.
+- **Kalender Event**, Informasi acara dan festival yang berlangsung di sekitar destinasi, berguna untuk menentukan waktu berkunjung.
+- **Chat Assistant**, Antarmuka percakapan untuk membantu pengguna mengeksplorasi destinasi dan menyusun rencana perjalanan.
+- **Pencarian Rute**, Pencarian jalur perjalanan antar titik untuk membantu perencanaan pergerakan dalam trip.
+- **Auto-Release Booking Kedaluwarsa**, Booking yang tidak dibayar hingga batas waktu otomatis dilepas oleh scheduler berkala, sehingga ketersediaan tidak tertahan selamanya.
 
 ---
 
@@ -125,7 +125,7 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
   <p><em>Checkout — Pembayaran satu invoice via QRIS, Virtual Account, atau e-wallet</em></p>
 </div>
 
-### Video Demo
+### Video Demo ( opsional )
 
 📹 **[Tonton Video Demo](https://youtube.com/watch?v=demo)**
 
