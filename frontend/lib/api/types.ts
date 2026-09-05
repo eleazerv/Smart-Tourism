@@ -140,6 +140,8 @@ export type Album = {
   created_at: string;
   updated_at: string;
   item_count: number;
+  /** Set once the album has a public link; null while it stays private. */
+  share_token: string | null;
   /** Only present when the listing was asked about one destination. */
   contains?: boolean;
 };

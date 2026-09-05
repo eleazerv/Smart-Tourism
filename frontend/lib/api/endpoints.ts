@@ -401,6 +401,39 @@ export async function renameAlbum(
   return data;
 }
 
+/**
+ * Turns on the album's public link and returns its token.
+ *
+ * Idempotent: an album that is already shared answers with the token it
+ * already has, so pressing Bagikan twice never invalidates a link that may
+ * already be in someone's chat.
+ */
+export async function shareAlbum(id: string, auth: Auth): Promise<string> {
+  const { data } = await apiFetch<{
+    data: { id: string; share_token: string };
+  }>(`/api/albums/${id}/share`, { ...auth, method: "POST" });
+  return data.share_token;
+}
+
+/** Revokes the link. Sharing again later mints a different one. */
+export async function unshareAlbum(id: string, auth: Auth) {
+  return apiFetch<{ data: { id: string; share_token: null } }>(
+    `/api/albums/${id}/share`,
+    { ...auth, method: "DELETE" },
+  );
+}
+
+/** The public view of a shared album. No token, no owner identity. */
+export async function getSharedAlbum(
+  token: string,
+): Promise<AlbumDetail | null> {
+  const result = await apiFetch<{ data: AlbumDetail }>(
+    `/api/albums/shared/${token}`,
+    { nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
 /** Removes the album, not the destinations — those stay saved. */
 export async function deleteAlbum(id: string, auth: Auth) {
   return apiFetch<{ deleted: boolean; id: string }>(`/api/albums/${id}`, {

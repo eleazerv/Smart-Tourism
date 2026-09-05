@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
-import { Compass } from "lucide-react";
+import { Bookmark, Compass } from "lucide-react";
 import {
   listAlbums,
   listSavedDestinations,
@@ -10,14 +10,15 @@ import {
 } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
 import { AccountSection } from "@/components/account/account-section";
-import { AlbumManager } from "@/components/account/album-manager";
-import { SavedGrid } from "@/components/account/saved-grid";
+import { AlbumCard } from "@/components/account/album-card";
+import { NewAlbumCard } from "@/components/account/new-album-card";
+import { LOOSE_SLUG } from "@/components/account/album-routes";
 import { LoadError } from "@/components/home/load-error";
 
 export const metadata: Metadata = { title: "Destinasi Tersimpan" };
 
-/** Saves that belong to no album, shown last under their own heading. */
-const LOOSE = "loose";
+/** Covers shown on an album card before it opens. */
+const PREVIEW = 4;
 
 async function SavedSection() {
   const token = await requireAccessToken();
@@ -27,13 +28,27 @@ async function SavedSection() {
   try {
     [saved, albums] = await Promise.all([
       listSavedDestinations({ token }),
-      // Fetched even though the saved rows carry their album names: an album
-      // with nothing in it appears nowhere in those rows, and a reader who
-      // just created one would think it failed.
-      listAlbums({ token }).catch(() => [] as Album[]),
+      listAlbums({ token }),
     ]);
   } catch {
     return <LoadError what="Destinasi tersimpan" />;
+  }
+
+  // One destination can sit in several albums, so this is a lookup for the
+  // cover mosaics rather than a partition of the saved list.
+  const byAlbum = new Map<string, SavedDestination[]>();
+  const loose: SavedDestination[] = [];
+
+  for (const row of saved) {
+    if (row.albums.length === 0) {
+      loose.push(row);
+      continue;
+    }
+    for (const album of row.albums) {
+      const rows = byAlbum.get(album.id);
+      if (rows) rows.push(row);
+      else byAlbum.set(album.id, [row]);
+    }
   }
 
   if (saved.length === 0 && albums.length === 0) {
@@ -54,69 +69,42 @@ async function SavedSection() {
     );
   }
 
-  // One destination can sit in several albums, so it is listed under each of
-  // them rather than assigned to one — grouping is a view here, not a move.
-  const byAlbum = new Map<string, SavedDestination[]>();
-  for (const row of saved) {
-    const keys = row.albums.length > 0 ? row.albums.map((a) => a.id) : [LOOSE];
-    for (const key of keys) {
-      const rows = byAlbum.get(key);
-      if (rows) rows.push(row);
-      else byAlbum.set(key, [row]);
-    }
-  }
-
-  const loose = byAlbum.get(LOOSE) ?? [];
-
   return (
-    <div className="space-y-8">
-      <AlbumManager albums={albums} />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {albums.map((album) => (
+        <AlbumCard
+          key={album.id}
+          album={album}
+          preview={(byAlbum.get(album.id) ?? []).slice(0, PREVIEW)}
+        />
+      ))}
 
-      {albums.map((album) => {
-        const rows = byAlbum.get(album.id) ?? [];
-        return (
-          <section key={album.id} id={`album-${album.id}`} className="scroll-mt-24">
-            <div className="flex flex-wrap items-baseline justify-between gap-2">
-              <h2 className="font-display text-lg font-bold tracking-tight">
-                {album.name}
-              </h2>
-              <p className="text-xs tabular-nums text-muted-foreground">
-                {rows.length} destinasi
+      {/* Bukan album sungguhan, tapi tetap sebuah kartu: simpanan tanpa album
+          harus punya tempat yang bisa dibuka, bukan menghilang dari halaman
+          hanya karena belum dikelompokkan. */}
+      {loose.length > 0 && (
+        <article className="group overflow-hidden rounded-2xl border border-dashed border-border bg-card transition hover:border-brand-700 dark:hover:border-brand-100">
+          <Link
+            href={`/akun/tersimpan/${LOOSE_SLUG}`}
+            className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
+          >
+            <div className="grid aspect-[4/3] place-items-center bg-muted/40">
+              <Bookmark
+                aria-hidden="true"
+                className="h-7 w-7 text-muted-foreground"
+              />
+            </div>
+            <div className="p-3">
+              <p className="truncate text-sm font-bold">Tanpa album</p>
+              <p className="mt-0.5 text-xs text-muted-foreground">
+                {loose.length} destinasi belum dikelompokkan
               </p>
             </div>
-
-            {rows.length === 0 ? (
-              <p className="mt-3 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                Album ini masih kosong. Simpan sebuah destinasi, lalu centang
-                album ini di panel yang muncul.
-              </p>
-            ) : (
-              <div className="mt-3">
-                <SavedGrid saved={rows} />
-              </div>
-            )}
-          </section>
-        );
-      })}
-
-      {loose.length > 0 && (
-        <section>
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <h2 className="font-display text-lg font-bold tracking-tight">
-              Tanpa album
-            </h2>
-            <p className="text-xs tabular-nums text-muted-foreground">
-              {loose.length} destinasi
-            </p>
-          </div>
-          <p className="mt-0.5 text-sm text-muted-foreground">
-            Tersimpan tapi belum masuk rencana mana pun.
-          </p>
-          <div className="mt-3">
-            <SavedGrid saved={loose} />
-          </div>
-        </section>
+          </Link>
+        </article>
       )}
+
+      <NewAlbumCard />
     </div>
   );
 }
@@ -125,7 +113,7 @@ export default function SavedDestinationsPage() {
   return (
     <AccountSection
       title="Destinasi tersimpan"
-      description="Destinasi yang Anda tandai, dikelompokkan per album."
+      description="Kumpulan album Anda. Buka salah satunya untuk melihat isinya."
     >
       <Suspense fallback={<GridSkeleton />}>
         <SavedSection />
@@ -136,17 +124,16 @@ export default function SavedDestinationsPage() {
 
 function GridSkeleton() {
   return (
-    <div className="space-y-6">
-      <div className="h-28 animate-pulse rounded-2xl bg-muted" />
-      <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-        {Array.from({ length: 6 }, (_, i) => (
-          <div key={i} className="space-y-2.5">
-            <div className="aspect-[4/3] animate-pulse rounded-2xl bg-muted" />
-            <div className="h-3.5 w-3/4 animate-pulse rounded bg-muted" />
-            <div className="h-3 w-1/2 animate-pulse rounded bg-muted" />
+    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {Array.from({ length: 6 }, (_, i) => (
+        <div key={i} className="overflow-hidden rounded-2xl border border-border">
+          <div className="aspect-[4/3] animate-pulse bg-muted" />
+          <div className="space-y-2 p-3">
+            <div className="h-3.5 w-2/3 animate-pulse rounded bg-muted" />
+            <div className="h-3 w-1/3 animate-pulse rounded bg-muted" />
           </div>
-        ))}
-      </div>
+        </div>
+      ))}
     </div>
   );
 }
