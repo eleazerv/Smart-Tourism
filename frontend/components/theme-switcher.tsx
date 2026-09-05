@@ -27,8 +27,10 @@ const ThemeSwitcher = () => {
 
   const ICON_SIZE = 16;
 
+  // Non-modal: mengunci scroll halaman akan mencabut scrollbar dan menggeser
+  // seluruh isi halaman. Lihat catatan di account-menu.tsx.
   return (
-    <DropdownMenu>
+    <DropdownMenu modal={false}>
       <DropdownMenuTrigger asChild>
         <Button variant="ghost" size={"sm"}>
           {theme === "light" ? (

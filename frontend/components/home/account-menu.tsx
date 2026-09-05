@@ -102,7 +102,22 @@ export function AccountMenu({ className }: { className?: string }) {
 
   return (
     <>
-      <DropdownMenu>
+      {/*
+        `modal={false}` supaya menu ini tidak mengunci scroll halaman.
+        Radix default-nya modal, dan mode itu memasang react-remove-scroll:
+        body diberi `overflow: hidden` sehingga scrollbar dokumen hilang
+        selama menu terbuka. Lebarnya cuma 5px di tema ini (lihat aturan
+        ::-webkit-scrollbar di globals.css), tapi hilangnya tetap melebarkan
+        viewport dan menggeser seluruh isi halaman yang terpusat -- termasuk
+        header ini sendiri, jadi tombol yang barusan ditekan ikut meloncat di
+        bawah kursor.
+
+        Mengunci scroll memang tidak ada gunanya untuk menu akun: ia kecil,
+        ditutup dengan Esc atau klik di luar, dan tidak menuntut perhatian
+        penuh seperti dialog. Tanpa mode modal, scrollbar tidak pernah dicabut
+        dan tidak ada yang bergeser.
+      */}
+      <DropdownMenu modal={false}>
         <DropdownMenuTrigger
           aria-label={`Menu akun ${name}`}
           className={cn(

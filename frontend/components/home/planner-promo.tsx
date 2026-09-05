@@ -16,18 +16,18 @@ import { MapPin, MessageSquareText, Sparkles, Ticket } from "lucide-react";
 const STEPS = [
   {
     icon: MessageSquareText,
-    title: "Ceritakan rencanamu",
-    body: "Mau suasana pantai atau gunung, berapa hari, dan berangkat dari kota mana.",
+    title: "Mau liburan ke mana?",
+    body: "Pantai, gunung, atau keliling kota? Tentukan durasi dan kota keberangkatanmu.",
   },
   {
     icon: MapPin,
-    title: "Pilihan yang nyata",
-    body: "Destinasi wisata, penginapan, dan jadwal penerbangan diambil dari katalog, lengkap dengan harga dan ratingnya.",
+    title: "Cari yang pas buatmu",
+    body: "Lihat destinasi, hotel, dan penerbangan lengkap dengan harga dan rating.",
   },
   {
     icon: Ticket,
-    title: "Pesan sekali jalan",
-    body: "Tiket pesawat dan kamar hotel di rencanamu dipesan bersamaan, tanpa pindah situs.",
+    title: "Tinggal pesan, berangkat",
+    body: "Pesan tiket dan hotel sekaligus dalam satu perjalanan.",
   },
 ];
 

@@ -150,7 +150,9 @@ export function AlbumCard({
             )}
           </div>
 
-          <DropdownMenu>
+          {/* Non-modal: mengunci scroll halaman akan mencabut scrollbar dan
+              menggeser seluruh isi halaman. Lihat catatan di account-menu.tsx. */}
+          <DropdownMenu modal={false}>
             <DropdownMenuTrigger
               aria-label={`Kelola album ${album.name}`}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 data-[state=open]:bg-muted"
