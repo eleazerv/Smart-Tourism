@@ -116,7 +116,6 @@ export const listAccommodationBookings = async (req, res) => {
           id, room_name, check_in, check_out, nights,
           accommodations ( id, name, tier, cover_image_url )
         )
->>>>>>> backend
       `)
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })

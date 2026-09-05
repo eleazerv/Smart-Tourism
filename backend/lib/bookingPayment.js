@@ -128,8 +128,7 @@ export async function settleOverdue (bookings, tag) {
     return changed;
 }
 
-
-const SWEEP_TABLES = ['flight_bookings', 'accommodation_bookings', 'trip_bookings'];
+const SWEEP_TABLES = ['flight_bookings', 'accommodation_bookings'];
 
 /**
  * Menyapu semua booking pending yang sudah lewat batas, bukan cuma yang

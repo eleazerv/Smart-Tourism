@@ -38,6 +38,52 @@ export const getTrips = async (req, res) => {
   }
 }
 
+// POST /api/trips
+export const createTrip = async (req, res) => {
+  try {
+    const { name, start_date, end_date, travelers, origin_city_id } = req.body;
+    const payload = { user_id: req.user.id, status: 'planning', travelers: 1 };
+
+    if (name !== undefined) payload.name = String(name).slice(0, 120);
+
+    for (const [field, value] of [['start_date', start_date], ['end_date', end_date]]) {
+      if (value === undefined || value === null) continue;
+      if (!DATE_RE.test(value)) {
+        return res.status(400).json({ error: 'invalid_date', message: `${field} must be in YYYY-MM-DD format` });
+      }
+      payload[field] = value;
+    }
+
+    if (payload.start_date && payload.end_date && payload.end_date < payload.start_date) {
+      return res.status(400).json({ error: 'invalid_date_range', message: 'end_date cannot be before start_date' });
+    }
+
+    if (travelers !== undefined) {
+      const n = Number(travelers);
+      if (!Number.isInteger(n) || n < 1) {
+        return res.status(400).json({ error: 'invalid_travelers', message: 'travelers must be at least 1' });
+      }
+      payload.travelers = n;
+    }
+
+    if (origin_city_id !== undefined && origin_city_id !== null) {
+      payload.origin_city_id = Number(origin_city_id);
+    }
+
+    const { data: trip, error } = await req.db
+      .from('trips')
+      .insert(payload)
+      .select('id, name, start_date, end_date, travelers, origin_city_id, status')
+      .single();
+    if (error) throw error;
+
+    return res.status(201).json({ data: trip });
+  } catch (err) {
+    console.error('[createTrip] error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
 // GET /api/trips/:id
 export const getTripCanvas = async (req, res) => {
   try{ 

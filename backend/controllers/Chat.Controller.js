@@ -2,6 +2,8 @@ import { supabase } from '../lib/supabase.js';
 import { callDeepseek, startTokenTurn, getTokenTurn } from '../lib/deepseek.js';
 import { TOOL_DEFINITIONS, executeTool } from '../lib/aiTools.js';
 import { loadCanvas } from '../lib/tripStops.helper.js';
+import { handleRpcError } from '../lib/bookingPayment.js'; // sesuaikan path
+
 const MAX_TOOL_ROUNDS = 6;   // batas putaran tool per giliran chat
 const HISTORY_LIMIT = 10;    // berapa pesan terakhir yang dikirim ke model
 const TOOL_RESULT_LIMIT = 2500; // panjang maksimum hasil tool yang dikirim balik ke model
