@@ -52,6 +52,15 @@ export function ConfirmDialog({
     if (!dialog) return;
     if (open && !dialog.open) dialog.showModal();
     if (!open && dialog.open) dialog.close();
+
+    // Ditutup juga saat komponennya pergi. Dialog modal hidup di top layer
+    // browser, bukan sekadar di pohon React, jadi komponen yang menghilang
+    // selagi dialognya terbuka -- misalnya karena sesinya berakhir dan
+    // pemiliknya berhenti merendernya -- berpotensi meninggalkan lapisan
+    // yang memblokir halaman di belakangnya.
+    return () => {
+      if (dialog.open) dialog.close();
+    };
   }, [open]);
 
   return (

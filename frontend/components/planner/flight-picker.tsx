@@ -1,21 +1,24 @@
 "use client";
 
 /**
- * Pemilih penerbangan di panel rencana.
+ * Pemilih penerbangan di panel rencana — satu per kota.
  *
  * Sebelumnya penerbangan cuma bisa diisi lewat percakapan, dan itu buntu kalau
- * AI tidak mengerjakannya. Bedanya dengan pemilih penginapan: rute tidak bisa
- * disimpulkan dari satu destinasi saja, jadi kota asal, kota tujuan, dan
- * tanggalnya perlu ditanyakan.
+ * AI tidak mengerjakannya.
  *
- * Ketiganya diisi dulu dengan tebakan yang paling masuk akal dari isi rencana
- * -- kota asal dari trip, kota tujuan dari destinasi pertama, tanggal dari
- * check-in paling awal -- tapi ditampilkan sebagai kolom yang bisa diubah,
- * bukan diam-diam dipakai. Tebakan yang salah jadi terlihat sebelum dicari,
- * bukan sesudah hasilnya aneh.
+ * Sejak rencana disusun per kota, rutenya tidak perlu ditebak-tebak lagi:
+ * penerbangan `arrival` membawa masuk ke kota stop ini, jadi tujuannya pasti
+ * kota ini dan asalnya kota stop sebelumnya (atau kota asal trip untuk stop
+ * pertama). `departure` kebalikannya — dari kota ini menuju kota stop
+ * berikutnya, atau pulang ke kota asal untuk stop terakhir. Tanggalnya ikut
+ * check-in untuk yang masuk dan check-out untuk yang keluar.
+ *
+ * Tebakan itu tetap ditampilkan sebagai kolom yang bisa diubah, bukan
+ * diam-diam dipakai: rute yang salah jadi terlihat sebelum dicari, bukan
+ * sesudah hasilnya aneh.
  */
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { ChevronDown, Loader2, Plane, Search } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { formatIDR } from "@/lib/seeded-random";
@@ -26,18 +29,25 @@ import {
   type City,
   type FlightOption,
   type TripCanvas,
+  type TripFlightRole,
+  type TripStop,
 } from "@/lib/api";
 
-type FlightType = "outbound" | "return";
+const ROLE_LABEL: Record<TripFlightRole, string> = {
+  arrival: "Masuk",
+  departure: "Keluar",
+};
 
 export function FlightPicker({
   canvas,
+  stop,
   disabled,
   onPick,
 }: {
   canvas: TripCanvas;
+  stop: TripStop;
   disabled: boolean;
-  onPick: (option: FlightOption, type: FlightType) => Promise<void>;
+  onPick: (option: FlightOption, role: TripFlightRole) => Promise<void>;
 }) {
   const [open, setOpen] = useState(false);
   const [cities, setCities] = useState<City[] | null>(null);
@@ -45,36 +55,51 @@ export function FlightPicker({
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
   const [date, setDate] = useState<string>("");
-  const [type, setType] = useState<FlightType>("outbound");
+  const [role, setRole] = useState<TripFlightRole>("arrival");
 
   const [results, setResults] = useState<FlightOption[] | null>(null);
   const [searching, setSearching] = useState(false);
   const [picking, setPicking] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  /** Tebakan awal dari isi rencana, dihitung ulang kalau rencananya berubah. */
+  /** Rute dan tanggal yang paling masuk akal untuk peran yang sedang dipilih. */
   const guess = useMemo(() => {
-    const firstItem = canvas.items[0];
-    const earliest = canvas.items
-      .map((item) => item.check_in)
-      .filter((value): value is string => Boolean(value))
-      .sort()[0];
+    const stops = canvas.stops ?? [];
+    const index = stops.findIndex((s) => s.id === stop.id);
+    const previous = index > 0 ? stops[index - 1] : undefined;
+    const next = index >= 0 ? stops[index + 1] : undefined;
+    const homeCityId = canvas.trip?.origin_city_id ?? null;
+
+    if (role === "arrival") {
+      return {
+        origin: previous?.cities?.id ?? homeCityId,
+        destination: stop.cities?.id ?? null,
+        date: stop.check_in ?? canvas.trip?.start_date ?? "",
+      };
+    }
 
     return {
-      origin: canvas.trip?.origin_city_id ? String(canvas.trip.origin_city_id) : "",
-      destination: firstItem?.destinations?.cities?.id
-        ? String(firstItem.destinations.cities.id)
-        : "",
-      date: canvas.trip?.start_date ?? earliest ?? "",
+      origin: stop.cities?.id ?? null,
+      destination: next?.cities?.id ?? homeCityId,
+      date: stop.check_out ?? canvas.trip?.end_date ?? "",
     };
-  }, [canvas]);
+  }, [canvas, stop, role]);
+
+  // Tebakan dipasang ulang saat panelnya dibuka dan saat perannya ditukar --
+  // dua momen ketika rute yang benar memang berubah. Dibaca lewat ref supaya
+  // canvas yang diperbarui di tengah pengisian tidak menimpa ketikan orang.
+  const guessRef = useRef(guess);
+  guessRef.current = guess;
 
   useEffect(() => {
     if (!open) return;
-    setOrigin((current) => current || guess.origin);
-    setDestination((current) => current || guess.destination);
-    setDate((current) => current || guess.date);
-  }, [open, guess]);
+    const seed = guessRef.current;
+    setOrigin(seed.origin ? String(seed.origin) : "");
+    setDestination(seed.destination ? String(seed.destination) : "");
+    setDate(seed.date ?? "");
+    setResults(null);
+    setError(null);
+  }, [open, role]);
 
   async function toggle() {
     const next = !open;
@@ -118,9 +143,9 @@ export function FlightPicker({
     }
   }
 
-  // Mengisi slot yang sudah terpakai berarti mengganti, bukan menambah -- satu
-  // rencana cuma punya satu berangkat dan satu pulang.
-  const occupied = canvas.flights.find((f) => f.flight_type === type);
+  // Tiap kota cuma punya satu leg masuk dan satu leg keluar, jadi mengisi
+  // peran yang sudah terpakai berarti mengganti, bukan menambah.
+  const occupied = stop.trip_flights.find((f) => f.flight_role === role);
 
   return (
     <div className="mt-2">
@@ -134,7 +159,9 @@ export function FlightPicker({
       >
         <Plane className="h-3.5 w-3.5" />
         Cari penerbangan
-        <ChevronDown className={cn("h-3.5 w-3.5 transition", open && "rotate-180")} />
+        <ChevronDown
+          className={cn("h-3.5 w-3.5 transition", open && "rotate-180")}
+        />
       </Button>
 
       {open && (
@@ -169,16 +196,16 @@ export function FlightPicker({
               />
             </label>
             <label className="block">
-              <span className="sr-only">Jenis penerbangan</span>
+              <span className="sr-only">Peran penerbangan</span>
               <select
-                title="Jenis penerbangan"
-                value={type}
+                title="Peran penerbangan"
+                value={role}
                 disabled={disabled}
-                onChange={(e) => setType(e.target.value as FlightType)}
+                onChange={(e) => setRole(e.target.value as TripFlightRole)}
                 className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
               >
-                <option value="outbound">Berangkat</option>
-                <option value="return">Pulang</option>
+                <option value="arrival">Masuk ke kota ini</option>
+                <option value="departure">Keluar dari kota ini</option>
               </select>
             </label>
           </div>
@@ -199,15 +226,24 @@ export function FlightPicker({
 
           {occupied && !occupied.booked_at && (
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Slot {type === "outbound" ? "berangkat" : "pulang"} sedang diisi{" "}
+              Leg {ROLE_LABEL[role].toLowerCase()} sedang diisi{" "}
               {occupied.flight_options?.airline}{" "}
               {occupied.flight_options?.flight_number}. Memilih di sini akan
               menggantinya.
             </p>
           )}
 
+          {occupied?.booked_at && (
+            <p className="text-[11px] leading-relaxed text-muted-foreground">
+              Leg {ROLE_LABEL[role].toLowerCase()} sudah dipesan dan tidak bisa
+              ditimpa. Batalkan pesanannya dulu di halaman Pesanan.
+            </p>
+          )}
+
           {error && (
-            <p className="text-[11px] leading-relaxed text-destructive">{error}</p>
+            <p className="text-[11px] leading-relaxed text-destructive">
+              {error}
+            </p>
           )}
 
           {results?.length === 0 && (
@@ -227,7 +263,7 @@ export function FlightPicker({
                     onClick={async () => {
                       setPicking(flight.id);
                       try {
-                        await onPick(flight, type);
+                        await onPick(flight, role);
                         setResults(null);
                         setOpen(false);
                       } finally {
@@ -287,9 +323,7 @@ function CitySelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
       >
-        <option value="">
-          {cities === null ? "Memuat…" : `${label} kota`}
-        </option>
+        <option value="">{cities === null ? "Memuat…" : `${label} kota`}</option>
         {cities?.map((city) => (
           <option key={city.id} value={city.id}>
             {city.name}

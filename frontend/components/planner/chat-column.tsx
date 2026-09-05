@@ -12,19 +12,32 @@ import { useEffect, useRef, useState } from "react";
 import { AlertTriangle, ArrowRight, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { InteractiveCards } from "@/components/planner/interactive-cards";
-import type { ChatMessage, PlannerFlightOption, TripCanvas } from "@/lib/api";
+import type {
+  ChatMessage,
+  PlannerFlightOption,
+  TripCanvas,
+  TripFlightRole,
+} from "@/lib/api";
 
 type Props = {
   messages: ChatMessage[];
   canvas: TripCanvas | null;
   sending: boolean;
-  disabled: boolean;
+  /**
+   * Kotak tulisnya tidak pernah dikunci karena belum ada percakapan: pesan
+   * pertama yang membuat ruangnya. Satu-satunya yang mengunci adalah giliran
+   * yang sedang diproses.
+   */
   onSend: (message: string) => void;
   onAddDestination: (id: string) => Promise<void>;
-  onPickAccommodation: (itemId: string, accommodationId: string) => Promise<void>;
+  onPickAccommodation: (
+    stopId: string,
+    accommodationId: string,
+  ) => Promise<void>;
   onPickFlight: (
     option: PlannerFlightOption,
-    type: "outbound" | "return",
+    stopId: string,
+    role: TripFlightRole,
   ) => Promise<void>;
 };
 
@@ -32,7 +45,6 @@ export function ChatColumn({
   messages,
   canvas,
   sending,
-  disabled,
   onSend,
   onAddDestination,
   onPickAccommodation,
@@ -47,7 +59,7 @@ export function ChatColumn({
 
   function submit() {
     const trimmed = text.trim();
-    if (!trimmed || disabled || sending) return;
+    if (!trimmed || sending) return;
     onSend(trimmed);
     setText("");
   }
@@ -112,12 +124,8 @@ export function ChatColumn({
           <textarea
             rows={1}
             value={text}
-            disabled={disabled || sending}
-            placeholder={
-              disabled
-                ? "Buat atau buka percakapan dulu"
-                : "Ceritakan rencana liburanmu..."
-            }
+            disabled={sending}
+            placeholder="Ceritakan rencana liburanmu..."
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -131,7 +139,7 @@ export function ChatColumn({
             size="icon"
             className="shrink-0 rounded-full"
             aria-label="Kirim pesan"
-            disabled={disabled || sending || !text.trim()}
+            disabled={sending || !text.trim()}
             onClick={submit}
           >
             <ArrowRight className="h-4 w-4" />

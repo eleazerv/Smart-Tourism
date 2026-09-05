@@ -24,18 +24,30 @@ import type {
   InteractiveBlock,
   PlannerFlightOption,
   TripCanvas,
+  TripFlightRole,
+  TripStop,
 } from "@/lib/api";
 
 type Props = {
   blocks: InteractiveBlock[];
   canvas: TripCanvas | null;
   onAddDestination: (id: string) => Promise<void>;
-  onPickAccommodation: (itemId: string, accommodationId: string) => Promise<void>;
+  /** Penginapan menempel ke kota, jadi yang dialamatkan stop — bukan item. */
+  onPickAccommodation: (
+    stopId: string,
+    accommodationId: string,
+  ) => Promise<void>;
   onPickFlight: (
     option: PlannerFlightOption,
-    type: "outbound" | "return",
+    stopId: string,
+    role: TripFlightRole,
   ) => Promise<void>;
 };
+
+/** Semua destinasi di seluruh kota, diratakan jadi satu daftar. */
+function allItems(canvas: TripCanvas | null) {
+  return (canvas?.stops ?? []).flatMap((stop) => stop.trip_items);
+}
 
 const TIER_LABEL: Record<string, string> = {
   budget: "Hemat",
@@ -191,7 +203,9 @@ function DestinationCard({
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<DestinationOption | null>(null);
   const inTrip = new Set(
-    (canvas?.items ?? []).map((item) => item.destinations?.id).filter(Boolean),
+    allItems(canvas)
+      .map((item) => item.destinations?.id)
+      .filter(Boolean),
   );
 
   const regions = groupByRegion(options);
@@ -328,15 +342,16 @@ function AccommodationCard({
 }: {
   block: Extract<InteractiveBlock, { type: "accommodation" }>;
   canvas: TripCanvas | null;
-  onPick: (itemId: string, accommodationId: string) => Promise<void>;
+  onPick: (stopId: string, accommodationId: string) => Promise<void>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
 
-  // Penginapan selalu menempel ke satu destinasi di rencana. Kalau destinasinya
-  // belum ditambahkan, belum ada baris untuk ditempeli — jadi tombolnya mati
-  // dengan penjelasan, bukan pura-pura berhasil lalu gagal diam-diam.
-  const target = (canvas?.items ?? []).find(
-    (item) => item.destinations?.id === block.destination_id,
+  // Penginapan menempel ke KOTA, bukan ke destinasi: yang dicari adalah stop
+  // yang sudah memuat destinasi ini. Kalau destinasinya belum ditambahkan,
+  // belum ada kota untuk ditempeli — jadi tombolnya mati dengan penjelasan,
+  // bukan pura-pura berhasil lalu gagal diam-diam.
+  const target = (canvas?.stops ?? []).find((stop) =>
+    stop.trip_items.some((item) => item.destinations?.id === block.destination_id),
   );
 
   return (
@@ -345,7 +360,7 @@ function AccommodationCard({
       title={`Penginapan dekat ${block.near}`}
       footnote={
         target
-          ? null
+          ? `Berlaku untuk seluruh destinasi di ${target.cities?.name ?? "kota ini"}.`
           : "Tambahkan destinasinya ke rencana dulu supaya penginapan ini bisa ditempelkan."
       }
     >
@@ -405,27 +420,61 @@ function FlightCard({
   canvas: TripCanvas | null;
   onPick: (
     option: PlannerFlightOption,
-    type: "outbound" | "return",
+    stopId: string,
+    role: TripFlightRole,
   ) => Promise<void>;
 }) {
   const [busy, setBusy] = useState<string | null>(null);
-  const flights = canvas?.flights ?? [];
-  const bothFilled =
-    flights.some((f) => f.flight_type === "outbound") &&
-    flights.some((f) => f.flight_type === "return");
+  const stops = canvas?.stops ?? [];
+
+  // Peran sebuah leg ditentukan kotanya, bukan ditanyakan ke pengguna: rute
+  // ini mendarat di `destination_city_id`, jadi bagi kota itu ia penerbangan
+  // MASUK; dan ia lepas landas dari `origin_city_id`, jadi bagi kota itu ia
+  // penerbangan KELUAR. Kota yang belum jadi stop tidak punya tempat untuk
+  // menampung leg-nya, jadi tombolnya tidak ditawarkan.
+  const targets: { stop: TripStop; role: TripFlightRole; label: string }[] = [];
+
+  const arrivalStop = stops.find((s) => s.cities?.id === block.destination_city_id);
+  if (arrivalStop) {
+    targets.push({
+      stop: arrivalStop,
+      role: "arrival",
+      label: `Masuk ${arrivalStop.cities?.name ?? "kota tujuan"}`,
+    });
+  }
+
+  const departureStop = stops.find((s) => s.cities?.id === block.origin_city_id);
+  if (departureStop) {
+    targets.push({
+      stop: departureStop,
+      role: "departure",
+      label: `Keluar ${departureStop.cities?.name ?? "kota asal"}`,
+    });
+  }
+
+  /** Leg yang sudah memakai opsi penerbangan tertentu, kalau ada. */
+  const usedBy = (optionId: string) => {
+    for (const stop of stops) {
+      const leg = stop.trip_flights.find(
+        (f) => f.flight_options?.id === optionId,
+      );
+      if (leg) return { stop, leg };
+    }
+    return null;
+  };
 
   return (
     <CardShell
       icon={<Plane className="h-3.5 w-3.5" />}
       title={`Penerbangan · ${block.date}`}
       footnote={
-        bothFilled
-          ? "Slot berangkat dan pulang sudah terisi — memilih di sini akan mengganti salah satunya."
-          : "Pilih sebagai penerbangan berangkat atau pulang."
+        targets.length === 0
+          ? "Rute ini belum menyentuh satu pun kota di rencanamu. Tambahkan kotanya dulu lewat destinasi, baru penerbangannya bisa dipasang."
+          : "Pilih mau dipasang sebagai penerbangan masuk atau keluar."
       }
     >
       {block.options.map((f) => {
-        const used = flights.find((x) => x.flight_options?.id === f.id);
+        const used = usedBy(f.id);
         return (
           <Row
             key={f.id}
@@ -434,35 +483,40 @@ function FlightCard({
             action={
               used ? (
                 <Added
-                  label={used.flight_type === "outbound" ? "berangkat" : "pulang"}
+                  label={
+                    used.leg.flight_role === "arrival"
+                      ? `masuk ${used.stop.cities?.name ?? ""}`.trim()
+                      : `keluar ${used.stop.cities?.name ?? ""}`.trim()
+                  }
                 />
               ) : (
                 <div className="flex gap-1.5">
-                  {(["outbound", "return"] as const).map((type) => (
-                    <Button
-                      key={type}
-                      size="sm"
-                      variant="outline"
-                      className="rounded-full px-2 text-[11px]"
-                      disabled={busy !== null}
-                      onClick={async () => {
-                        setBusy(f.id + type);
-                        try {
-                          await onPick(f, type);
-                        } finally {
-                          setBusy(null);
-                        }
-                      }}
-                    >
-                      {busy === f.id + type ? (
-                        <Loader2 className="h-3 w-3 animate-spin" />
-                      ) : type === "outbound" ? (
-                        "Berangkat"
-                      ) : (
-                        "Pulang"
-                      )}
-                    </Button>
-                  ))}
+                  {targets.map(({ stop, role, label }) => {
+                    const key = f.id + role;
+                    return (
+                      <Button
+                        key={role}
+                        size="sm"
+                        variant="outline"
+                        className="rounded-full px-2 text-[11px]"
+                        disabled={busy !== null}
+                        onClick={async () => {
+                          setBusy(key);
+                          try {
+                            await onPick(f, stop.id, role);
+                          } finally {
+                            setBusy(null);
+                          }
+                        }}
+                      >
+                        {busy === key ? (
+                          <Loader2 className="h-3 w-3 animate-spin" />
+                        ) : (
+                          label
+                        )}
+                      </Button>
+                    );
+                  })}
                 </div>
               )
             }

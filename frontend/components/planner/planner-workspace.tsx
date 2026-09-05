@@ -9,7 +9,7 @@
  * ada jalan bagi panel untuk menampilkan sesuatu yang tidak ada di database.
  */
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Loader2, Plus } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ChatColumn } from "@/components/planner/chat-column";
@@ -23,14 +23,18 @@ import {
   listChatRooms,
   removeTripFlight,
   removeTripItem,
+  removeTripStop,
   sendChatMessage,
   setTripFlight,
   updateTripItem,
+  updateTripStop,
   type ChatMessage,
   type ChatRoom,
   type PlannerFlightOption,
   type TripCanvas,
+  type TripFlightRole,
 } from "@/lib/api";
+import type { StopPatch } from "@/components/planner/plan-panel";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 
 /** Id sementara untuk pesan pengguna yang belum punya baris di database. */
@@ -50,12 +54,20 @@ export function PlannerWorkspace() {
   const [busy, setBusy] = useState(false);
   const [notice, setNotice] = useState<string | null>(null);
 
-  // Token dibaca sekali lalu dipakai ulang; membacanya di tiap pemanggilan
-  // berarti satu round-trip ke Supabase untuk setiap klik.
-  const tokenRef = useRef<string | null>(null);
+  /**
+   * Token dibaca ulang di setiap pemanggilan.
+   *
+   * Sempat disimpan sekali di sebuah ref demi menghemat satu panggilan, dan
+   * justru itu sumber 401 "Invalid Token": access token Supabase kedaluwarsa
+   * dalam hitungan jam, klien menyegarkannya sendiri di latar, tapi ref-nya
+   * tidak pernah tahu — jadi setiap aksi sesudah itu mengirim token basi.
+   *
+   * Penghematannya pun semu. `getSession()` membaca dari penyimpanan lokal
+   * dan baru menembak jaringan kalau tokennya memang sudah waktunya
+   * diperbarui, persis seperti yang dilakukan seluruh bagian app lain.
+   */
   const auth = useCallback(async () => {
-    if (!tokenRef.current) tokenRef.current = await getBrowserAccessToken();
-    return { token: tokenRef.current };
+    return { token: await getBrowserAccessToken() };
   }, []);
 
   /** Kegagalan API selalu punya pesan dari backend — tampilkan apa adanya. */
@@ -111,8 +123,15 @@ export function PlannerWorkspace() {
     }
   }
 
+  /**
+   * Mengirim satu giliran, membuat ruangnya lebih dulu kalau belum ada.
+   *
+   * Tombol "Rencana baru" tetap ada untuk yang mau memulai dari kanvas
+   * kosong, tapi ia bukan lagi syarat: menulis di kotak yang kosong sudah
+   * cukup. Ruang yang lahir tanpa pernah diisi cuma jadi sampah di sidebar,
+   * jadi pembuatannya ditunda sampai ada yang benar-benar mau dikatakan.
+   */
   async function send(message: string) {
-    if (!roomId) return;
     setNotice(null);
 
     // Pesan pengguna tampil langsung; balasannya bisa belasan detik lagi.
@@ -126,8 +145,37 @@ export function PlannerWorkspace() {
     setMessages((prev) => [...prev, optimistic]);
     setSending(true);
 
+    let target = roomId;
+    if (!target) {
+      try {
+        const room = await createChatRoom(await auth());
+        setRooms((prev) => [room, ...prev]);
+        setRoomId(room.id);
+        setTripId(room.trip_id);
+        target = room.id;
+
+        // Kepala rencananya diisi sekarang juga, supaya panel kanan tidak
+        // berkata "buka percakapan dulu" padahal percakapannya baru saja
+        // lahir. Satu GET ringan, dan ia selesai jauh sebelum giliran
+        // pertama dijawab. Sengaja ditunggu, bukan dilepas: kalau ia
+        // mendarat setelah giliran selesai, canvas kosongnya akan menimpa
+        // rencana yang baru saja disusun.
+        try {
+          const opened = await getChatRoom(room.id, await auth());
+          if (opened) setCanvas(opened.canvas);
+        } catch {
+          // Panel menyusul lewat balasan gilirannya sendiri.
+        }
+      } catch (err) {
+        report(err, "Percakapan baru gagal dibuat.");
+        setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
+        setSending(false);
+        return;
+      }
+    }
+
     try {
-      const turn = await sendChatMessage(roomId, message, await auth());
+      const turn = await sendChatMessage(target, message, await auth());
       setMessages((prev) => [
         ...prev,
         {
@@ -181,36 +229,75 @@ export function PlannerWorkspace() {
   );
 
   const pickAccommodation = useCallback(
-    async (itemId: string, accommodationId: string) => {
+    async (stopId: string, accommodationId: string) => {
       if (!tripId) return;
       await mutate(
         (token) =>
-          updateTripItem(tripId, itemId, { accommodation_id: accommodationId }, token),
+          updateTripStop(
+            tripId,
+            stopId,
+            { accommodation_id: accommodationId },
+            token,
+          ),
         "Penginapan itu gagal dipilih.",
       );
     },
     [mutate, tripId],
   );
 
+  const patchStop = useCallback(
+    async (stopId: string, patch: StopPatch) => {
+      if (!tripId) return;
+      await mutate(
+        (token) => updateTripStop(tripId, stopId, patch, token),
+        "Perubahan itu gagal disimpan.",
+      );
+    },
+    [mutate, tripId],
+  );
+
+  const dropStop = useCallback(
+    async (stopId: string) => {
+      if (!tripId) return;
+      await mutate(
+        (token) => removeTripStop(tripId, stopId, token),
+        "Kota itu gagal dihapus.",
+      );
+    },
+    [mutate, tripId],
+  );
+
   const pickFlight = useCallback(
-    async (option: PlannerFlightOption, type: "outbound" | "return") => {
+    async (
+      option: PlannerFlightOption,
+      stopId: string,
+      role: TripFlightRole,
+    ) => {
       if (!tripId) return;
 
-      // Slot berangkat/pulang cuma satu masing-masing, jadi memilih di slot
-      // yang sudah terisi berarti mengganti. Itu wajar (ganti pikiran), tapi
-      // harus disadari — bukan terjadi diam-diam.
-      const existing = canvas?.flights.find((f) => f.flight_type === type);
+      // Tiap kota cuma punya satu leg masuk dan satu leg keluar, jadi memilih
+      // di peran yang sudah terisi berarti mengganti. Itu wajar (ganti
+      // pikiran), tapi harus disadari — bukan terjadi diam-diam.
+      const stop = (canvas?.stops ?? []).find((s) => s.id === stopId);
+      const existing = stop?.trip_flights.find((f) => f.flight_role === role);
       if (existing && !existing.booked_at) {
         const current = existing.flight_options;
+        const where = stop?.cities?.name ?? "kota ini";
+        const what = role === "arrival" ? "masuk ke" : "keluar dari";
         const ok = window.confirm(
-          `Slot ${type === "outbound" ? "berangkat" : "pulang"} sudah diisi ${current?.airline} ${current?.flight_number}. Ganti dengan ${option.airline} ${option.flight_number}?`,
+          `Penerbangan ${what} ${where} sudah diisi ${current?.airline} ${current?.flight_number}. Ganti dengan ${option.airline} ${option.flight_number}?`,
         );
         if (!ok) return;
       }
 
       await mutate(
         (token) =>
-          setTripFlight(tripId, { flight_option_id: option.id, flight_type: type }, token),
+          setTripFlight(
+            tripId,
+            stopId,
+            { flight_option_id: option.id, flight_role: role },
+            token,
+          ),
         "Penerbangan itu gagal dipakai. Kursinya mungkin sudah habis.",
       );
     },
@@ -218,15 +305,7 @@ export function PlannerWorkspace() {
   );
 
   const patchItem = useCallback(
-    async (
-      itemId: string,
-      patch: {
-        status?: "suggested" | "confirmed";
-        accommodation_id?: string | null;
-        check_in?: string | null;
-        check_out?: string | null;
-      },
-    ) => {
+    async (itemId: string, patch: { status?: "suggested" | "confirmed" }) => {
       if (!tripId) return;
       await mutate(
         (token) => updateTripItem(tripId, itemId, patch, token),
@@ -248,36 +327,40 @@ export function PlannerWorkspace() {
   );
 
   const dropFlight = useCallback(
-    async (type: "outbound" | "return") => {
+    async (stopId: string, role: TripFlightRole) => {
       if (!tripId) return;
       await mutate(
-        (token) => removeTripFlight(tripId, type, token),
+        (token) => removeTripFlight(tripId, stopId, role, token),
         "Penerbangan itu gagal dilepas.",
       );
     },
     [mutate, tripId],
   );
 
-  async function checkout() {
-    if (!roomId) return;
+  /**
+   * Checkout kini satu trip_booking untuk seluruh rencana, bukan sekumpulan
+   * pesanan terpisah — jadi hasilnya satu kode booking dan satu total, dan
+   * kegagalan datang sebagai error dari endpoint-nya, bukan daftar per baris.
+   */
+  async function checkout(passengerNames: string[]) {
+    if (!tripId) return;
     setBusy(true);
     setNotice(null);
     try {
-      const result = await checkoutTrip(roomId, await auth());
-      const lines: string[] = [];
-      if (result.flight_booking) {
-        lines.push(`Penerbangan: ${result.flight_booking.booking_code}`);
-      }
-      for (const stay of result.accommodation_bookings) {
-        lines.push(`${stay.destination}: ${stay.booking_code}`);
-      }
-      for (const failure of result.errors) {
-        lines.push(`Gagal (${failure.kind}): ${failure.message}`);
-      }
+      const result = await checkoutTrip(tripId, passengerNames, await auth());
+      const parts = [
+        result.accommodation_count
+          ? `${result.accommodation_count} penginapan`
+          : null,
+        result.flight_count ? `${result.flight_count} penerbangan` : null,
+      ].filter(Boolean);
+
       setNotice(
-        `Checkout selesai — ${lines.join(" · ")}. Pesanan masih pending sampai dibayar; lanjutkan di halaman Pesanan.`,
+        `Checkout selesai — kode ${result.booking_code}` +
+          (parts.length ? ` (${parts.join(" & ")})` : "") +
+          `. Pesanan masih pending sampai dibayar; lanjutkan di halaman Pesanan.`,
       );
-      await openRoom(roomId);
+      if (roomId) await openRoom(roomId);
     } catch (err) {
       report(err, "Checkout gagal. Coba lagi sebentar lagi.");
     } finally {
@@ -340,7 +423,6 @@ export function PlannerWorkspace() {
             messages={messages}
             canvas={canvas}
             sending={sending}
-            disabled={!roomId}
             onSend={send}
             onAddDestination={addDestination}
             onPickAccommodation={pickAccommodation}
@@ -359,6 +441,8 @@ export function PlannerWorkspace() {
         <PlanPanel
           canvas={canvas}
           busy={busy}
+          onPatchStop={patchStop}
+          onRemoveStop={dropStop}
           onPatchItem={patchItem}
           onRemoveItem={dropItem}
           onDropFlight={dropFlight}

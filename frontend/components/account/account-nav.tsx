@@ -26,11 +26,22 @@ export function AccountNav() {
   const [confirming, setConfirming] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
 
+  /**
+   * Kedua flag dilepas di `finally` -- lihat catatan panjangnya di
+   * `account-menu.tsx`. Dialog yang ditinggalkan `pending` akan muncul lagi
+   * dengan spinner abadi, dan signOut yang gagal mengunci halaman di balik
+   * modal yang tidak bisa ditutup.
+   */
   const signOut = async () => {
     setSigningOut(true);
-    await createClient().auth.signOut();
-    router.push("/");
-    router.refresh();
+    try {
+      await createClient().auth.signOut();
+      router.push("/");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+      setConfirming(false);
+    }
   };
 
   return (

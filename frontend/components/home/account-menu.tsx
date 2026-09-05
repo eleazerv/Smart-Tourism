@@ -19,9 +19,12 @@ import { Avatar } from "@/components/account/avatar";
 import { cn } from "@/lib/utils";
 
 /**
- * shadcn's menu items highlight with `--accent`, which in this theme is
- * `176 100% 84%` — a solid bright mint. Every item overrides it with the same
- * translucent leaf wash the rest of the app hovers with.
+ * Sapuan hover untuk tiap item menu.
+ *
+ * Dulu ini menimpa `--accent` yang bernilai mint terang pekat. Tokennya kini
+ * sudah disetel ke sapuan yang sama (lihat globals.css), jadi kelas-kelas di
+ * bawah cuma menegaskan hasil yang sama — ditahan di sini karena item ini
+ * juga mewarnai ikonnya, yang tidak dilakukan token mana pun.
  */
 const ITEM =
   "cursor-pointer gap-2.5 rounded-lg px-2.5 py-2 text-sm focus:bg-brand-tint/10 focus:text-brand-700 dark:focus:bg-brand-tint/15 dark:focus:text-brand-100 [&>svg]:text-muted-foreground focus:[&>svg]:text-current";
@@ -65,7 +68,18 @@ export function AccountMenu({ className }: { className?: string }) {
     });
 
     const { data: subscription } = supabase.auth.onAuthStateChange(
-      (_event, session) => setUser(session?.user ?? null),
+      (_event, session) => {
+        setUser(session?.user ?? null);
+
+        // Sesi yang berakhir menutup dialognya, dari mana pun berakhirnya:
+        // tombol Keluar di tab ini, tab sebelah, atau token yang habis. Tanpa
+        // ini, dialog yang tertinggal terbuka akan muncul lagi -- masih
+        // berputar -- pada sesi berikutnya.
+        if (!session) {
+          setConfirming(false);
+          setSigningOut(false);
+        }
+      },
     );
     return () => subscription.subscription.unsubscribe();
   }, []);
@@ -93,11 +107,31 @@ export function AccountMenu({ className }: { className?: string }) {
   const name = displayName(user);
   const avatarUrl = avatarOf(user);
 
+  /**
+   * Keluar dari akun, lalu pulangkan ke beranda.
+   *
+   * `finally`-nya bukan hiasan. Dulu kedua flag di bawah tidak pernah
+   * dikembalikan, dengan asumsi komponen ini ikut hilang bersama halamannya.
+   * Asumsi itu salah: AccountMenu tidak pernah unmount saat sesi berakhir --
+   * ia cuma berganti merender tombol "Masuk" -- jadi `confirming` dan
+   * `signingOut` yang ditinggalkan `true` tetap hidup, dan dialognya muncul
+   * kembali dengan spinner yang tidak akan pernah berhenti begitu ada yang
+   * login lagi.
+   *
+   * Kegagalan juga harus melepas keduanya. Kalau tidak, satu signOut yang
+   * gagal meninggalkan dialog modal yang memblokir seluruh halaman, dan
+   * satu-satunya jalan keluar adalah memuat ulang.
+   */
   const signOut = async () => {
     setSigningOut(true);
-    await createClient().auth.signOut();
-    router.push("/");
-    router.refresh();
+    try {
+      await createClient().auth.signOut();
+      router.push("/");
+      router.refresh();
+    } finally {
+      setSigningOut(false);
+      setConfirming(false);
+    }
   };
 
   return (
