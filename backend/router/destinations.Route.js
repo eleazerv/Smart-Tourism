@@ -10,7 +10,7 @@ import { getReviews, getReviewCounts, createReview, deleteReview, likeReview } f
 import { getDestinationPricing } from "../controllers/budget.Controller.js";
 import { getDestinationAccommodations } from "../controllers/accommodations.Controller.js";
 import { toggleSaveDestination } from "../controllers/savedDestination.Controller.js";
-
+import { setDestinationAlbums } from "../controllers/albums.Controller.js";
 const router = express.Router();
 
 /**
