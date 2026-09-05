@@ -8,7 +8,18 @@ import { ResultTile } from "@/components/destinations/result-card";
  * catalogue does — no `description` — so the rows are widened here rather than
  * giving the tile a second, nearly identical prop type.
  */
-export async function SavedGrid({ saved }: { saved: SavedDestination[] }) {
+export async function SavedGrid({
+  saved,
+  owned = true,
+}: {
+  saved: SavedDestination[];
+  /**
+   * False on the public share page. Those visitors have no session, so a
+   * filled bookmark would claim they had saved a list they have never seen,
+   * and tapping it would bounce them to a login form they did not ask for.
+   */
+  owned?: boolean;
+}) {
   const destinations: RecommendedDestination[] = saved.map((row) => ({
     id: row.id,
     name: row.name,
@@ -36,9 +47,9 @@ export async function SavedGrid({ saved }: { saved: SavedDestination[] }) {
           key={destination.id}
           destination={destination}
           reviews={reviewCounts[destination.id]}
-          // Everything on this page is saved by definition; unsaving one
-          // refreshes the route, which drops it from the list.
-          saved
+          // Everything on the account pages is saved by definition; unsaving
+          // one refreshes the route, which drops it from the list.
+          saved={owned}
           priority={i < 3}
         />
       ))}

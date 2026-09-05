@@ -1,3 +1,4 @@
+import { randomUUID } from 'node:crypto';
 import { supabase } from '../lib/supabase.js';
 
 const DEST_FIELDS = `
@@ -37,7 +38,7 @@ export const listAlbums = async (req, res) => {
 
     const { data: albums, error } = await req.db
       .from('albums')
-      .select('id, name, created_at, updated_at, album_items ( destination_id )')
+      .select('id, name, created_at, updated_at, share_token, album_items ( destination_id )')
       .eq('user_id', req.user.id)
       .order('created_at', { ascending: false })
       .limit(100);
@@ -51,6 +52,7 @@ export const listAlbums = async (req, res) => {
         name: album.name,
         created_at: album.created_at,
         updated_at: album.updated_at,
+        share_token: album.share_token,
         item_count: items.length,
         ...(destination_id
           ? { contains: items.some((i) => i.destination_id === destination_id) }
@@ -96,7 +98,7 @@ export const getAlbum = async (req, res) => {
   try {
     const { data: album, error } = await req.db
       .from('albums')
-      .select('id, name, created_at, updated_at')
+      .select('id, name, created_at, updated_at, share_token')
       .eq('id', req.params.id)
       .eq('user_id', req.user.id)
       .maybeSingle();
@@ -182,6 +184,118 @@ export const deleteAlbum = async (req, res) => {
     return res.json({ deleted: true, id: data.id });
   } catch (err) {
     console.error('[deleteAlbum] error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+// POST /api/albums/:id/share
+// Menyalakan tautan publik. Idempoten: album yang sudah punya token akan
+// mengembalikan token yang sama, jadi menekan Bagikan dua kali tidak
+// mematikan tautan yang mungkin sudah tersebar.
+export const shareAlbum = async (req, res) => {
+  try {
+    const { data: album, error } = await req.db
+      .from('albums')
+      .select('id, share_token')
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!album) {
+      return res.status(404).json({ error: 'not_found', message: 'Album not found' });
+    }
+
+    if (album.share_token) {
+      return res.json({ data: { id: album.id, share_token: album.share_token } });
+    }
+
+    const { data, error: updateError } = await req.db
+      .from('albums')
+      .update({ share_token: randomUUID() })
+      .eq('id', album.id)
+      .eq('user_id', req.user.id)
+      .select('id, share_token')
+      .single();
+
+    if (updateError) throw updateError;
+
+    return res.status(201).json({ data });
+  } catch (err) {
+    console.error('[shareAlbum] error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+// DELETE /api/albums/:id/share
+// Mencabut tautan. Token lama tidak disimpan, jadi menyalakan lagi nanti
+// menghasilkan tautan baru -- yang sudah tersebar tetap mati.
+export const unshareAlbum = async (req, res) => {
+  try {
+    const { data, error } = await req.db
+      .from('albums')
+      .update({ share_token: null })
+      .eq('id', req.params.id)
+      .eq('user_id', req.user.id)
+      .select('id')
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!data) {
+      return res.status(404).json({ error: 'not_found', message: 'Album not found' });
+    }
+
+    return res.json({ data: { id: data.id, share_token: null } });
+  } catch (err) {
+    console.error('[unshareAlbum] error', err);
+    return res.status(500).json({ error: 'server_error' });
+  }
+};
+
+// GET /api/albums/shared/:token
+//
+// Satu-satunya endpoint album tanpa login. Sengaja memakai klien anon, bukan
+// service key: yang menentukan boleh-tidaknya baris ini terbaca adalah
+// kebijakan RLS albums_public_read (share_token is not null), sehingga
+// mencabut tautan langsung berlaku di database, bukan bergantung pada
+// klausa di controller ini.
+//
+// Nama pemilik tidak ikut dikembalikan. Album yang dibagikan adalah daftar
+// tempat, bukan halaman profil.
+export const getSharedAlbum = async (req, res) => {
+  try {
+    const { data: album, error } = await supabase
+      .from('albums')
+      .select('id, name, created_at, updated_at')
+      .eq('share_token', req.params.token)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (!album) {
+      return res.status(404).json({
+        error: 'not_found',
+        message: 'Album tidak ditemukan atau tautannya sudah dicabut',
+      });
+    }
+
+    const { data: items, error: itemsError } = await supabase
+      .from('album_items')
+      .select(`added_at, destinations ( ${DEST_FIELDS} )`)
+      .eq('album_id', album.id)
+      .order('added_at', { ascending: false })
+      .limit(200);
+
+    if (itemsError) throw itemsError;
+
+    const destinations = (items || [])
+      .filter((row) => row.destinations)
+      .map((row) => ({ added_at: row.added_at, ...row.destinations }));
+
+    return res.json({
+      data: { ...album, item_count: destinations.length, destinations },
+    });
+  } catch (err) {
+    console.error('[getSharedAlbum] error', err);
     return res.status(500).json({ error: 'server_error' });
   }
 };

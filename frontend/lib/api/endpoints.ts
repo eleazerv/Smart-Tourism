@@ -36,6 +36,7 @@ import type {
   Tag,
   TrendingDestination,
   TripCanvas,
+  TripFlightRole,
 } from "@/lib/api/types";
 
 type Auth = Pick<ApiFetchOptions, "token" | "signal">;
@@ -401,6 +402,39 @@ export async function renameAlbum(
   return data;
 }
 
+/**
+ * Turns on the album's public link and returns its token.
+ *
+ * Idempotent: an album that is already shared answers with the token it
+ * already has, so pressing Bagikan twice never invalidates a link that may
+ * already be in someone's chat.
+ */
+export async function shareAlbum(id: string, auth: Auth): Promise<string> {
+  const { data } = await apiFetch<{
+    data: { id: string; share_token: string };
+  }>(`/api/albums/${id}/share`, { ...auth, method: "POST" });
+  return data.share_token;
+}
+
+/** Revokes the link. Sharing again later mints a different one. */
+export async function unshareAlbum(id: string, auth: Auth) {
+  return apiFetch<{ data: { id: string; share_token: null } }>(
+    `/api/albums/${id}/share`,
+    { ...auth, method: "DELETE" },
+  );
+}
+
+/** The public view of a shared album. No token, no owner identity. */
+export async function getSharedAlbum(
+  token: string,
+): Promise<AlbumDetail | null> {
+  const result = await apiFetch<{ data: AlbumDetail }>(
+    `/api/albums/shared/${token}`,
+    { nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
 /** Removes the album, not the destinations — those stay saved. */
 export async function deleteAlbum(id: string, auth: Auth) {
   return apiFetch<{ deleted: boolean; id: string }>(`/api/albums/${id}`, {
@@ -682,14 +716,28 @@ export async function sendChatMessage(
   return data;
 }
 
-/** Mengubah isi rencana jadi booking sungguhan, semuanya berstatus pending. */
+/**
+ * Mengubah isi rencana jadi booking sungguhan, semuanya berstatus pending.
+ *
+ * Dialamatkan ke trip, bukan ke chat room: rencana bisa disusun lewat panel
+ * tanpa percakapan sama sekali, dan rute lama `/api/chat/rooms/:id/checkout`
+ * sudah tidak ada di router.
+ *
+ * `passengerNames` wajib berisi minimal satu nama kalau rencananya punya leg
+ * penerbangan yang belum dipesan -- nama yang sama dipakai untuk semua leg.
+ */
 export async function checkoutTrip(
-  roomId: string,
+  tripId: string,
+  passengerNames: string[],
   auth: Auth,
 ): Promise<CheckoutResult> {
   const { data } = await apiFetch<{ data: CheckoutResult }>(
-    `/api/chat/rooms/${roomId}/checkout`,
-    { ...auth, method: "POST" },
+    `/api/trips/${tripId}/checkout`,
+    {
+      ...auth,
+      method: "POST",
+      body: passengerNames.length ? { passenger_names: passengerNames } : {},
+    },
   );
   return data;
 }
@@ -753,22 +801,37 @@ export async function addTripItem(
   tripId: string,
   destinationId: string,
   auth: Auth,
+  stopId?: string,
 ): Promise<TripCanvas> {
   const { data } = await apiFetch<{ data: TripCanvas }>(
     `/api/trips/${tripId}/items`,
-    { ...auth, method: "POST", body: { destination_id: destinationId } },
+    {
+      ...auth,
+      method: "POST",
+      // Tanpa `stop_id`, backend menyimpulkan kotanya dari destinasi dan
+      // membuat stop baru kalau kota itu belum disinggahi -- persis yang
+      // dimau saat pengguna menambah lewat kartu di chat.
+      body: {
+        destination_id: destinationId,
+        ...(stopId ? { stop_id: stopId } : {}),
+      },
+    },
   );
   return data;
 }
 
+/**
+ * Yang tersisa milik item cuma status, jumlah tamu, dan catatan.
+ *
+ * `accommodation_id`, `check_in`, dan `check_out` sudah pindah ke stop, dan
+ * backend menolaknya di sini dengan 400 `moved_to_stop`. Pakai
+ * `updateTripStop` untuk ketiganya.
+ */
 export async function updateTripItem(
   tripId: string,
   itemId: string,
   patch: {
     status?: "suggested" | "confirmed";
-    accommodation_id?: string | null;
-    check_in?: string | null;
-    check_out?: string | null;
     guests?: number;
     notes?: string | null;
   },
@@ -793,14 +856,58 @@ export async function removeTripItem(
   return data;
 }
 
-/** Slot berangkat & pulang masing-masing cuma satu: ini mengganti, bukan menambah. */
-export async function setTripFlight(
+/**
+ * Tanggal menginap dan penginapan sebuah kota.
+ *
+ * Ketiganya milik stop, bukan item: semua destinasi di kota yang sama tidur
+ * di hotel yang sama pada rentang yang sama. Backend menolak penginapan yang
+ * kotanya beda dari kota stop ini.
+ */
+export async function updateTripStop(
   tripId: string,
-  body: { flight_option_id: string; flight_type: "outbound" | "return" },
+  stopId: string,
+  patch: {
+    accommodation_id?: string | null;
+    check_in?: string | null;
+    check_out?: string | null;
+  },
   auth: Auth,
 ): Promise<TripCanvas> {
   const { data } = await apiFetch<{ data: TripCanvas }>(
-    `/api/trips/${tripId}/flights`,
+    `/api/trips/${tripId}/stops/${stopId}`,
+    { ...auth, method: "PATCH", body: patch },
+  );
+  return data;
+}
+
+/** Menghapus satu kota beserta seluruh destinasi di dalamnya. */
+export async function removeTripStop(
+  tripId: string,
+  stopId: string,
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/stops/${stopId}`,
+    { ...auth, method: "DELETE" },
+  );
+  return data;
+}
+
+/**
+ * Penerbangan masuk/keluar untuk satu kota.
+ *
+ * Tiap stop punya paling banyak satu `arrival` dan satu `departure`, jadi
+ * mengisi peran yang sudah terisi berarti mengganti. Leg yang sudah dipesan
+ * ditolak backend dengan 409.
+ */
+export async function setTripFlight(
+  tripId: string,
+  stopId: string,
+  body: { flight_option_id: string; flight_role: TripFlightRole },
+  auth: Auth,
+): Promise<TripCanvas> {
+  const { data } = await apiFetch<{ data: TripCanvas }>(
+    `/api/trips/${tripId}/stops/${stopId}/flights`,
     { ...auth, method: "PUT", body },
   );
   return data;
@@ -808,11 +915,12 @@ export async function setTripFlight(
 
 export async function removeTripFlight(
   tripId: string,
-  type: "outbound" | "return",
+  stopId: string,
+  role: TripFlightRole,
   auth: Auth,
 ): Promise<TripCanvas> {
   const { data } = await apiFetch<{ data: TripCanvas }>(
-    `/api/trips/${tripId}/flights/${type}`,
+    `/api/trips/${tripId}/stops/${stopId}/flights/${role}`,
     { ...auth, method: "DELETE" },
   );
   return data;

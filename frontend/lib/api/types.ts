@@ -140,6 +140,8 @@ export type Album = {
   created_at: string;
   updated_at: string;
   item_count: number;
+  /** Set once the album has a public link; null while it stays private. */
+  share_token: string | null;
   /** Only present when the listing was asked about one destination. */
   contains?: boolean;
 };
@@ -462,13 +464,19 @@ export type ChatMessage = {
 
 export type TripItemStatus = "suggested" | "confirmed" | "booked" | "removed";
 
+/**
+ * Satu destinasi di dalam sebuah stop.
+ *
+ * Sejak rencana disusun per kota, item tidak lagi memegang penginapan maupun
+ * tanggal: keduanya milik stop, karena semua destinasi di kota yang sama
+ * berbagi satu penginapan dan satu rentang menginap. Kotanya pun dibaca dari
+ * stop, bukan dari `destinations.cities` seperti dulu.
+ */
 export type TripItem = {
   id: string;
   sequence_order: number;
   status: TripItemStatus;
   notes: string | null;
-  check_in: string | null;
-  check_out: string | null;
   guests: number;
   /** `ai` untuk yang datang dari saran, `user` untuk yang dipilih sendiri. */
   added_by: "user" | "ai";
@@ -478,7 +486,57 @@ export type TripItem = {
     category: string | null;
     latitude: number | null;
     longitude: number | null;
-    cities: { id: number; name: string } | null;
+    cover_image_url: string | null;
+  } | null;
+};
+
+/**
+ * Peran satu leg terhadap stop-nya: `arrival` menerbangkan masuk ke kota itu,
+ * `departure` menerbangkan keluar. Bukan lagi berangkat/pulang untuk seluruh
+ * rencana -- perjalanan multi-kota punya lebih dari dua leg.
+ */
+export type TripFlightRole = "arrival" | "departure";
+
+export type TripFlight = {
+  id: string;
+  flight_role: TripFlightRole;
+  /** Terisi begitu penerbangannya benar-benar dipesan; sesudah itu terkunci. */
+  booked_at: string | null;
+  /** Masih `false` selama baru usulan AI. Checkout melewatkan yang belum true. */
+  confirmed: boolean;
+  flight_options: {
+    id: string;
+    airline: string;
+    flight_number: string;
+    departure_time: string;
+    arrival_time: string;
+    price: number;
+  } | null;
+};
+
+/**
+ * `none` belum dipilih · `suggested` usulan AI yang belum disetujui pengguna ·
+ * `pending` sudah disetujui dan ikut checkout · `booked` sudah jadi pesanan.
+ */
+export type TripAccommodationStatus =
+  | "none"
+  | "suggested"
+  | "pending"
+  | "booked";
+
+/** Satu kota yang disinggahi, beserta segala yang menempel padanya. */
+export type TripStop = {
+  id: string;
+  sequence_order: number;
+  check_in: string | null;
+  check_out: string | null;
+  accommodation_status: TripAccommodationStatus;
+  accommodation_booking_id: string | null;
+  cities: {
+    id: number;
+    name: string;
+    province_id: number | null;
+    provinces: { id: number; name: string } | null;
   } | null;
   accommodations: {
     id: string;
@@ -489,21 +547,8 @@ export type TripItem = {
     latitude: number | null;
     longitude: number | null;
   } | null;
-};
-
-export type TripFlight = {
-  id: string;
-  flight_type: "outbound" | "return";
-  /** Terisi begitu penerbangannya benar-benar dipesan; sesudah itu terkunci. */
-  booked_at: string | null;
-  flight_options: {
-    id: string;
-    airline: string;
-    flight_number: string;
-    departure_time: string;
-    arrival_time: string;
-    price: number;
-  } | null;
+  trip_items: TripItem[];
+  trip_flights: TripFlight[];
 };
 
 export type TripSummary = {
@@ -517,11 +562,15 @@ export type TripSummary = {
   cities: { name: string } | null;
 };
 
-/** Bentuk rencana yang dikembalikan setiap endpoint `/api/trips/...`. */
+/**
+ * Bentuk rencana yang dikembalikan setiap endpoint `/api/trips/...`.
+ *
+ * Rata: cuma trip dan daftar stop. Destinasi, penginapan, dan penerbangan
+ * semuanya bersarang di dalam stop-nya masing-masing.
+ */
 export type TripCanvas = {
   trip: TripSummary | null;
-  items: TripItem[];
-  flights: TripFlight[];
+  stops: TripStop[];
 };
 
 export type ChatTurn = {
@@ -532,15 +581,16 @@ export type ChatTurn = {
 };
 
 /**
- * Checkout tidak all-or-nothing: kamar yang keburu penuh tidak membatalkan
- * tiket yang sudah dapat, jadi kegagalan datang per baris di `errors`.
+ * Hasil `POST /api/trips/:id/checkout`.
+ *
+ * Checkout sekarang satu RPC yang membuat SATU trip_booking menaungi semua
+ * sub-booking, jadi tidak ada lagi daftar kegagalan per baris: entah seluruh
+ * checkout jadi, entah endpoint-nya membalas error. Satu invoice untuk
+ * semuanya, dibayar lewat POST /api/trip-bookings/:id/pay.
  */
 export type CheckoutResult = {
-  flight_booking: { id: string; booking_code: string } | null;
-  accommodation_bookings: {
-    destination: string;
-    booking_code: string;
-    id?: string;
-  }[];
-  errors: { kind: string; message: string }[];
+  booking_code: string;
+  total_price: number;
+  flight_count: number;
+  accommodation_count: number;
 };

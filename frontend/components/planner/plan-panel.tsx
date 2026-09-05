@@ -7,6 +7,13 @@
  * pernah menambal state-nya sendiri: setiap aksi mengganti seluruh rencana
  * dengan apa yang baru saja dikonfirmasi server. Itu yang menjaga panel ini
  * dan database tidak pernah berbeda cerita.
+ *
+ * Rencana disusun PER KOTA. Satu stop = satu kota, dan penginapan serta
+ * tanggal menginap menempel di stop itu, bukan di tiap destinasi — semua
+ * destinasi di kota yang sama tidur di hotel yang sama pada rentang yang
+ * sama. Penerbangan juga per kota: `arrival` menerbangkan masuk, `departure`
+ * menerbangkan keluar, jadi perjalanan lima kota wajar punya lebih dari dua
+ * leg.
  */
 
 import { useState } from "react";
@@ -15,6 +22,7 @@ import {
   Check,
   ChevronDown,
   Loader2,
+  MapPin,
   Plane,
   Trash2,
   X,
@@ -28,7 +36,10 @@ import {
   type FlightOption,
   type NearbyAccommodation,
   type TripCanvas,
+  type TripFlight,
+  type TripFlightRole,
   type TripItem,
+  type TripStop,
 } from "@/lib/api";
 
 const TIER_LABEL: Record<string, string> = {
@@ -37,26 +48,30 @@ const TIER_LABEL: Record<string, string> = {
   luxury: "Mewah",
 };
 
+export type StopPatch = {
+  accommodation_id?: string | null;
+  check_in?: string | null;
+  check_out?: string | null;
+};
+
 type Props = {
   canvas: TripCanvas | null;
   busy: boolean;
+  onPatchStop: (stopId: string, patch: StopPatch) => Promise<void>;
+  onRemoveStop: (stopId: string) => Promise<void>;
   onPatchItem: (
     itemId: string,
-    patch: {
-      status?: "suggested" | "confirmed";
-      accommodation_id?: string | null;
-      check_in?: string | null;
-      check_out?: string | null;
-    },
+    patch: { status?: "suggested" | "confirmed" },
   ) => Promise<void>;
   onRemoveItem: (itemId: string) => Promise<void>;
-  onDropFlight: (type: "outbound" | "return") => Promise<void>;
+  onDropFlight: (stopId: string, role: TripFlightRole) => Promise<void>;
   /** Sama dengan yang dipakai kartu pilihan di chat — satu jalur, satu perilaku. */
   onPickFlight: (
     option: FlightOption,
-    type: "outbound" | "return",
+    stopId: string,
+    role: TripFlightRole,
   ) => Promise<void>;
-  onCheckout: () => Promise<void>;
+  onCheckout: (passengerNames: string[]) => Promise<void>;
 };
 
 const STATUS_LABEL: Record<string, string> = {
@@ -65,63 +80,100 @@ const STATUS_LABEL: Record<string, string> = {
   booked: "dipesan",
 };
 
+/**
+ * Label status penginapan, meluruskan kosakata database.
+ *
+ * `pending` di sana berarti "sudah disetujui pengguna, siap checkout" — bukan
+ * "menunggu sesuatu". Nama kolomnya menyesatkan, jadi labelnya di sini yang
+ * membetulkan.
+ */
+const STAY_STATUS_LABEL: Record<string, string> = {
+  none: "belum dipilih",
+  suggested: "usulan AI",
+  pending: "siap dipesan",
+  booked: "dipesan",
+};
+
+const ROLE_LABEL: Record<TripFlightRole, string> = {
+  arrival: "Masuk",
+  departure: "Keluar",
+};
+
 function shortDate(value: string | null) {
   if (!value) return null;
   const d = new Date(`${value}T00:00:00`);
   return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
 }
 
+/** Nama kota stop ini, atau penanda jujur kalau relasinya kosong. */
+function cityName(stop: TripStop) {
+  return stop.cities?.name ?? "Kota tidak dikenal";
+}
+
 /**
  * Apa yang akan terjadi kalau tombol checkout ditekan sekarang.
  *
- * Dulu bagian ini berupa daftar "belum siap dipesan" yang menyebut tiap
- * destinasi tanpa penginapan sebagai kekurangan. Itu keliru dan bikin buntu:
- * backend tidak pernah mewajibkan penginapan atau penerbangan — ia memesan
- * yang sudah lengkap dan melewati sisanya tanpa mengeluh. Rencana berisi
- * delapan destinasi tanpa satu pun hotel tetap rencana yang sah.
+ * Yang ditampilkan bukan daftar kekurangan melainkan ringkasan: ini yang akan
+ * dipesan, ini yang tidak ikut, dan tidak ikut itu bukan masalah. Backend
+ * tidak pernah mewajibkan penginapan atau penerbangan — ia memesan yang sudah
+ * lengkap dan melewati sisanya tanpa mengeluh.
  *
- * Jadi yang ditampilkan sekarang bukan kekurangan, melainkan ringkasan:
- * ini yang akan dipesan, ini yang tidak ikut, dan tidak ikut itu bukan
- * masalah. Syaratnya disalin persis dari `checkoutTrip` di backend supaya
- * ringkasan ini tidak pernah menjanjikan sesuatu yang berbeda.
+ * Syaratnya disalin dari dokumentasi `POST /api/trips/:id/checkout` dan dari
+ * aturan yang dipegang system prompt planner:
+ *
+ * - penginapan ikut kalau stop-nya punya hotel terpilih, tanggal lengkap,
+ *   minimal satu destinasi berstatus `confirmed`, dan statusnya sudah naik
+ *   dari `suggested` ke `pending` (artinya pengguna sudah menyetujuinya);
+ * - penerbangan ikut kalau legnya sudah `confirmed` dan belum pernah dipesan.
  */
-const MAX_FLIGHT_LEGS = 2;
-
 function bookingPlan(canvas: TripCanvas) {
-  const stays = canvas.items.filter(
-    (item) =>
-      item.status === "confirmed" &&
-      item.accommodations &&
-      item.check_in &&
-      item.check_out,
-  );
-  const flights = canvas.flights.filter((flight) => !flight.booked_at);
+  const stops = canvas.stops ?? [];
 
-  const skipped = canvas.items.filter(
-    (item) => item.status !== "booked" && !stays.includes(item),
+  const stays = stops.filter(
+    (stop) =>
+      stop.accommodations &&
+      stop.accommodation_status === "pending" &&
+      stop.check_in &&
+      stop.check_out &&
+      stop.trip_items.some((item) => item.status === "confirmed"),
+  );
+
+  const flights = stops.flatMap((stop) =>
+    stop.trip_flights
+      .filter((flight) => flight.confirmed && !flight.booked_at)
+      .map((flight) => ({ stop, flight })),
+  );
+
+  const skipped = stops.filter(
+    (stop) => !stays.includes(stop) && stop.accommodation_status !== "booked",
   );
 
   return {
     stays,
     flights,
     skipped,
-    /** Backend menolak lebih dari dua kaki penerbangan dalam satu pemesanan. */
-    tooManyFlights: flights.length > MAX_FLIGHT_LEGS,
     alreadyBooked:
-      canvas.items.some((item) => item.status === "booked") ||
-      canvas.flights.some((flight) => Boolean(flight.booked_at)),
+      stops.some((stop) => stop.accommodation_status === "booked") ||
+      stops.some((stop) => stop.trip_flights.some((f) => f.booked_at)),
   };
 }
 
 export function PlanPanel({
   canvas,
   busy,
+  onPatchStop,
+  onRemoveStop,
   onPatchItem,
   onRemoveItem,
   onDropFlight,
   onPickFlight,
   onCheckout,
 }: Props) {
+  // Nama penumpang hanya diminta kalau ada tiket yang benar-benar akan
+  // dipesan: backend menolak checkout berisi penerbangan tanpa nama, dan
+  // meminta nama untuk pemesanan yang cuma berisi hotel jadi mubazir.
+  const [passengers, setPassengers] = useState("");
+
   if (!canvas?.trip) {
     return (
       <p className="p-5 text-sm text-muted-foreground">
@@ -130,9 +182,19 @@ export function PlanPanel({
     );
   }
 
-  const { trip, items, flights } = canvas;
+  const { trip } = canvas;
+  const stops = canvas.stops ?? [];
   const plan = bookingPlan(canvas);
-  const ready = plan.stays.length > 0 || plan.flights.length > 0;
+
+  const passengerNames = passengers
+    .split(",")
+    .map((name) => name.trim())
+    .filter(Boolean);
+
+  const needsPassengers = plan.flights.length > 0;
+  const hasSomethingToBook = plan.stays.length > 0 || plan.flights.length > 0;
+  const ready =
+    hasSomethingToBook && (!needsPassengers || passengerNames.length > 0);
 
   return (
     <div className="flex h-full flex-col">
@@ -143,112 +205,70 @@ export function PlanPanel({
         <p className="mt-0.5 text-xs text-muted-foreground">
           {shortDate(trip.start_date) ?? "tanggal?"} →{" "}
           {shortDate(trip.end_date) ?? "?"} · {trip.travelers} orang
+          {trip.cities?.name ? ` · dari ${trip.cities.name}` : ""}
         </p>
       </div>
 
-      <div className="flex-1 space-y-5 overflow-y-auto p-4">
-        <section>
-          <SectionTitle>Penerbangan</SectionTitle>
-          {flights.length === 0 ? (
-            <Empty>
-              Belum ada penerbangan dipilih. Opsional — rencana tetap tersimpan
-              tanpa tiket.
-            </Empty>
-          ) : (
-            <ul className="space-y-2">
-              {flights.map((f) => (
-                <li
-                  key={f.flight_type}
-                  className="rounded-xl border border-border bg-card p-3"
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-                      <Plane className="h-3.5 w-3.5" />
-                      {f.flight_type === "outbound" ? "Berangkat" : "Pulang"}
-                    </span>
-                    {f.booked_at ? (
-                      <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100">
-                        dipesan
-                      </span>
-                    ) : (
-                      <span className="text-xs font-medium">
-                        {f.flight_options
-                          ? formatIDR(f.flight_options.price)
-                          : "—"}
-                      </span>
-                    )}
-                  </div>
-                  <p className="mt-1 text-sm">
-                    {f.flight_options?.airline} {f.flight_options?.flight_number}
-                  </p>
-                  <p className="text-xs text-muted-foreground">
-                    {f.flight_options?.departure_time.slice(11, 16)} →{" "}
-                    {f.flight_options?.arrival_time.slice(11, 16)}
-                  </p>
-                  {!f.booked_at && (
-                    <Button
-                      size="sm"
-                      variant="ghost"
-                      className="mt-1 h-7 rounded-full px-2 text-xs text-destructive hover:text-destructive"
-                      disabled={busy}
-                      onClick={() => onDropFlight(f.flight_type)}
-                    >
-                      Lepas pilihan
-                    </Button>
-                  )}
-                </li>
-              ))}
-            </ul>
-          )}
-
-          <FlightPicker canvas={canvas} disabled={busy} onPick={onPickFlight} />
-        </section>
-
-        <section>
-          <SectionTitle>Destinasi</SectionTitle>
-          {items.length === 0 ? (
-            <Empty>
-              Belum ada destinasi. Ceritakan maumu lewat chat, atau tambahkan dari
-              kartu yang ditawarkan AI.
-            </Empty>
-          ) : (
-            <ul className="space-y-2">
-              {items.map((item) => (
-                <ItemCard
-                  key={item.id}
-                  item={item}
-                  busy={busy}
-                  onPatch={onPatchItem}
-                  onRemove={onRemoveItem}
-                />
-              ))}
-            </ul>
-          )}
-        </section>
-
-        {plan.tooManyFlights && (
-          <div className="rounded-2xl bg-amber-50 p-3 text-xs leading-relaxed text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
-            Rencana ini punya {plan.flights.length} penerbangan, sementara satu
-            pemesanan cuma memuat dua (berangkat dan pulang). Lepaskan dulu yang
-            berlebih sebelum checkout.
-          </div>
+      <div className="flex-1 space-y-4 overflow-y-auto p-4">
+        {stops.length === 0 ? (
+          <p className="text-xs leading-relaxed text-muted-foreground">
+            Belum ada kota di rencana ini. Ceritakan maumu lewat chat, atau
+            tambahkan destinasi dari kartu yang ditawarkan AI — kotanya
+            menyusul sendiri.
+          </p>
+        ) : (
+          stops.map((stop) => (
+            <StopCard
+              key={stop.id}
+              stop={stop}
+              canvas={canvas}
+              busy={busy}
+              onPatchStop={onPatchStop}
+              onRemoveStop={onRemoveStop}
+              onPatchItem={onPatchItem}
+              onRemoveItem={onRemoveItem}
+              onDropFlight={onDropFlight}
+              onPickFlight={onPickFlight}
+            />
+          ))
         )}
 
         <BookingSummary plan={plan} />
       </div>
 
       <div className="border-t border-border p-4">
+        {needsPassengers && (
+          <label className="mb-2 block">
+            <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+              Nama penumpang
+            </span>
+            <input
+              type="text"
+              value={passengers}
+              disabled={busy}
+              placeholder="Pisahkan dengan koma"
+              onChange={(e) => setPassengers(e.target.value)}
+              className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs disabled:opacity-50"
+            />
+            <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
+              Dipakai untuk semua tiket dalam pemesanan ini.
+            </span>
+          </label>
+        )}
+
         <Button
           className="w-full rounded-full"
           disabled={!ready || busy}
-          onClick={onCheckout}
+          onClick={() => onCheckout(passengerNames)}
         >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
-          {ready
-            ? `Pesan ${summarise(plan)}`
-            : plan.alreadyBooked
+          {!hasSomethingToBook
+            ? plan.alreadyBooked
               ? "Semuanya sudah dipesan"
-              : "Belum ada yang bisa dipesan"}
+              : "Belum ada yang bisa dipesan"
+            : needsPassengers && passengerNames.length === 0
+              ? "Isi nama penumpang dulu"
+              : `Pesan ${summarise(plan)}`}
         </Button>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
           Semua pesanan lahir berstatus pending sampai dibayar.
@@ -258,16 +278,331 @@ export function PlanPanel({
   );
 }
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
+/**
+ * Satu kota beserta isinya.
+ *
+ * Urutan bagiannya mengikuti urutan keputusan yang sebenarnya diambil orang:
+ * kapan menginap, di mana menginap, naik apa ke sini, lalu ke mana saja
+ * selama di kota ini.
+ */
+function StopCard({
+  stop,
+  canvas,
+  busy,
+  onPatchStop,
+  onRemoveStop,
+  onPatchItem,
+  onRemoveItem,
+  onDropFlight,
+  onPickFlight,
+}: {
+  stop: TripStop;
+  canvas: TripCanvas;
+  busy: boolean;
+  onPatchStop: Props["onPatchStop"];
+  onRemoveStop: Props["onRemoveStop"];
+  onPatchItem: Props["onPatchItem"];
+  onRemoveItem: Props["onRemoveItem"];
+  onDropFlight: Props["onDropFlight"];
+  onPickFlight: Props["onPickFlight"];
+}) {
+  const [pending, setPending] = useState(false);
+  const stay = stop.accommodations;
+  const locked = stop.accommodation_status === "booked";
+
+  const run = async (fn: () => Promise<void>) => {
+    setPending(true);
+    try {
+      await fn();
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const frozen = busy || pending;
+
   return (
-    <p className="mb-2 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-      {children}
-    </p>
+    <section className="rounded-2xl border border-border bg-card p-3">
+      <header className="flex items-start gap-2">
+        <span className="mt-0.5 font-mono text-[11px] text-muted-foreground">
+          {String(stop.sequence_order).padStart(2, "0")}
+        </span>
+        <div className="min-w-0 flex-1">
+          <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
+            <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
+            {cityName(stop)}
+          </p>
+          {stop.cities?.provinces?.name && (
+            <p className="truncate text-xs text-muted-foreground">
+              {stop.cities.provinces.name}
+            </p>
+          )}
+        </div>
+        {!locked && (
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 shrink-0 rounded-full px-2 text-destructive hover:text-destructive"
+            aria-label={`Hapus ${cityName(stop)} dari rencana`}
+            disabled={frozen}
+            onClick={() => run(() => onRemoveStop(stop.id))}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        )}
+      </header>
+
+      <div className="mt-2.5 flex gap-2">
+        <DateInput
+          label="Check-in"
+          value={stop.check_in}
+          disabled={frozen || locked}
+          onChange={(v) => run(() => onPatchStop(stop.id, { check_in: v }))}
+        />
+        <DateInput
+          label="Check-out"
+          value={stop.check_out}
+          disabled={frozen || locked}
+          onChange={(v) => run(() => onPatchStop(stop.id, { check_out: v }))}
+        />
+      </div>
+
+      <div className="mt-2.5">
+        <div className="flex items-center justify-between gap-2">
+          <SectionTitle>Penginapan</SectionTitle>
+          <span className="mb-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+            {STAY_STATUS_LABEL[stop.accommodation_status] ??
+              stop.accommodation_status}
+          </span>
+        </div>
+        <p className="text-xs text-muted-foreground">
+          {stay ? (
+            <>
+              <span className="font-medium text-foreground">{stay.name}</span> ·{" "}
+              {formatIDR(stay.price_per_night)}/malam
+            </>
+          ) : (
+            "Belum pilih penginapan — opsional, hanya perlu kalau mau dipesan lewat sini."
+          )}
+        </p>
+
+        {!locked && (
+          <StayPicker
+            stop={stop}
+            selectedId={stay?.id ?? null}
+            disabled={frozen}
+            onPick={(accommodationId) =>
+              run(() =>
+                onPatchStop(stop.id, { accommodation_id: accommodationId }),
+              )
+            }
+          />
+        )}
+      </div>
+
+      <div className="mt-3">
+        <SectionTitle>Penerbangan</SectionTitle>
+        <ul className="space-y-1.5">
+          {(["arrival", "departure"] as const).map((role) => (
+            <FlightRow
+              key={role}
+              role={role}
+              leg={stop.trip_flights.find((f) => f.flight_role === role)}
+              busy={frozen}
+              onDrop={() => run(() => onDropFlight(stop.id, role))}
+            />
+          ))}
+        </ul>
+
+        <FlightPicker
+          canvas={canvas}
+          stop={stop}
+          disabled={frozen}
+          onPick={(option, role) => onPickFlight(option, stop.id, role)}
+        />
+      </div>
+
+      <div className="mt-3">
+        <SectionTitle>Destinasi</SectionTitle>
+        {stop.trip_items.length === 0 ? (
+          <p className="text-xs text-muted-foreground">
+            Belum ada destinasi di kota ini.
+          </p>
+        ) : (
+          <ul className="space-y-1.5">
+            {stop.trip_items.map((item) => (
+              <ItemRow
+                key={item.id}
+                item={item}
+                busy={frozen}
+                onPatch={onPatchItem}
+                onRemove={onRemoveItem}
+              />
+            ))}
+          </ul>
+        )}
+      </div>
+    </section>
   );
 }
 
-function Empty({ children }: { children: React.ReactNode }) {
-  return <p className="text-xs text-muted-foreground">{children}</p>;
+function FlightRow({
+  role,
+  leg,
+  busy,
+  onDrop,
+}: {
+  role: TripFlightRole;
+  leg: TripFlight | undefined;
+  busy: boolean;
+  onDrop: () => void;
+}) {
+  if (!leg) {
+    return (
+      <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
+        <Plane className="h-3.5 w-3.5 shrink-0" />
+        {ROLE_LABEL[role]}: belum dipilih
+      </li>
+    );
+  }
+
+  const option = leg.flight_options;
+
+  return (
+    <li className="rounded-xl border border-border p-2.5">
+      <div className="flex items-center justify-between gap-2">
+        <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+          <Plane className="h-3.5 w-3.5" />
+          {ROLE_LABEL[role]}
+        </span>
+        {leg.booked_at ? (
+          <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100">
+            dipesan
+          </span>
+        ) : (
+          <span className="text-xs font-medium">
+            {option ? formatIDR(option.price) : "—"}
+          </span>
+        )}
+      </div>
+      <p className="mt-1 text-sm">
+        {option?.airline} {option?.flight_number}
+      </p>
+      <p className="text-xs text-muted-foreground">
+        {option?.departure_time.slice(11, 16)} →{" "}
+        {option?.arrival_time.slice(11, 16)}
+        {/* Leg yang masih usulan AI tidak ikut checkout. Menyebutnya di sini
+            supaya tidak ada yang mengira tiketnya sudah aman. */}
+        {!leg.booked_at && !leg.confirmed && " · masih usulan"}
+      </p>
+      {!leg.booked_at && (
+        <Button
+          size="sm"
+          variant="ghost"
+          className="mt-1 h-7 rounded-full px-2 text-xs text-destructive hover:text-destructive"
+          disabled={busy}
+          onClick={onDrop}
+        >
+          Lepas pilihan
+        </Button>
+      )}
+    </li>
+  );
+}
+
+function ItemRow({
+  item,
+  busy,
+  onPatch,
+  onRemove,
+}: {
+  item: TripItem;
+  busy: boolean;
+  onPatch: Props["onPatchItem"];
+  onRemove: Props["onRemoveItem"];
+}) {
+  const [pending, setPending] = useState(false);
+  const locked = item.status === "booked";
+
+  const run = async (fn: () => Promise<void>) => {
+    setPending(true);
+    try {
+      await fn();
+    } finally {
+      setPending(false);
+    }
+  };
+
+  const frozen = busy || pending;
+
+  return (
+    <li className="rounded-xl border border-border p-2.5">
+      <div className="flex items-start gap-2">
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-medium">
+            {item.destinations?.name}
+          </p>
+          {item.destinations?.category && (
+            <p className="truncate text-xs text-muted-foreground">
+              {item.destinations.category}
+            </p>
+          )}
+        </div>
+        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
+          {STATUS_LABEL[item.status] ?? item.status}
+        </span>
+      </div>
+
+      {!locked && (
+        <div className="mt-2 flex gap-1.5">
+          <Button
+            size="sm"
+            variant={item.status === "confirmed" ? "outline" : "default"}
+            className="h-7 flex-1 rounded-full text-xs"
+            disabled={frozen}
+            onClick={() =>
+              run(() =>
+                onPatch(item.id, {
+                  status:
+                    item.status === "confirmed" ? "suggested" : "confirmed",
+                }),
+              )
+            }
+          >
+            {pending ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : item.status === "confirmed" ? (
+              <>
+                <X className="h-3.5 w-3.5" /> Batalkan
+              </>
+            ) : (
+              <>
+                <Check className="h-3.5 w-3.5" /> Konfirmasi
+              </>
+            )}
+          </Button>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 rounded-full px-2 text-destructive hover:text-destructive"
+            aria-label={`Hapus ${item.destinations?.name ?? "destinasi"} dari rencana`}
+            disabled={frozen}
+            onClick={() => run(() => onRemove(item.id))}
+          >
+            <Trash2 className="h-3.5 w-3.5" />
+          </Button>
+        </div>
+      )}
+    </li>
+  );
+}
+
+function SectionTitle({ children }: { children: React.ReactNode }) {
+  return (
+    <p className="mb-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
+      {children}
+    </p>
+  );
 }
 
 /** Label tombol checkout: menyebut apa yang akan dipesan, bukan "checkout". */
@@ -281,9 +616,9 @@ function summarise(plan: ReturnType<typeof bookingPlan>) {
 /**
  * Ringkasan apa yang akan dan tidak akan dipesan.
  *
- * Nadanya sengaja netral, bukan peringatan: destinasi tanpa penginapan itu
- * pilihan yang sah, bukan kesalahan yang perlu diperbaiki. Menyebutnya di sini
- * cuma supaya tidak ada kejutan setelah tombolnya ditekan.
+ * Nadanya sengaja netral, bukan peringatan: kota tanpa penginapan itu pilihan
+ * yang sah, bukan kesalahan yang perlu diperbaiki. Menyebutnya di sini cuma
+ * supaya tidak ada kejutan setelah tombolnya ditekan.
  */
 function BookingSummary({ plan }: { plan: ReturnType<typeof bookingPlan> }) {
   const bookable = plan.stays.length > 0 || plan.flights.length > 0;
@@ -302,181 +637,52 @@ function BookingSummary({ plan }: { plan: ReturnType<typeof bookingPlan> }) {
     <div className="rounded-2xl border border-border p-3 text-xs leading-relaxed">
       <p className="mb-1.5 font-semibold">Yang akan dipesan</p>
       <ul className="space-y-1 text-muted-foreground">
-        {plan.flights.map((flight) => (
-          <li key={flight.flight_type}>
-            · Penerbangan{" "}
-            {flight.flight_type === "outbound" ? "berangkat" : "pulang"} —{" "}
-            {flight.flight_options?.airline}{" "}
+        {plan.flights.map(({ stop, flight }) => (
+          <li key={flight.id}>
+            · Penerbangan {ROLE_LABEL[flight.flight_role].toLowerCase()}{" "}
+            {cityName(stop)} — {flight.flight_options?.airline}{" "}
             {flight.flight_options?.flight_number}
           </li>
         ))}
-        {plan.stays.map((item) => (
-          <li key={item.id}>
-            · {item.accommodations?.name} di {item.destinations?.name}
+        {plan.stays.map((stop) => (
+          <li key={stop.id}>
+            · {stop.accommodations?.name} di {cityName(stop)}
           </li>
         ))}
       </ul>
 
       {plan.skipped.length > 0 && (
         <p className="mt-2 text-muted-foreground">
-          {plan.skipped.length} destinasi lain tidak ikut dipesan karena belum
-          punya penginapan atau tanggal. Itu tidak apa-apa — rencananya tetap
-          tersimpan.
+          {plan.skipped.length} kota lain tidak ikut dipesan karena penginapan,
+          tanggal, atau konfirmasi destinasinya belum lengkap. Itu tidak apa-apa
+          — rencananya tetap tersimpan.
         </p>
       )}
     </div>
   );
 }
 
-function ItemCard({
-  item,
-  busy,
-  onPatch,
-  onRemove,
-}: {
-  item: TripItem;
-  busy: boolean;
-  onPatch: Props["onPatchItem"];
-  onRemove: Props["onRemoveItem"];
-}) {
-  const [pending, setPending] = useState(false);
-  const locked = item.status === "booked";
-  const stay = item.accommodations;
-
-  const run = async (fn: () => Promise<void>) => {
-    setPending(true);
-    try {
-      await fn();
-    } finally {
-      setPending(false);
-    }
-  };
-
-  return (
-    <li className="rounded-xl border border-border bg-card p-3">
-      <div className="flex items-start gap-2">
-        <span className="mt-0.5 font-mono text-[11px] text-muted-foreground">
-          {String(item.sequence_order).padStart(2, "0")}
-        </span>
-        <div className="min-w-0 flex-1">
-          <p className="truncate text-sm font-medium">
-            {item.destinations?.name}
-          </p>
-          <p className="truncate text-xs text-muted-foreground">
-            {[item.destinations?.cities?.name, item.destinations?.category]
-              .filter(Boolean)
-              .join(" · ")}
-          </p>
-        </div>
-        <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-          {STATUS_LABEL[item.status] ?? item.status}
-        </span>
-      </div>
-
-      <p className="mt-2 text-xs text-muted-foreground">
-        {stay ? (
-          <>
-            <span className="font-medium text-foreground">{stay.name}</span> ·{" "}
-            {formatIDR(stay.price_per_night)}/malam
-          </>
-        ) : (
-          "Belum pilih penginapan — opsional, hanya perlu kalau mau dipesan lewat sini."
-        )}
-      </p>
-
-      {!locked && (
-        <>
-          <StayPicker
-            destinationId={item.destinations?.id ?? null}
-            destinationName={item.destinations?.name ?? "destinasi ini"}
-            selectedId={stay?.id ?? null}
-            disabled={busy || pending}
-            onPick={(accommodationId) =>
-              run(() => onPatch(item.id, { accommodation_id: accommodationId }))
-            }
-          />
-
-          <div className="mt-2 flex gap-2">
-            <DateInput
-              label="Check-in"
-              value={item.check_in}
-              disabled={busy || pending}
-              onChange={(v) => run(() => onPatch(item.id, { check_in: v }))}
-            />
-            <DateInput
-              label="Check-out"
-              value={item.check_out}
-              disabled={busy || pending}
-              onChange={(v) => run(() => onPatch(item.id, { check_out: v }))}
-            />
-          </div>
-
-          <div className="mt-2 flex gap-1.5">
-            <Button
-              size="sm"
-              variant={item.status === "confirmed" ? "outline" : "default"}
-              className="h-7 flex-1 rounded-full text-xs"
-              disabled={busy || pending}
-              onClick={() =>
-                run(() =>
-                  onPatch(item.id, {
-                    status:
-                      item.status === "confirmed" ? "suggested" : "confirmed",
-                  }),
-                )
-              }
-            >
-              {pending ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : item.status === "confirmed" ? (
-                <>
-                  <X className="h-3.5 w-3.5" /> Batalkan
-                </>
-              ) : (
-                <>
-                  <Check className="h-3.5 w-3.5" /> Konfirmasi
-                </>
-              )}
-            </Button>
-            <Button
-              size="sm"
-              variant="ghost"
-              className="h-7 rounded-full px-2 text-destructive hover:text-destructive"
-              aria-label={`Hapus ${item.destinations?.name ?? "destinasi"} dari rencana`}
-              disabled={busy || pending}
-              onClick={() => run(() => onRemove(item.id))}
-            >
-              <Trash2 className="h-3.5 w-3.5" />
-            </Button>
-          </div>
-        </>
-      )}
-    </li>
-  );
-}
-
 /**
  * Pemilih penginapan langsung di panel.
  *
- * Tanpa ini, satu-satunya jalan mengisi penginapan adalah meminta AI
- * mencarikannya — dan daftar "belum siap dipesan" jadi buntu: ia menyebut apa
- * yang kurang tapi tidak memberi cara memperbaikinya. Daftarnya diambil dari
- * endpoint yang sama dengan yang dipakai AI, sudah terurut dari yang terdekat
- * ke destinasi, jadi pilihan lewat panel dan lewat chat selalu sama isinya.
+ * Daftarnya diambil lewat endpoint accommodations milik salah satu destinasi
+ * di stop ini. Destinasi mana pun boleh jadi jangkar: backend menolak
+ * penginapan yang kotanya berbeda dari kota stop, jadi semua destinasi di
+ * stop yang sama menghasilkan daftar yang sama. Kalau stop-nya belum punya
+ * destinasi sama sekali, tidak ada jangkar — dan memang belum ada yang bisa
+ * dipilihkan.
  *
  * Dimuat saat dibuka, bukan saat kartunya dirender: rencana berisi delapan
- * destinasi akan menembak delapan permintaan sekaligus untuk daftar yang
- * mungkin tidak satu pun dibuka.
+ * kota akan menembak delapan permintaan sekaligus untuk daftar yang mungkin
+ * tidak satu pun dibuka.
  */
 function StayPicker({
-  destinationId,
-  destinationName,
+  stop,
   selectedId,
   disabled,
   onPick,
 }: {
-  destinationId: string | null;
-  destinationName: string;
+  stop: TripStop;
   selectedId: string | null;
   disabled: boolean;
   onPick: (accommodationId: string) => void;
@@ -485,20 +691,29 @@ function StayPicker({
   const [options, setOptions] = useState<NearbyAccommodation[] | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const anchor = stop.trip_items[0]?.destinations?.id ?? null;
+
   async function toggle() {
     const next = !open;
     setOpen(next);
-    if (!next || options || !destinationId) return;
+    if (!next || options || !anchor) return;
 
     try {
       setFailed(false);
-      setOptions(await getDestinationAccommodations(destinationId));
+      setOptions(await getDestinationAccommodations(anchor));
     } catch {
       setFailed(true);
     }
   }
 
-  if (!destinationId) return null;
+  if (!anchor) {
+    return (
+      <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
+        Tambahkan satu destinasi di kota ini dulu, baru penginapannya bisa
+        dipilih.
+      </p>
+    );
+  }
 
   return (
     <div className="mt-2">
@@ -534,7 +749,7 @@ function StayPicker({
 
           {options?.length === 0 && (
             <p className="px-3 py-4 text-xs leading-relaxed text-muted-foreground">
-              Belum ada penginapan terdaftar di kota {destinationName}.
+              Belum ada penginapan terdaftar di {cityName(stop)}.
             </p>
           )}
 
