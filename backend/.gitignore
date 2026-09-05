@@ -18,3 +18,4 @@ Thumbs.db
 seed/
 .npm
 .eslintcache
+coverage/

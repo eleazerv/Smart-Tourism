@@ -3,6 +3,7 @@ import { authMiddleware } from '../middleware/AuthMiddleware.js';
 import { globalLimiter, moderateLimiter } from '../middleware/RateLimit.js';
 import {
   getTrips,
+  createTrip,
   getTripCanvas,
   patchTrip,
   addTripStop,
@@ -57,6 +58,51 @@ router.use(authMiddleware);
  *       401: { description: Tidak ada atau tidak valid token }
  */
 router.get('/', globalLimiter, getTrips);
+
+/**
+ * @swagger
+ * /api/trips:
+ *   post:
+ *     summary: Buat trip baru
+ *     description: >
+ *       Membuat trip kosong milik pengguna (status awal 'planning'). Kota
+ *       singgah dan destinasi ditambahkan belakangan lewat
+ *       POST /api/trips/{id}/stops dan POST /api/trips/{id}/items.
+ *     tags: [Trips]
+ *     security: [{ bearerAuth: [] }]
+ *     requestBody:
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               name: { type: string, nullable: true }
+ *               start_date: { type: string, format: date, nullable: true }
+ *               end_date: { type: string, format: date, nullable: true }
+ *               travelers: { type: integer, minimum: 1, default: 1 }
+ *               origin_city_id: { type: integer, nullable: true }
+ *     responses:
+ *       201:
+ *         description: Trip berhasil dibuat
+ *         content:
+ *           application/json:
+ *             schema:
+ *               type: object
+ *               properties:
+ *                 data:
+ *                   type: object
+ *                   properties:
+ *                     id: { type: string, format: uuid }
+ *                     name: { type: string, nullable: true }
+ *                     start_date: { type: string, format: date, nullable: true }
+ *                     end_date: { type: string, format: date, nullable: true }
+ *                     travelers: { type: integer }
+ *                     origin_city_id: { type: integer, nullable: true }
+ *                     status: { type: string }
+ *       400: { description: Tanggal atau travelers tidak valid }
+ *       401: { description: Tidak ada atau tidak valid token }
+ */
+router.post('/', moderateLimiter, createTrip);
 
 /**
  * @swagger
