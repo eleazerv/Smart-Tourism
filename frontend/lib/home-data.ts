@@ -43,18 +43,6 @@ export const quickLinks: QuickLink[] = [
   { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
 ];
 
-export type Inspiration = {
-  title: string;
-  seed: string;
-};
-
-export const inspirations: Inspiration[] = [
-  { title: "Tempat melihat bintang di seluruh Nusantara, dari Bromo hingga Sumba", seed: "milky-way-mountain" },
-  { title: "Nikmati seni di Yogyakarta, Bandung, dan kota budaya populer lainnya", seed: "museum-gallery-art" },
-  { title: "13 kota, 13 perjalanan kuliner yang luar biasa", seed: "noodle-bowl-hands" },
-  { title: "Menyusuri jalur kereta paling indah di Pulau Jawa", seed: "train-window-rice-field" },
-];
-
 export const footerColumns: {
   title: string;
   links: { label: string; href: string }[];
