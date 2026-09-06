@@ -10,7 +10,6 @@ import {
   airportByCityId,
   clockOf,
   dateOf,
-  durationMinutes,
   formatDuration,
   arrivalDayOffset,
 } from "@/lib/airports";
@@ -131,7 +130,7 @@ async function Booking({ searchParams }: PageProps) {
                 flightNumber: flight.flight_number,
                 departureTime: flight.departure_time,
                 arrivalTime: flight.arrival_time,
-                durationMin: durationMinutes(flight),
+                durationMin: flight.duration_minutes ?? 0,
                 fromLabel,
                 toLabel,
                 dateLabel: formatDateLabel(date),
@@ -224,8 +223,7 @@ function ItineraryCard({
 
         <div className="min-w-0 flex-1">
           <p className="text-center text-[11px] text-muted-foreground">
-            {formatDuration(durationMinutes(flight))}
-          </p>
+            {formatDuration(flight.duration_minutes ?? 0)}          </p>
           <div className="relative my-1 h-px bg-border">
             <Plane
               aria-hidden="true"

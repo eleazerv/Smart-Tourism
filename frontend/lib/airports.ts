@@ -107,11 +107,9 @@ export function durationMinutes(flight: {
   const originOffset = airportByCityId(flight.origin_city_id)?.utcOffset ?? 7;
   const destOffset = airportByCityId(flight.destination_city_id)?.utcOffset ?? 7;
 
-  // Selisih offset ditambahkan ke selisih jam mentah: kalau tujuan lebih
-  // timur (WITA dari WIB), jam kedatangan yang tertulis "terlihat" lebih
-  // awal dari yang sebenarnya, jadi durasi aslinya lebih panjang.
-  return rawDiff + (destOffset - originOffset) * 60;
+  return rawDiff - (destOffset - originOffset) * 60;
 }
+
 
 /** How many calendar days after departure the flight lands. */
 export function arrivalDayOffset(flight: {

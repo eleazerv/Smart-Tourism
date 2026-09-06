@@ -2,34 +2,25 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, ExternalLink, Plane, Search } from "lucide-react";
+import { AlertTriangle, ArrowLeft, BedDouble, ExternalLink, Search } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
-import { BookingActions } from "@/components/account/booking-actions";
+import { AccommodationBookingActions } from "@/components/account/accommodation-booking-actions";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import {
-  airportByCityId,
-  clockOf,
-  dateOf,
-  durationMinutes,
-  formatDuration,
-  arrivalDayOffset,
-} from "@/lib/airports";
-import {
-  getFlightBooking,
-  type FlightBooking,
-  type FlightBookingItem,
+  getAccommodationBooking,
+  type AccommodationBooking,
+  type AccommodationBookingRoom,
   type PaymentStatus,
 } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
 import { formatDateTime } from "@/lib/format-date";
-import { formatDateLabel } from "@/lib/flights-search";
 import { formatIDR } from "@/lib/seeded-random";
 
-export const metadata: Metadata = { title: "Detail Pesanan" };
+export const metadata: Metadata = { title: "Detail Pesanan Penginapan" };
 
 type PageProps = { params: Promise<{ id: string }> };
 
-export default function BookingDetailPage({ params }: PageProps) {
+export default function AccommodationBookingDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
       <Link
@@ -51,9 +42,9 @@ async function BookingDetail({ params }: PageProps) {
   const { id } = await params;
   const token = await requireAccessToken();
 
-  let booking: FlightBooking | null;
+  let booking: AccommodationBooking | null;
   try {
-    booking = await getFlightBooking(id, { token });
+    booking = await getAccommodationBooking(id, { token });
   } catch {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
@@ -62,13 +53,9 @@ async function BookingDetail({ params }: PageProps) {
     );
   }
 
-  // The API scopes the lookup to the signed-in user, so "not yours" and
-  // "does not exist" arrive the same way — and should look the same too.
   if (!booking) notFound();
 
-  const items = booking.flight_booking_items ?? [];
-  // A closed booking holds no seats and owes nothing: it is shown as a record
-  // of what was attempted, not as something still waiting on the reader.
+  const rooms = booking.accommodation_booking_rooms ?? [];
   const closed = isClosed(booking.payment_status);
   const invoiceLive =
     booking.payment_status === "pending" &&
@@ -114,9 +101,9 @@ async function BookingDetail({ params }: PageProps) {
 
           {booking.payment_status === "pending" && (
             <div className="mt-4 space-y-3 border-t border-border pt-4">
-              <BookingActions bookingId={booking.id} />
+              <AccommodationBookingActions bookingId={booking.id} />
               {invoiceLive && booking.invoice_url && (
-                <a
+                 <a
                   href={booking.invoice_url}
                   target="_blank"
                   rel="noopener noreferrer"
@@ -130,13 +117,13 @@ async function BookingDetail({ params }: PageProps) {
           )}
         </div>
 
-        {items.length === 0 ? (
+        {rooms.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Rincian penerbangan untuk pesanan ini tidak tersedia.
+            Rincian kamar untuk pesanan ini tidak tersedia.
           </p>
         ) : (
-          items.map((item) => (
-            <ItemCard key={item.id} item={item} closed={closed} />
+          rooms.map((room) => (
+            <RoomCard key={room.id} room={room} closed={closed} />
           ))
         )}
       </div>
@@ -144,19 +131,18 @@ async function BookingDetail({ params }: PageProps) {
   );
 }
 
-/** Why a closed booking ended, and the one thing left to do about it. */
 const CLOSED_COPY: Partial<Record<PaymentStatus, { title: string; body: string }>> = {
   failed: {
     title: "Pembayaran tidak selesai",
-    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kursi yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kamar yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
   },
   expired: {
     title: "Tagihan sudah kedaluwarsa",
-    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kursinya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kamarnya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
   },
   cancelled: {
     title: "Pesanan dibatalkan",
-    body: "Pesanan ini dibatalkan dan kursinya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    body: "Pesanan ini dibatalkan dan kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
   },
 };
 
@@ -164,8 +150,6 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
   const copy = CLOSED_COPY[status];
   if (!copy) return null;
 
-  // Only a lapsed payment is the reader's loss to act on; a booking they
-  // cancelled themselves is stated plainly, without the alarm colour.
   const alarming = status === "failed";
 
   return (
@@ -184,43 +168,23 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
             : "mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
         }
       />
-
       <div className="min-w-0">
         <p className="text-sm font-semibold">{copy.title}</p>
         <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
-
         <Link
-          href="/flights"
+          href="/hotels"
           className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Search className="h-4 w-4" />
-          Cari penerbangan lagi
+          Cari penginapan lagi
         </Link>
       </div>
     </div>
   );
 }
 
-function ItemCard({
-  item,
-  closed,
-}: {
-  item: FlightBookingItem;
-  closed: boolean;
-}) {
-  const flight = item.flight_options;
-
-  if (!flight) {
-    return (
-      <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-        Data penerbangan untuk item ini sudah tidak tersedia.
-      </div>
-    );
-  }
-
-  const from = flight.origin ? airportByCityId(flight.origin.id) : null;
-  const to = flight.destination ? airportByCityId(flight.destination.id) : null;
-  const dayOffset = arrivalDayOffset(flight);
+function RoomCard({ room, closed }: { room: AccommodationBookingRoom; closed: boolean }) {
+  const acc = room.accommodations;
 
   return (
     <div
@@ -230,84 +194,40 @@ function ItemCard({
           : "rounded-2xl border border-border bg-card p-5"
       }
     >
-      <div className="flex flex-wrap items-center justify-between gap-2">
-        <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {item.flight_type === "return" ? "Penerbangan pulang" : "Keberangkatan"}
-        </p>
-        <span className="text-xs text-muted-foreground">
-          {formatDateLabel(dateOf(flight.departure_time))}
-        </span>
-      </div>
-
-      <div className="mt-2">
-        <p className="text-sm font-semibold">{flight.airline}</p>
-        <p className="text-xs text-muted-foreground">{flight.flight_number}</p>
-      </div>
-
-      <div className="mt-4 flex items-center gap-4">
-        <div className="shrink-0">
-          <p className="text-lg font-bold leading-none tabular-nums">
-            {clockOf(flight.departure_time)}
-          </p>
-          <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {from?.code ?? flight.origin?.name ?? "—"}
-          </p>
-        </div>
-
-        <div className="min-w-0 flex-1">
-          <p className="text-center text-[11px] text-muted-foreground">
-            {formatDuration(durationMinutes(flight))}
-          </p>
-          <div className="relative my-1 h-px bg-border">
-            <Plane
-              aria-hidden="true"
-              className="absolute -top-[7px] right-0 h-3.5 w-3.5 text-muted-foreground"
-            />
-          </div>
-        </div>
-
-        <div className="shrink-0 text-right">
-          <p className="text-lg font-bold leading-none tabular-nums">
-            {clockOf(flight.arrival_time)}
-            {dayOffset > 0 && (
-              <sup className="ml-0.5 text-[10px] font-semibold text-muted-foreground">
-                +{dayOffset}
-              </sup>
-            )}
-          </p>
-          <p className="mt-1 text-xs font-medium text-muted-foreground">
-            {to?.code ?? flight.destination?.name ?? "—"}
-          </p>
-        </div>
-      </div>
-
-      <p className="mt-4 border-t border-border pt-3 text-sm">
-        <span className="text-muted-foreground">Harga tiket </span>
+      <div className="flex items-center gap-3">
         <span
-          className={
-            closed
-              ? "font-semibold tabular-nums text-muted-foreground line-through decoration-1"
-              : "font-semibold tabular-nums"
-          }
+          aria-hidden="true"
+          className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
         >
-          {formatIDR(item.price)}
+          <BedDouble className="h-5 w-5" />
         </span>
-        {closed && (
-          <span className="ml-2 text-xs text-muted-foreground">
-            tiket tidak berlaku
-          </span>
-        )}
-      </p>
+        <div className="min-w-0 flex-1">
+          <p className="truncate text-sm font-semibold">{acc?.name ?? room.room_name}</p>
+          <p className="truncate text-xs text-muted-foreground">
+            {room.room_name} · {room.guests} tamu · {room.nights} malam
+          </p>
+        </div>
+      </div>
+
+      <dl className="mt-3 space-y-1.5 border-t border-border pt-3 text-sm">
+        <Row label="Check-in" value={room.check_in} />
+        <Row label="Check-out" value={room.check_out} />
+        <Row
+          label="Subtotal"
+          value={
+            closed
+              ? `${formatIDR(room.subtotal)} (tidak berlaku)`
+              : formatIDR(room.subtotal)
+          }
+        />
+      </dl>
     </div>
   );
 }
 
-/** `invoice_expires_at` comes back without a zone; the API reads it as UTC. */
 function isExpired(expiresAt: string | null): boolean {
   if (!expiresAt) return true;
-  const parsed = Date.parse(
-    expiresAt.endsWith("Z") ? expiresAt : `${expiresAt}Z`,
-  );
+  const parsed = Date.parse(expiresAt.endsWith("Z") ? expiresAt : `${expiresAt}Z`);
   return Number.isNaN(parsed) || parsed <= Date.now();
 }
 

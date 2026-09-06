@@ -600,3 +600,87 @@ export type CheckoutResult = {
   flight_count: number;
   accommodation_count: number;
 };
+
+/**
+ * Hasil `GET /api/trip-bookings`.
+ *
+ */
+export type TripBookingSummary = {
+  id: string;
+  trip_id: string;
+  booking_code: string;
+  total_price: number;
+  payment_status: PaymentStatus;
+  created_at: string;
+  paid_at: string | null;
+};
+
+/**
+ * Hasil `GET /api/trip-bookings/:id`.
+ *
+ */
+export type TripBookingDetail = TripBookingSummary & {
+  payment_method: string | null;
+  invoice_url: string | null;
+  invoice_expires_at: string | null;
+  flight_bookings: {
+    id: string;
+    booking_code: string;
+    total_price: number;
+    payment_status: PaymentStatus;
+  }[];
+  accommodation_bookings: {
+    id: string;
+    booking_code: string;
+    total_price: number;
+    payment_status: PaymentStatus;
+    accommodation_booking_rooms: {
+      id: string;
+      room_name: string;
+      check_in: string;
+      check_out: string;
+      guests: number;
+      nights: number;
+      subtotal: number;
+    }[];
+  }[];
+};
+
+/* */
+export type AccommodationBookingRoom = {
+  id: string;
+  room_name: string;
+  check_in: string;
+  check_out: string;
+  guests: number;
+  nights: number;
+  subtotal: number;
+  price_per_night?: number;
+  accommodations: {
+    id: string;
+    name: string;
+    tier: AccommodationTier;
+    cover_image_url: string | null;
+    latitude?: number | null;
+    longitude?: number | null;
+    max_guests?: number | null;
+    partner_name?: string | null;
+    cities?: { id: number; name: string; provinces: ProvinceRef | null } | null;
+  } | null;
+};
+
+export type AccommodationBookingSummary = {
+  id: string;
+  booking_code: string;
+  total_price: number;
+  payment_status: PaymentStatus;
+  created_at: string;
+  paid_at: string | null;
+  accommodation_booking_rooms: AccommodationBookingRoom[];
+};
+
+export type AccommodationBooking = AccommodationBookingSummary & {
+  payment_method: string | null;
+  invoice_url: string | null;
+  invoice_expires_at: string | null;
+};

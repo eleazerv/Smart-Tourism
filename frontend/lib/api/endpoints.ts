@@ -35,8 +35,12 @@ import type {
   SeasonalRecommendations,
   Tag,
   TrendingDestination,
+  TripBookingDetail,
+  TripBookingSummary,
   TripCanvas,
   TripFlightRole,
+  AccommodationBookingSummary,
+  AccommodationBooking,
 } from "@/lib/api/types";
 
 type Auth = Pick<ApiFetchOptions, "token" | "signal">;
@@ -924,4 +928,93 @@ export async function removeTripFlight(
     { ...auth, method: "DELETE" },
   );
   return data;
+}
+
+
+/* ---------------------------------------------------------- trip bookings --- */
+
+/**
+ * Checkout trip membuat satu `trip_booking` yang menaungi flight dan
+ * accommodation booking di dalamnya -- lihat komentar `checkoutTrip` di atas.
+ * List/detail/pay di sini terpisah dari `listFlightBookings`/
+ * `listAccommodationBookings`, yang menampilkan pesanan mandiri (dipesan
+ * langsung tanpa lewat trip planner).
+ */
+export async function listTripBookings(auth: Auth): Promise<TripBookingSummary[]> {
+  const { data } = await apiFetch<{ data: TripBookingSummary[] }>(
+    "/api/trip-bookings",
+    auth,
+  );
+  return data ?? [];
+}
+
+export async function getTripBooking(
+  id: string,
+  auth: Auth,
+): Promise<TripBookingDetail | null> {
+  const result = await apiFetch<{ data: TripBookingDetail }>(
+    `/api/trip-bookings/${id}`,
+    { ...auth, nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+/** Opens (or re-opens) a Xendit invoice covering the whole trip booking. */
+export async function payTripBooking(id: string, auth: Auth): Promise<PaymentIntent> {
+  const { data } = await apiFetch<{ data: PaymentIntent }>(
+    `/api/trip-bookings/${id}/pay`,
+    { ...auth, method: "POST" },
+  );
+  return data;
+}
+
+/** Only works while the booking is still pending; releases held rooms/seats. */
+export async function cancelTripBooking(id: string, auth: Auth) {
+  await apiFetch(`/api/trip-bookings/${id}/cancel`, {
+    ...auth,
+    method: "POST",
+  });
+}
+
+
+
+/* ---------------------------------------------------- accommodation bookings --- */
+
+export async function listAccommodationBookings(
+  auth: Auth,
+): Promise<AccommodationBookingSummary[]> {
+  const { data } = await apiFetch<{ data: AccommodationBookingSummary[] }>(
+    "/api/accommodation-bookings",
+    auth,
+  );
+  return data ?? [];
+}
+
+export async function getAccommodationBooking(
+  id: string,
+  auth: Auth,
+): Promise<AccommodationBooking | null> {
+  const result = await apiFetch<{ data: AccommodationBooking }>(
+    `/api/accommodation-bookings/${id}`,
+    { ...auth, nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+export async function payAccommodationBooking(
+  id: string,
+  auth: Auth,
+): Promise<PaymentIntent> {
+  const { data } = await apiFetch<{ data: PaymentIntent }>(
+    `/api/accommodation-bookings/${id}/pay`,
+    { ...auth, method: "POST" },
+  );
+  return data;
+}
+
+export async function cancelAccommodationBooking(id: string, auth: Auth) {
+  await apiFetch(`/api/accommodation-bookings/${id}/cancel`, {
+    ...auth,
+    method: "POST",
+  });
 }
