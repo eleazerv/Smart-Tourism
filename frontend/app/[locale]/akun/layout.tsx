@@ -42,9 +42,11 @@ export default async function AccountLayout({
 
       <main className="flex-1">
         <div className="container-page grid gap-8 py-8 md:grid-cols-[15rem_minmax(0,1fr)] md:gap-10 md:py-10">
-          <Suspense fallback={<SidebarSkeleton />}>
-            <AccountSidebar />
-          </Suspense>
+          <div className="min-w-0">
+            <Suspense fallback={<SidebarSkeleton />}>
+              <AccountSidebar />
+            </Suspense>
+          </div>
           <div className="min-w-0">{children}</div>
         </div>
       </main>

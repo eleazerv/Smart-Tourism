@@ -72,20 +72,20 @@ app.use('/api/trip-bookings', tripBookingRoutes);
 app.use("/api/public-config", (req, res) => res.json({ supabase_url: process.env.SUPABASE_URL, supabase_anon_key: process.env.SUPABASE_ANON_KEY }));
 // Swagger UI memuat script dan style inline, yang diblokir CSP bawaan helmet.
 // Longgarkan kebijakannya di path ini saja, bukan di seluruh aplikasi.
-app.use(
-  '/api-docs',
-  helmet({
-    contentSecurityPolicy: {
-      directives: {
-        ...helmet.contentSecurityPolicy.getDefaultDirectives(),
-        'script-src': ["'self'", "'unsafe-inline'"],
-        'style-src': ["'self'", "'unsafe-inline'"],
-      },
-    },
-  }),
-  swaggerUi.serve,
-  swaggerUi.setup(swaggerSpec),
-);
+// app.use(
+//   '/api-docs',
+//   helmet({
+//     contentSecurityPolicy: {
+//       directives: {
+//         ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+//         'script-src': ["'self'", "'unsafe-inline'"],
+//         'style-src': ["'self'", "'unsafe-inline'"],
+//       },
+//     },
+//   }),
+//   swaggerUi.serve,
+//   swaggerUi.setup(swaggerSpec),
+// );
 
 app.get('/', (req, res) => {
   res.json({ message: 'Hello from Express backend!' });
