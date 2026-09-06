@@ -8,6 +8,7 @@ import {
   useAnchoredPanel,
 } from "@/components/ui/anchored-panel";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * Airport field with a searchable list, the shape every travel search uses:
@@ -35,6 +36,8 @@ export function AirportPicker({
   icon: LucideIcon;
   counterpart?: string;
 }) {
+  const t = useTranslations("flights");
+
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
@@ -111,7 +114,7 @@ export function AirportPicker({
             {selected ? `${selected.city} (${selected.code})` : value}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {selected?.name ?? "Pilih bandara"}
+            {selected?.name ?? t("pickAirport")}
           </span>
         </span>
       </button>
@@ -120,7 +123,7 @@ export function AirportPicker({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label={`Pilih ${label.toLowerCase()}`}
+          label={t("pickX", { label: label.toLowerCase() })}
           className="p-2"
         >
           <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
@@ -130,8 +133,8 @@ export function AirportPicker({
               value={query}
               onChange={(event) => setQuery(event.target.value)}
               onKeyDown={onKeyDown}
-              placeholder="Cari kota, bandara, atau kode"
-              aria-label={`Cari ${label.toLowerCase()}`}
+              placeholder={t("searchAirport")}
+              aria-label={t("searchX", { label: label.toLowerCase() })}
               aria-controls={listId}
               aria-activedescendant={
                 flat[active] ? `${listId}-${flat[active].code}` : undefined
@@ -142,7 +145,7 @@ export function AirportPicker({
 
           {flat.length === 0 ? (
             <p className="px-3 py-6 text-center text-sm text-muted-foreground">
-              Tidak ada bandara yang cocok dengan &ldquo;{query}&rdquo;.
+              {t("noAirportMatch", { query })}
             </p>
           ) : (
             <ul
@@ -218,7 +221,7 @@ export function AirportPicker({
   );
 }
 
-type Group = { title: string; items: Airport[] };
+type Group = { titleKey?: string; title?: string; items: Airport[] };
 
 /**
  * Empty search opens on the busy airports; typing drops the grouping and ranks
@@ -239,7 +242,7 @@ function grouped(airports: Airport[], query: string): Group[] {
 
     return [
       ...(popular.length > 0 ? [{ title: "Kota populer", items: popular }] : []),
-      ...(rest.length > 0 ? [{ title: "Semua bandara", items: rest }] : []),
+      ...(rest.length > 0 ? [{ titleKey: "allAirports", items: rest }] : []),
     ];
   }
 

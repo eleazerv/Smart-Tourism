@@ -1,5 +1,6 @@
 import Image from "next/image";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight } from "lucide-react";
 import { photo } from "@/lib/home-data";
 
@@ -24,6 +25,8 @@ export function SearchHero({
   /** The search panel. */
   children: React.ReactNode;
 }) {
+  const t = useTranslations("catalogue");
+
   return (
     <section className="relative isolate overflow-hidden bg-brand-900">
       <Image
@@ -40,7 +43,7 @@ export function SearchHero({
       />
 
       <div className="container-page relative py-8 sm:py-12">
-        <nav aria-label="Remah roti">
+        <nav aria-label={t("breadcrumb")}>
           <ol className="flex flex-wrap items-center gap-1 text-xs text-brand-100/80">
             {crumbs.map((crumb, i) => (
               <li key={crumb.label} className="flex items-center gap-1">

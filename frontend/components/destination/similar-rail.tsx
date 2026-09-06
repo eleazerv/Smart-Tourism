@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { searchDestinations, type Destination } from "@/lib/api";
 import { DestinationCard } from "@/components/home/destination-card";
 import { loadSavedIds } from "@/lib/saved-destinations";
@@ -52,6 +53,9 @@ export async function SimilarRail({
   provinceId: number | null;
   provinceName: string | null;
 }) {
+  const t = await getTranslations("destination");
+  const common = await getTranslations("common");
+
   let destinations: Destination[];
   try {
     destinations = await loadSimilar(destinationId, tagSlugs, provinceId);
@@ -66,15 +70,15 @@ export async function SimilarRail({
 
   return (
     <Section
-      title="Destinasi serupa"
+      title={t("similarHeading")}
       subtitle={
         provinceName
-          ? `Pilihan lain dengan suasana sejenis, sebagian di ${provinceName}.`
-          : "Pilihan lain dengan suasana sejenis."
+          ? t("similarSubtitleProvince", { province: provinceName })
+          : t("similarSubtitle")
       }
-      action={{ label: "Jelajahi semua", href: "/destinations" }}
+      action={{ label: common("exploreAll"), href: "/destinations" }}
     >
-      <Rail label="Destinasi serupa">
+      <Rail label={t("similarHeading")}>
         {destinations.map((destination) => (
           <DestinationCard
             key={destination.id}

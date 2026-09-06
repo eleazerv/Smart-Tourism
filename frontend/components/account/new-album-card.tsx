@@ -1,10 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { FolderPlus, Loader2, Plus, X } from "lucide-react";
 import { ApiError, createAlbum } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
+import { useTranslations } from "next-intl";
 
 /**
  * The last tile in the album grid: a dashed placeholder that turns into a
@@ -15,6 +16,8 @@ import { getBrowserAccessToken } from "@/lib/api/session-browser";
  * appears — rather than hiding the action in a toolbar above.
  */
 export function NewAlbumCard() {
+  const ui = useTranslations("ui");
+  const t = useTranslations("albums");
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
   const [busy, setBusy] = useState(false);
@@ -39,8 +42,8 @@ export function NewAlbumCard() {
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === "album_exists"
-          ? "Nama itu sudah dipakai."
-          : "Album gagal dibuat.",
+          ? t("nameTaken")
+          : t("createFailed"),
       );
     } finally {
       setBusy(false);
@@ -55,7 +58,7 @@ export function NewAlbumCard() {
         className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-muted-foreground transition hover:border-brand-700 hover:bg-brand-tint/5 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
       >
         <FolderPlus className="h-6 w-6" />
-        <span className="text-sm font-semibold">Album baru</span>
+        <span className="text-sm font-semibold">{t("newAlbum")}</span>
       </button>
     );
   }
@@ -63,7 +66,7 @@ export function NewAlbumCard() {
   return (
     <div className="flex aspect-[4/3] w-full flex-col justify-center gap-2 rounded-2xl border border-brand-700 bg-card p-4">
       <label className="text-xs font-medium text-muted-foreground">
-        Nama album
+        {t("albumName")}
         <input
           autoFocus
           value={name}
@@ -104,7 +107,7 @@ export function NewAlbumCard() {
             setName("");
             setError(null);
           }}
-          aria-label="Batal"
+          aria-label={ui("cancel")}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border transition hover:bg-muted"
         >
           <X className="h-4 w-4" />

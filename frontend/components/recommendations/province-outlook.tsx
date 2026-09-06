@@ -1,9 +1,10 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, CloudRain, Compass } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCount, monthRangeLabel } from "@/lib/destination-data";
+import { monthName } from "@/lib/intl";
 import {
   formatActivities,
-  monthName,
   timingHref,
   type ProvinceTiming,
   type TimingState,
@@ -37,8 +38,11 @@ export function ProvinceOutlook({
   /** Months this province is in the dry season; empty when unknown. */
   dryMonths: number[];
 }) {
+  const t = useTranslations("timing");
+  const locale = useLocale();
+
   const { info, crowd, visitors } = timing;
-  const month = monthName(state.month);
+  const month = monthName(state.month, locale);
   const dryNow = dryMonths.includes(state.month);
 
   return (
@@ -49,27 +53,29 @@ export function ProvinceOutlook({
           {crowd && <CrowdBadge crowd={crowd} />}
         </div>
         <p className="text-sm text-muted-foreground">
-          Kunjungan terakhir{" "}
+          {t("lastVisits")}{" "}
           <span className="font-semibold tabular-nums text-foreground">
-            {visitors === null ? "belum ada data" : formatCount(visitors)}
+            {visitors === null ? t("noDataLower") : formatCount(visitors, locale)}
           </span>
         </p>
       </div>
 
       {info.recommended_activities.length > 0 && (
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Cocok untuk {formatActivities(info.recommended_activities)}.
+          {t("goodFor", {
+            activities: formatActivities(info.recommended_activities, locale),
+          })}
         </p>
       )}
 
       {dryMonths.length > 0 && (
         <div className="mt-4 border-t border-border pt-4">
           <div className="flex flex-wrap items-baseline justify-between gap-x-4 gap-y-1">
-            <h3 className="text-sm font-bold">Musim sepanjang tahun</h3>
+            <h3 className="text-sm font-bold">{t("yearRound")}</h3>
             <p className="text-sm">
-              <span className="text-muted-foreground">Kemarau </span>
+              <span className="text-muted-foreground">{t("seasonDry")} </span>
               <span className="font-semibold">
-                {monthRangeLabel(dryMonths)}
+                {monthRangeLabel(dryMonths, locale) ?? t("allYear")}
               </span>
             </p>
           </div>
@@ -78,9 +84,10 @@ export function ProvinceOutlook({
             <MonthStrip
               active={dryMonths}
               currentMonth={state.month}
-              activeLabel="Kemarau"
-              inactiveLabel="Hujan"
+              activeLabel={t("seasonDry")}
+              inactiveLabel={t("seasonWet")}
               hrefFor={(m) => timingHref(state, { month: m })}
+              locale={locale}
             />
           </div>
 
@@ -88,9 +95,7 @@ export function ProvinceOutlook({
             <p className="mt-3 flex items-start gap-2 text-xs leading-relaxed text-muted-foreground">
               <CloudRain className="mt-px h-4 w-4 shrink-0" />
               <span>
-                Bukan berarti tutup: hujan di Indonesia umumnya turun sore dan
-                sebentar, dan bulan sepi begini justru paling longgar untuk
-                penginapan. Bawa saja rencana cadangan dalam ruangan.
+                {t("rainNote")}
               </span>
             </p>
           )}
@@ -103,7 +108,7 @@ export function ProvinceOutlook({
           className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
           <Compass className="h-4 w-4" />
-          Provinsi lain yang kemarau bulan {month}
+          {t("otherDryProvinces", { month })}
           <ArrowRight className="h-4 w-4" />
         </Link>
       </div>

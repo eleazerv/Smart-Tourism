@@ -1,4 +1,5 @@
 import { createServerClient } from "@supabase/ssr";
+import type { ResponseCookie } from "next/dist/compiled/@edge-runtime/cookies";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
 import {
@@ -7,27 +8,66 @@ import {
   ONBOARDING_PATH,
   hasOnboarded,
 } from "../onboarding";
+import { localisedPath, routing } from "@/i18n/routing";
 
 /** Route prefixes that require a signed-in user. */
 const PROTECTED_PREFIXES = ["/akun", ONBOARDING_PATH];
 
+/**
+ * Hasil pemeriksaan sesi.
+ *
+ * Bukan lagi sebuah `NextResponse` utuh: setelah i18n masuk, respons yang
+ * benar-benar dikirim dibuat oleh middleware next-intl (ia yang menulis ulang
+ * `/en/...` ke segmen `[locale]`). Yang dikembalikan di sini hanya dua hal
+ * yang tidak boleh hilang — perintah mengalihkan, dan cookie sesi yang baru
+ * disegarkan. `proxy.ts` yang menempelkannya ke respons akhir.
+ */
+export type SessionCheck = {
+  redirect: NextResponse | null;
+  cookies: ResponseCookie[];
+};
+
+/**
+ * Bahasa yang sedang dipakai, dibaca dari path.
+ *
+ * Bahasa default tidak berprefiks (lihat `i18n/routing.ts`), jadi ketiadaan
+ * prefiks berarti Indonesia, bukan "tidak diketahui".
+ */
+function localeOf(pathname: string): string {
+  const prefix = routing.locales.find(
+    (locale) => pathname === `/${locale}` || pathname.startsWith(`/${locale}/`),
+  );
+  return prefix ?? routing.defaultLocale;
+}
+
+/** Path tanpa prefiks bahasa, supaya aturan di bawah cukup ditulis sekali. */
+function stripLocale(pathname: string): string {
+  for (const locale of routing.locales) {
+    if (pathname === `/${locale}`) return "/";
+    if (pathname.startsWith(`/${locale}/`)) {
+      return pathname.slice(locale.length + 1);
+    }
+  }
+  return pathname;
+}
+
+
 /** Halaman yang tetap terbuka walau personalisasi belum pernah diisi. */
-function isOnboardingExempt(request: NextRequest) {
-  const path = request.nextUrl.pathname;
+function isOnboardingExempt(path: string) {
   return ONBOARDING_EXEMPT_PREFIXES.some(
     (prefix) => path === prefix || path.startsWith(`${prefix}/`),
   );
 }
 
-export async function updateSession(request: NextRequest) {
-  let supabaseResponse = NextResponse.next({
-    request,
-  });
+export async function updateSession(
+  request: NextRequest,
+): Promise<SessionCheck> {
+  const cookies: ResponseCookie[] = [];
 
   // If the env vars are not set, skip proxy check. You can remove this
   // once you setup the project.
   if (!hasEnvVars) {
-    return supabaseResponse;
+    return { redirect: null, cookies };
   }
 
   // With Fluid compute, don't put this client in a global environment
@@ -41,15 +81,12 @@ export async function updateSession(request: NextRequest) {
           return request.cookies.getAll();
         },
         setAll(cookiesToSet) {
+          // Ditulis ke `request` juga supaya pembacaan berikutnya di dalam
+          // proses ini melihat token yang baru, bukan yang sudah kedaluwarsa.
           cookiesToSet.forEach(({ name, value }) =>
             request.cookies.set(name, value),
           );
-          supabaseResponse = NextResponse.next({
-            request,
-          });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options),
-          );
+          cookies.push(...cookiesToSet);
         },
       },
     },
@@ -64,16 +101,24 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
+  const locale = localeOf(request.nextUrl.pathname);
+  const path = stripLocale(request.nextUrl.pathname);
+
+  const redirectTo = (target: string, keepSearch: boolean) => {
+    const url = request.nextUrl.clone();
+    url.pathname = localisedPath(target, locale);
+    if (!keepSearch) url.search = "";
+    return NextResponse.redirect(url);
+  };
+
   // Jelantara is a public catalogue: browsing destinations, events and the
   // heatmap must not require an account. Only the signed-in area is gated.
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
-    request.nextUrl.pathname.startsWith(prefix),
+    path.startsWith(prefix),
   );
 
   if (!user && isProtected) {
-    const url = request.nextUrl.clone();
-    url.pathname = "/auth/login";
-    return NextResponse.redirect(url);
+    return { redirect: redirectTo("/auth/login", true), cookies };
   }
 
   // Akun yang belum pernah melewati personalisasi dibawa ke wizard lebih dulu,
@@ -81,31 +126,15 @@ export async function updateSession(request: NextRequest) {
   // masuk sama-sama bermuara di sini. Hanya untuk navigasi biasa: memantulkan
   // POST akan mematahkan server action yang sedang berjalan, termasuk milik
   // wizard itu sendiri.
-  if (user && request.method === "GET" && !isOnboardingExempt(request)) {
+  if (user && request.method === "GET" && !isOnboardingExempt(path)) {
     const onboarded =
       hasOnboarded((user as Record<string, unknown>).user_metadata) ||
       request.cookies.has(ONBOARDED_COOKIE);
 
     if (!onboarded) {
-      const url = request.nextUrl.clone();
-      url.pathname = ONBOARDING_PATH;
-      url.search = "";
-      return NextResponse.redirect(url);
+      return { redirect: redirectTo(ONBOARDING_PATH, false), cookies };
     }
   }
 
-  // IMPORTANT: You *must* return the supabaseResponse object as it is.
-  // If you're creating a new response object with NextResponse.next() make sure to:
-  // 1. Pass the request in it, like so:
-  //    const myNewResponse = NextResponse.next({ request })
-  // 2. Copy over the cookies, like so:
-  //    myNewResponse.cookies.setAll(supabaseResponse.cookies.getAll())
-  // 3. Change the myNewResponse object to fit your needs, but avoid changing
-  //    the cookies!
-  // 4. Finally:
-  //    return myNewResponse
-  // If this is not done, you may be causing the browser and server to go out
-  // of sync and terminate the user's session prematurely!
-
-  return supabaseResponse;
+  return { redirect: null, cookies };
 }

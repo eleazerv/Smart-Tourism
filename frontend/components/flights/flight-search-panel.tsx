@@ -1,12 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { ArrowLeftRight, PlaneLanding, PlaneTakeoff, Search } from "lucide-react";
 import { airport, type Airport } from "@/lib/airports";
 import { AirportPicker } from "@/components/flights/airport-picker";
 import { DatePicker } from "@/components/flights/date-picker";
 import { withFilter, type FlightSearchState } from "@/lib/flights-search";
+import { useTranslations } from "next-intl";
 
 /**
  * Origin, destination, and date. Submits by navigating, so the board below
@@ -22,6 +23,8 @@ export function FlightSearchPanel({
   state: FlightSearchState;
   airports: Airport[];
 }) {
+  const t = useTranslations("flights");
+
   const router = useRouter();
 
   const [from, setFrom] = useState(state.from);
@@ -70,7 +73,7 @@ export function FlightSearchPanel({
           <button
             type="button"
             onClick={swap}
-            aria-label="Tukar asal dan tujuan"
+            aria-label={t("swap")}
             className="grid h-9 w-9 place-items-center rounded-full border border-border bg-background transition hover:border-brand-700 hover:bg-brand-tint/10"
           >
             <ArrowLeftRight className="h-4 w-4" />
@@ -98,7 +101,7 @@ export function FlightSearchPanel({
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 sm:col-span-2 lg:col-span-1"
         >
           <Search className="h-4 w-4" />
-          Cari
+          {t("search")}
         </button>
       </div>
 
@@ -107,7 +110,7 @@ export function FlightSearchPanel({
           role="alert"
           className="px-3 pb-1 pt-2 text-xs font-medium text-destructive"
         >
-          Bandara asal dan tujuan tidak boleh sama.
+          {t("sameAirports")}
         </p>
       )}
     </form>

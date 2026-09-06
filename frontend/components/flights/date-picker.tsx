@@ -11,6 +11,7 @@ import { MonthCalendar } from "@/components/ui/month-calendar";
 import { longDate, shortDate, weekdayName } from "@/lib/calendar";
 import { shortIDR } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * Departure date as a month calendar with the cheapest fare printed under each
@@ -43,6 +44,8 @@ export function DatePicker({
   originCityId: number | null;
   destinationCityId: number | null;
 }) {
+  const t = useTranslations("flights");
+
   const [open, setOpen] = useState(false);
   const [month, setMonth] = useState(() => value.slice(0, 7));
   const [prices, setPrices] = useState<Map<string, number | null>>(new Map());
@@ -138,7 +141,7 @@ export function DatePicker({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label="Pilih tanggal berangkat"
+          label={t("pickDepartDate")}
         >
           <MonthCalendar
             month={month}
@@ -175,12 +178,12 @@ export function DatePicker({
             loading={loading}
             footnote={
               routeKey === null
-                ? "Pilih rute yang dilayani untuk melihat harga per tanggal."
+                ? t("pickRouteFirst")
                 : priced.length > 0
-                  ? "Harga termurah per tanggal untuk rute yang dipilih. Tanggal tanpa harga tidak ada penerbangannya."
+                  ? t("cheapestByDate")
                   : loading
                     ? "Memuat harga..."
-                    : "Harga per tanggal belum tersedia untuk rute ini."
+                    : t("priceUnavailable")
             }
           />
         </AnchoredPanel>

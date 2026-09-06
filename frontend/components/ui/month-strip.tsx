@@ -1,5 +1,6 @@
-import Link from "next/link";
-import { MONTHS, MONTHS_SHORT } from "@/lib/destination-data";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
+import { monthNames } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -11,6 +12,9 @@ import { cn } from "@/lib/utils";
  *
  * Pass `hrefFor` to turn the cells into links; the strip then doubles as the
  * month switcher, which is what a reader tries to click anyway.
+ *
+ * `locale` datang dari pemanggil, bukan dari hook, supaya komponen ini tetap
+ * bisa dipakai komponen server maupun klien tanpa dua versi.
  */
 export function MonthStrip({
   active,
@@ -18,6 +22,7 @@ export function MonthStrip({
   activeLabel,
   inactiveLabel,
   hrefFor,
+  locale,
 }: {
   /** Month numbers, 1–12, to mark as the good ones. */
   active: number[];
@@ -26,13 +31,17 @@ export function MonthStrip({
   activeLabel: string;
   inactiveLabel: string;
   hrefFor?: (month: number) => string;
+  locale: string;
 }) {
+  const t = useTranslations("monthStrip");
   const set = new Set(active);
+  const long = monthNames(locale, "long");
+  const short = monthNames(locale, "short");
 
   return (
     <>
       <ul className="grid grid-cols-6 gap-2 sm:grid-cols-12">
-        {MONTHS_SHORT.map((short, i) => {
+        {short.map((abbrev, i) => {
           const month = i + 1;
           const good = set.has(month);
           const now = month === currentMonth;
@@ -49,13 +58,13 @@ export function MonthStrip({
               "transition hover:border-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2",
           );
 
-          const label = `${MONTHS[i]}: ${good ? activeLabel : inactiveLabel}${
-            now ? ", bulan berjalan" : ""
+          const label = `${long[i]}: ${good ? activeLabel : inactiveLabel}${
+            now ? `, ${t("currentMonthSuffix")}` : ""
           }`;
 
           const body = (
             <>
-              <span>{short}</span>
+              <span>{abbrev}</span>
               {/* Bentuk, bukan cuma warna: satu-satunya pembeda tadi adalah
                   isian brand, yang hilang begitu halaman dicetak hitam-putih
                   atau dibaca mata yang sulit membedakan warna. */}
@@ -64,7 +73,7 @@ export function MonthStrip({
           );
 
           return (
-            <li key={short}>
+            <li key={abbrev}>
               {hrefFor ? (
                 <Link
                   href={hrefFor(month)}
@@ -75,7 +84,7 @@ export function MonthStrip({
                   {body}
                 </Link>
               ) : (
-                <div title={MONTHS[i]} aria-label={label} className={className}>
+                <div title={long[i]} aria-label={label} className={className}>
                   {body}
                 </div>
               )}
@@ -108,7 +117,7 @@ export function MonthStrip({
             aria-hidden="true"
             className="h-4 w-4 rounded-md border border-border bg-card ring-2 ring-foreground/50 ring-offset-1 ring-offset-background"
           />
-          Bulan berjalan ({MONTHS[currentMonth - 1]})
+          {t("currentMonth", { month: long[currentMonth - 1] })}
         </li>
       </ul>
     </>

@@ -3,20 +3,18 @@
 import Image from "next/image";
 import { useState, useTransition } from "react";
 import { Heart, Loader2, Trash2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Review } from "@/lib/api";
 import { likeReview } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { Avatar } from "@/components/account/avatar";
 import { Rating } from "@/components/home/rating";
-import { relativeDate } from "@/lib/destination-data";
+import { relativeStamp } from "@/lib/destination-data";
 import { cn } from "@/lib/utils";
 
 type Sort = "recent" | "likes";
 
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "recent", label: "Terbaru" },
-  { value: "likes", label: "Paling disukai" },
-];
+const SORTS = ["recent", "likes"] as const satisfies readonly Sort[];
 
 export function ReviewList({
   reviews,
@@ -28,12 +26,13 @@ export function ReviewList({
   currentUserId: string | null;
   onDelete: (reviewId: string) => Promise<{ ok: boolean; message?: string }>;
 }) {
+  const t = useTranslations("destination");
   const [sort, setSort] = useState<Sort>("recent");
 
   if (reviews.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-        Belum ada ulasan. Jadilah yang pertama berbagi pengalaman di sini.
+        {t("reviewsEmpty")}
       </p>
     );
   }
@@ -50,18 +49,18 @@ export function ReviewList({
       <div className="mb-3 flex items-center gap-1">
         {SORTS.map((option) => (
           <button
-            key={option.value}
+            key={option}
             type="button"
-            aria-pressed={sort === option.value}
-            onClick={() => setSort(option.value)}
+            aria-pressed={sort === option}
+            onClick={() => setSort(option)}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
-              sort === option.value
+              sort === option
                 ? "bg-brand-700 text-white"
                 : "border border-border hover:bg-brand-tint/10",
             )}
           >
-            {option.label}
+            {option === "recent" ? t("sortRecent") : t("sortLikes")}
           </button>
         ))}
       </div>
@@ -97,8 +96,11 @@ function ReviewCard({
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [deleting, startDelete] = useTransition();
+  const t = useTranslations("destination");
+  const time = useTranslations("time");
 
-  const name = review.users?.full_name?.trim() || "Pengguna Jelantara";
+  const name = review.users?.full_name?.trim() || t("anonymousReviewer");
+  const stamp = relativeStamp(review.created_at);
 
   const toggleLike = async () => {
     if (busy) return;
@@ -116,7 +118,7 @@ function ReviewCard({
     } catch {
       setLiked(!next);
       setLikes((count) => count + (next ? -1 : 1));
-      setError("Masuk dulu untuk menyukai ulasan.");
+      setError(t("likeSignIn"));
     } finally {
       setBusy(false);
     }
@@ -136,7 +138,13 @@ function ReviewCard({
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <p className="truncate text-sm font-semibold">{name}</p>
             <p className="text-xs text-muted-foreground">
-              {relativeDate(review.created_at)}
+              {/* `relativeStamp` hanya menghitung selisihnya; bentuk
+                  jamaknya diserahkan ke ICU di kamus. */}
+              {stamp
+                ? "value" in stamp
+                  ? time(stamp.unit, { value: stamp.value })
+                  : time(stamp.unit)
+                : null}
             </p>
           </div>
           <Rating value={review.rating} className="mt-0.5" />
@@ -153,7 +161,7 @@ function ReviewCard({
         <div className="relative mt-3 aspect-[3/2] w-full max-w-xs overflow-hidden rounded-xl bg-muted">
           <Image
             src={review.photo_url}
-            alt={`Foto dari ulasan ${name}`}
+            alt={t("reviewPhotoAlt", { name })}
             fill
             sizes="320px"
             className="object-cover"
@@ -174,7 +182,7 @@ function ReviewCard({
         >
           <Heart className={cn("h-3.5 w-3.5", liked && "fill-current")} />
           <span className="tabular-nums">{likes}</span>
-          <span className="sr-only">suka</span>
+          <span className="sr-only">{t("like")}</span>
         </button>
 
         {mine && (
@@ -184,7 +192,7 @@ function ReviewCard({
             onClick={() =>
               startDelete(async () => {
                 const result = await onDelete(review.id);
-                if (!result.ok) setError(result.message ?? "Gagal menghapus.");
+                if (!result.ok) setError(result.message ?? t("deleteFailed"));
               })
             }
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
@@ -194,7 +202,7 @@ function ReviewCard({
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-            Hapus
+            {t("deleteReview")}
           </button>
         )}
       </div>

@@ -1,6 +1,7 @@
 "use client";
 
 import { Children, useState } from "react";
+import { useTranslations } from "next-intl";
 
 /** Rows revealed before the "show all" link kicks in. */
 const COLLAPSED = 8;
@@ -21,6 +22,8 @@ export function FilterGroup({
   children: React.ReactNode;
   collapsedCount?: number;
 }) {
+  const t = useTranslations("ui");
+
   const [expanded, setExpanded] = useState(false);
 
   const rows = Children.toArray(children);
@@ -39,8 +42,8 @@ export function FilterGroup({
           className="mt-1.5 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline"
         >
           {expanded
-            ? "Tampilkan lebih sedikit"
-            : `Tampilkan semua (${rows.length})`}
+            ? t("showFewer")
+            : t("showAll", { count: rows.length })}
         </button>
       )}
     </section>

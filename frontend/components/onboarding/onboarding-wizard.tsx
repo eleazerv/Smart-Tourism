@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { ArrowLeft, ArrowRight, Loader2, MapPin } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import {
@@ -11,7 +12,7 @@ import {
   TRAVEL_PARTIES,
   type TravelProfile,
 } from "@/lib/onboarding";
-import { completeOnboarding, skipOnboarding } from "@/app/onboarding/actions";
+import { completeOnboarding, skipOnboarding } from "@/app/[locale]/onboarding/actions";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Logo } from "@/components/home/logo";
@@ -19,22 +20,8 @@ import { InterestTiles } from "@/components/onboarding/interest-tiles";
 import { WelcomeStep } from "@/components/onboarding/welcome-step";
 import { cn } from "@/lib/utils";
 
-const STEPS = [
-  {
-    title: "Kenalan dulu",
-    subtitle: "Isi seadanya dulu — semuanya bisa diubah kapan saja.",
-  },
-  {
-    title: "Liburan seperti apa yang Anda suka?",
-    subtitle: `Pilih minimal ${MIN_INTERESTS} tema. Rekomendasi di beranda mengikuti pilihan ini.`,
-  },
-  {
-    title: "Selamat datang di Jelantara",
-    subtitle: "Empat menu yang akan paling sering Anda pakai.",
-  },
-] as const;
-
-const LAST = STEPS.length - 1;
+const TOTAL_STEPS = 3;
+const LAST = TOTAL_STEPS - 1;
 
 export function OnboardingWizard({
   initialName,
@@ -49,6 +36,7 @@ export function OnboardingWizard({
   selectedTagIds: string[];
   cities: string[];
 }) {
+  const t = useTranslations("onboarding");
   const router = useRouter();
   const [step, setStep] = useState(0);
   const [fullName, setFullName] = useState(initialName);
@@ -94,7 +82,7 @@ export function OnboardingWizard({
     startTransition(async () => {
       const result = await action();
       if (!result.ok) {
-        setError(result.message ?? "Gagal menyimpan. Coba lagi.");
+        setError(result.message ?? t("genericSaveFailed"));
         return;
       }
       leave();
@@ -118,8 +106,6 @@ export function OnboardingWizard({
     );
   };
 
-  const current = STEPS[step];
-
   return (
     <div className="flex min-h-svh flex-col">
       <header className="container-page flex h-16 shrink-0 items-center justify-between gap-4">
@@ -130,7 +116,7 @@ export function OnboardingWizard({
           disabled={pending}
           className="rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:bg-brand-tint/10 hover:text-brand-700 disabled:opacity-50"
         >
-          Lewati
+          {t("skip")}
         </button>
       </header>
 
@@ -138,7 +124,11 @@ export function OnboardingWizard({
           jadi posisinya sama persis di ketiga langkah, sepanjang apa pun isi
           kartu di bawahnya. */}
       <div className="container-page shrink-0 pb-4">
-        <StepProgress step={step} total={STEPS.length} />
+        <StepProgress
+          step={step}
+          total={TOTAL_STEPS}
+          label={t("progress", { step: step + 1, total: TOTAL_STEPS })}
+        />
       </div>
 
       {/* Tanpa bingkai maupun latar sendiri — isinya menyatu dengan halaman.
@@ -148,10 +138,12 @@ export function OnboardingWizard({
       <main className="container-page flex flex-1 py-8">
         <div className="m-auto w-full max-w-xl">
           <h1 className="font-display text-2xl font-bold tracking-tight">
-            {current.title}
+            {t(`step${step + 1}Title`)}
           </h1>
           <p className="mt-1.5 text-sm text-muted-foreground">
-            {current.subtitle}
+            {step === 1
+              ? t("step2Subtitle", { min: needed })
+              : t(`step${step + 1}Subtitle`)}
           </p>
 
           {/* `key` memaksa remount tiap langkah, supaya transisi masuknya
@@ -183,8 +175,8 @@ export function OnboardingWizard({
                 {allTags.length > 0 && (
                   <p className="text-sm text-muted-foreground" role="status">
                     {remaining > 0
-                      ? `Pilih ${remaining} tema lagi.`
-                      : `${tagIds.size} tema dipilih.`}
+                      ? t("pickMore", { count: remaining })
+                      : t("picked", { count: tagIds.size })}
                   </p>
                 )}
               </div>
@@ -218,7 +210,7 @@ export function OnboardingWizard({
               className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:invisible"
             >
               <ArrowLeft className="h-4 w-4" aria-hidden />
-              Kembali
+              {t("back")}
             </button>
 
             <button
@@ -230,11 +222,7 @@ export function OnboardingWizard({
               {pending && (
                 <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
               )}
-              {pending
-                ? "Menyimpan..."
-                : step === LAST
-                  ? "Mulai jelajahi"
-                  : "Lanjut"}
+              {pending ? t("saving") : step === LAST ? t("finish") : t("next")}
               {!pending && step < LAST && (
                 <ArrowRight className="h-4 w-4" aria-hidden />
               )}
@@ -248,10 +236,18 @@ export function OnboardingWizard({
 
 /** Sapaan di langkah terakhir memakai nama depan saja. */
 function firstName(name: string) {
-  return name.split(/\s+/)[0] || "traveler";
+  return name.split(/\s+/)[0] || "";
 }
 
-function StepProgress({ step, total }: { step: number; total: number }) {
+function StepProgress({
+  step,
+  total,
+  label,
+}: {
+  step: number;
+  total: number;
+  label: string;
+}) {
   return (
     <div
       className="flex gap-1.5"
@@ -259,7 +255,7 @@ function StepProgress({ step, total }: { step: number; total: number }) {
       aria-valuemin={1}
       aria-valuemax={total}
       aria-valuenow={step + 1}
-      aria-label={`Langkah ${step + 1} dari ${total}`}
+      aria-label={label}
     >
       {Array.from({ length: total }, (_, index) => (
         <span
@@ -293,18 +289,19 @@ function IdentityStep({
   party: string;
   onPartyChange: (value: string) => void;
 }) {
+  const t = useTranslations("onboarding");
   const touched = fullName.length > 0;
 
   return (
     <div className="space-y-5">
       <div className="grid gap-2">
-        <Label htmlFor="onboarding-name">Nama lengkap</Label>
+        <Label htmlFor="onboarding-name">{t("fullName")}</Label>
         <Input
           id="onboarding-name"
           autoComplete="name"
           autoFocus
           maxLength={NAME_MAX}
-          placeholder="Budi Santoso"
+          placeholder={t("fullNamePlaceholder")}
           value={fullName}
           onChange={(event) => onNameChange(event.target.value)}
           aria-invalid={touched && !nameValid}
@@ -312,15 +309,17 @@ function IdentityStep({
         />
         {touched && !nameValid && (
           <p className="text-xs text-destructive">
-            Nama harus {NAME_MIN}–{NAME_MAX} karakter.
+            {t("nameError", { min: NAME_MIN, max: NAME_MAX })}
           </p>
         )}
       </div>
 
       <div className="grid gap-2">
         <Label htmlFor="onboarding-city">
-          Kota asal{" "}
-          <span className="font-normal text-muted-foreground">(opsional)</span>
+          {t("homeCity")}{" "}
+          <span className="font-normal text-muted-foreground">
+            {t("optional")}
+          </span>
         </Label>
         <div className="relative">
           <MapPin
@@ -331,7 +330,7 @@ function IdentityStep({
             id="onboarding-city"
             list="onboarding-cities"
             autoComplete="address-level2"
-            placeholder="Yogyakarta"
+            placeholder={t("homeCityPlaceholder")}
             value={homeCity}
             onChange={(event) => onCityChange(event.target.value)}
             className="h-11 pl-9"
@@ -346,18 +345,20 @@ function IdentityStep({
 
       <fieldset className="space-y-2.5">
         <legend className="text-sm font-medium">
-          Biasanya pergi dengan siapa?{" "}
-          <span className="font-normal text-muted-foreground">(opsional)</span>
+          {t("partyQuestion")}{" "}
+          <span className="font-normal text-muted-foreground">
+            {t("optional")}
+          </span>
         </legend>
         <div className="flex flex-wrap gap-2">
           {TRAVEL_PARTIES.map((option) => {
-            const active = party === option.value;
+            const active = party === option;
             return (
               <button
-                key={option.value}
+                key={option}
                 type="button"
                 aria-pressed={active}
-                onClick={() => onPartyChange(active ? "" : option.value)}
+                onClick={() => onPartyChange(active ? "" : option)}
                 className={cn(
                   "rounded-full border px-4 py-2 text-sm font-medium transition",
                   active
@@ -365,7 +366,7 @@ function IdentityStep({
                     : "border-border bg-card hover:border-brand-700 hover:text-brand-700",
                 )}
               >
-                {option.label}
+                {t(`party.${option}`)}
               </button>
             );
           })}

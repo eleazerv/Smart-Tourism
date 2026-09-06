@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import type { User } from "@supabase/supabase-js";
 import { ChevronDown, Heart, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
@@ -32,7 +33,7 @@ const ITEM =
 /** Best available display name, without a round-trip to /api/auth/me. */
 function displayName(user: User) {
   const meta = user.user_metadata as { full_name?: string } | null;
-  return meta?.full_name?.trim() || user.email?.split("@")[0] || "Akun";
+  return meta?.full_name?.trim() || user.email?.split("@")[0] || "";
 }
 
 /**
@@ -51,6 +52,7 @@ function avatarOf(user: User) {
 }
 
 export function AccountMenu({ className }: { className?: string }) {
+  const t = useTranslations("account");
   const [user, setUser] = useState<User | null>(null);
   const [ready, setReady] = useState(false);
   const [confirming, setConfirming] = useState(false);
@@ -99,12 +101,13 @@ export function AccountMenu({ className }: { className?: string }) {
           className,
         )}
       >
-        Masuk
+        {t("signIn")}
       </Link>
     );
   }
 
-  const name = displayName(user);
+  // Kosong hanya kalau email pun tidak ada; label menu tetap perlu sesuatu.
+  const name = displayName(user) || t("profile");
   const avatarUrl = avatarOf(user);
 
   /**
@@ -153,7 +156,7 @@ export function AccountMenu({ className }: { className?: string }) {
       */}
       <DropdownMenu modal={false}>
         <DropdownMenuTrigger
-          aria-label={`Menu akun ${name}`}
+          aria-label={t("menuFor", { name })}
           className={cn(
             "group flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2.5 text-sm font-medium transition hover:border-brand-700/30 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 data-[state=open]:border-brand-700/30 data-[state=open]:bg-brand-tint/10",
             className,
@@ -183,19 +186,19 @@ export function AccountMenu({ className }: { className?: string }) {
           <DropdownMenuItem asChild className={ITEM}>
             <Link href="/akun">
               <UserRound />
-              Akun saya
+              {t("profile")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className={ITEM}>
             <Link href="/akun/pesanan">
               <Ticket />
-              Pesanan saya
+              {t("orders")}
             </Link>
           </DropdownMenuItem>
           <DropdownMenuItem asChild className={ITEM}>
             <Link href="/akun/minat">
               <Heart />
-              Minat perjalanan
+              {t("interests")}
             </Link>
           </DropdownMenuItem>
 
@@ -206,7 +209,7 @@ export function AccountMenu({ className }: { className?: string }) {
             className="cursor-pointer gap-2.5 rounded-lg px-2.5 py-2 text-sm text-destructive focus:bg-destructive/10 focus:text-destructive [&>svg]:text-destructive"
           >
             <LogOut />
-            Keluar
+            {t("signOut")}
           </DropdownMenuItem>
         </DropdownMenuContent>
       </DropdownMenu>
@@ -214,9 +217,9 @@ export function AccountMenu({ className }: { className?: string }) {
       <ConfirmDialog
         open={confirming}
         icon={<LogOut className="h-5 w-5" />}
-        title="Keluar dari akun?"
-        description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
-        confirmLabel={signingOut ? "Keluar..." : "Keluar"}
+        title={t("signOutTitle")}
+        description={t("signOutDescription")}
+        confirmLabel={signingOut ? t("signingOut") : t("signOut")}
         destructive
         pending={signingOut}
         onConfirm={signOut}

@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight, Package } from "lucide-react";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import { listTripBookings, type TripBookingSummary } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { formatDateTime } from "@/lib/format-date";
 import { formatIDR } from "@/lib/seeded-random";
+import { useLocale, useTranslations } from "next-intl";
 
 export function TripBookingList() {
+  const t = useTranslations("bookings");
+  const locale = useLocale();
+
   const [bookings, setBookings] = useState<TripBookingSummary[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -28,7 +32,7 @@ export function TripBookingList() {
   if (error) {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Daftar pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -53,11 +57,10 @@ export function TripBookingList() {
           <Package className="h-6 w-6" />
         </span>
         <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-          Belum ada paket trip
+          {t("emptyTrips")}
         </h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-          Rencana yang di-checkout lewat asisten AI akan muncul di sini,
-          lengkap dengan penerbangan dan penginapannya.
+          {t("emptyTripsBody")}
         </p>
         <Link
           href="/"
@@ -88,7 +91,9 @@ export function TripBookingList() {
                 {booking.booking_code}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Dipesan {formatDateTime(booking.created_at)}
+                {t("bookedAt", {
+                  date: formatDateTime(booking.created_at, locale),
+                })}
               </p>
             </div>
             <div className="shrink-0 text-right">

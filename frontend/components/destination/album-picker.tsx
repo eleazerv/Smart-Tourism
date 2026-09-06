@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Check, FolderPlus, Loader2, Plus } from "lucide-react";
 import {
   ApiError,
@@ -12,6 +12,7 @@ import {
 } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * The album chooser that follows a save.
@@ -34,6 +35,7 @@ export function AlbumPicker({
   destinationId: string;
   onClose: () => void;
 }) {
+  const t = useTranslations("albums");
   const [albums, setAlbums] = useState<Album[] | null>(null);
   const [checked, setChecked] = useState<Set<string>>(new Set());
   const [failed, setFailed] = useState(false);
@@ -89,7 +91,7 @@ export function AlbumPicker({
       router.refresh();
     } catch {
       setChecked(previous);
-      setError("Gagal memperbarui album. Coba lagi.");
+      setError(t("updateFailed"));
     } finally {
       setBusy(false);
     }
@@ -128,8 +130,8 @@ export function AlbumPicker({
       // saja tanpa ada yang sadar cabang ini ikut mati.
       setError(
         err instanceof ApiError && err.code === "album_exists"
-          ? "Sudah ada album dengan nama itu."
-          : "Album gagal dibuat. Coba lagi.",
+          ? t("nameTakenLong")
+          : t("createFailedRetry"),
       );
       setBusy(false);
     }
@@ -138,7 +140,7 @@ export function AlbumPicker({
   return (
     <div className="text-sm">
       <div className="flex items-baseline justify-between gap-3 px-1">
-        <p className="font-semibold">Simpan ke album</p>
+        <p className="font-semibold">{t("saveToAlbum")}</p>
         <button
           type="button"
           onClick={onClose}
@@ -148,12 +150,12 @@ export function AlbumPicker({
         </button>
       </div>
       <p className="mt-0.5 px-1 text-xs leading-relaxed text-muted-foreground">
-        Sudah tersimpan. Album hanya untuk memisahkan rencana — boleh dilewati.
+        {t("savedNote")}
       </p>
 
       {failed ? (
         <p className="mt-3 px-1 text-xs text-muted-foreground">
-          Daftar album belum bisa dimuat.
+          {t("albumsLoadFailed")}
         </p>
       ) : albums === null ? (
         <ul className="mt-3 space-y-1.5" aria-hidden="true">
@@ -197,7 +199,7 @@ export function AlbumPicker({
 
           {albums.length === 0 && (
             <li className="px-2 py-2 text-xs text-muted-foreground">
-              Belum ada album. Buat satu untuk memisahkan rencana liburan.
+              {t("noAlbumsYet")}
             </li>
           )}
         </ul>
@@ -224,7 +226,7 @@ export function AlbumPicker({
                   setName("");
                 }
               }}
-              placeholder="Nama album, mis. Bali 2026"
+              placeholder={t("albumNamePlaceholder")}
               className="min-w-0 flex-1 rounded-lg border border-border bg-background px-2.5 py-2 text-sm outline-none focus-visible:border-brand-700 focus-visible:ring-2 focus-visible:ring-brand-700/30"
             />
             <button
@@ -248,7 +250,7 @@ export function AlbumPicker({
             className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-medium text-brand-700 transition hover:bg-brand-tint/10"
           >
             <FolderPlus className="h-4 w-4 shrink-0" />
-            Album baru
+            {t("newAlbum")}
           </button>
         )}
       </div>

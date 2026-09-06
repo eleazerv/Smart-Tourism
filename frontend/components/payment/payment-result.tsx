@@ -1,7 +1,8 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * Kerangka halaman pendaratan setelah Xendit.
@@ -28,6 +29,7 @@ export function PaymentResult({
   children: React.ReactNode;
   primaryLabel: string;
 }) {
+  const t = useTranslations("destination");
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -65,7 +67,7 @@ export function PaymentResult({
               href="/"
               className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10"
             >
-              Kembali ke beranda
+              {t("backHome")}
             </Link>
           </div>
         </div>

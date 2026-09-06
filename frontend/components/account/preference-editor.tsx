@@ -3,8 +3,9 @@
 import { useState, useTransition } from "react";
 import { Check, Loader2 } from "lucide-react";
 import type { Tag } from "@/lib/api";
-import { savePreferences } from "@/app/akun/actions";
+import { savePreferences } from "@/app/[locale]/akun/actions";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 export function PreferenceEditor({
   allTags,
@@ -19,6 +20,7 @@ export function PreferenceEditor({
   const [saved, setSaved] = useState<Set<string>>(
     () => new Set(selected.map((tag) => tag.id)),
   );
+  const t = useTranslations("profile");
   const [message, setMessage] = useState<string | null>(null);
   const [pending, startTransition] = useTransition();
 
@@ -41,7 +43,7 @@ export function PreferenceEditor({
       const result = await savePreferences(ids);
       if (result.ok) {
         setSaved(new Set(ids));
-        setMessage("Minat tersimpan.");
+        setMessage(t("interestsSaved"));
       } else {
         setMessage(result.message);
       }
@@ -82,13 +84,13 @@ export function PreferenceEditor({
           className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {pending ? "Menyimpan..." : "Simpan minat"}
+          {pending ? t("saving") : t("saveInterests")}
         </button>
         <p className="text-sm text-muted-foreground" role="status">
           {message ??
             (chosen.size === 0
-              ? "Belum ada minat dipilih."
-              : `${chosen.size} minat dipilih.`)}
+              ? t("noInterests")
+              : t("interestsChosen", { count: chosen.size }))}
         </p>
       </div>
     </div>

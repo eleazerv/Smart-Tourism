@@ -7,6 +7,7 @@
  * keyed by the BPS code the API returns.
  */
 import type { HeatmapEntry } from "@/lib/api";
+import { formatNumber, intlLocale } from "@/lib/intl";
 
 /* ------------------------------------------------------------- regions --- */
 
@@ -26,7 +27,6 @@ export type Bounds = [[number, number], [number, number]];
 
 export type Region = {
   key: RegionKey | "semua";
-  label: string;
   /**
    * The box the camera fits when this region is picked. Bounds rather than a
    * centre-and-zoom pair so the fit follows the container: the same region
@@ -42,15 +42,15 @@ const INDONESIA: Bounds = [
 
 /** The whole country, and each island group the filter can zoom to. */
 export const REGIONS: Region[] = [
-  { key: "semua", label: "Semua daerah", bounds: INDONESIA },
-  { key: "sumatera", label: "Sumatera", bounds: [[-6.2, 94.8], [6.2, 109.5]] },
-  { key: "jawa", label: "Jawa", bounds: [[-8.9, 104.9], [-5.4, 114.8]] },
-  { key: "balinusa", label: "Bali & Nusa Tenggara", bounds: [[-11.0, 114.3], [-7.6, 125.3]] },
-  { key: "kalimantan", label: "Kalimantan", bounds: [[-4.4, 108.7], [4.5, 119.4]] },
-  { key: "sulawesi", label: "Sulawesi", bounds: [[-6.3, 118.4], [2.3, 125.6]] },
-  { key: "maluku", label: "Maluku", bounds: [[-8.6, 124.4], [3.1, 135.6]] },
-  { key: "papua", label: "Papua", bounds: [[-9.3, 130.4], [0.6, 141.3]] },
-  { key: "lainnya", label: "Lainnya", bounds: INDONESIA },
+  { key: "semua", bounds: INDONESIA },
+  { key: "sumatera", bounds: [[-6.2, 94.8], [6.2, 109.5]] },
+  { key: "jawa", bounds: [[-8.9, 104.9], [-5.4, 114.8]] },
+  { key: "balinusa", bounds: [[-11.0, 114.3], [-7.6, 125.3]] },
+  { key: "kalimantan", bounds: [[-4.4, 108.7], [4.5, 119.4]] },
+  { key: "sulawesi", bounds: [[-6.3, 118.4], [2.3, 125.6]] },
+  { key: "maluku", bounds: [[-8.6, 124.4], [3.1, 135.6]] },
+  { key: "papua", bounds: [[-9.3, 130.4], [0.6, 141.3]] },
+  { key: "lainnya", bounds: INDONESIA },
 ];
 
 export const NATIONAL_BOUNDS = INDONESIA;
@@ -59,9 +59,7 @@ export function regionBounds(key: RegionKey | "semua"): Bounds {
   return REGIONS.find((region) => region.key === key)?.bounds ?? INDONESIA;
 }
 
-export function regionLabel(key: RegionKey | "semua"): string {
-  return REGIONS.find((region) => region.key === key)?.label ?? "Semua daerah";
-}
+
 
 /* ----------------------------------------------------------- provinces --- */
 
@@ -132,13 +130,16 @@ export function regionOfProvince(code: string): RegionKey {
 
 /* -------------------------------------------------------------- levels --- */
 
-/** Five crowding bands, quiet first. Index doubles as the level value. */
-export const DENSITY_LEVELS = [
-  { label: "Sangat sepi", color: "#2dd4bf", blurb: "Nyaris tanpa antrean" },
-  { label: "Sepi", color: "#a3e635", blurb: "Masih longgar" },
-  { label: "Sedang", color: "#fbbf24", blurb: "Ramai di akhir pekan" },
-  { label: "Ramai", color: "#f97316", blurb: "Siapkan waktu ekstra" },
-  { label: "Sangat ramai", color: "#dc2626", blurb: "Padat sepanjang tahun" },
+/**
+ * Five crowding bands, quiet first. Index doubles as the level value, dan
+ * indeks itu pula kunci terjemahannya di namespace `map.density`.
+ */
+export const DENSITY_COLORS = [
+  "#2dd4bf",
+  "#a3e635",
+  "#fbbf24",
+  "#f97316",
+  "#dc2626",
 ] as const;
 
 export type DensityLevel = 0 | 1 | 2 | 3 | 4;
@@ -212,19 +213,26 @@ export function markerRadius(intensity: number): number {
   return MIN + Math.sqrt(Math.max(intensity, 0)) * (MAX - MIN);
 }
 
-const NUMBER_FORMAT = new Intl.NumberFormat("id-ID");
-
-export function formatVisitors(count: number): string {
-  return NUMBER_FORMAT.format(Math.round(count));
+export function formatVisitors(count: number, locale: string): string {
+  return formatNumber(Math.round(count), locale);
 }
 
-/** Compact form for the marker tooltips: 18,7 jt / 410 rb. */
-export function formatVisitorsShort(count: number): string {
-  if (count >= 1_000_000) return `${(count / 1_000_000).toFixed(1).replace(".", ",")} jt`;
-  if (count >= 1_000) return `${Math.round(count / 1_000)} rb`;
-  return NUMBER_FORMAT.format(count);
+/**
+ * Compact form for the marker tooltips: 18,7 jt / 410 rb / 18.7M / 410K.
+ *
+ * `Intl.NumberFormat` dengan notasi ringkas yang memilih singkatannya sendiri
+ * per bahasa, jadi tidak ada "jt" yang bocor ke versi Inggris.
+ */
+export function formatVisitorsShort(count: number, locale: string): string {
+  return new Intl.NumberFormat(intlLocale(locale), {
+    notation: "compact",
+    maximumFractionDigits: 1,
+  }).format(count);
 }
 
-export function formatShare(share: number): string {
-  return `${(share * 100).toFixed(1).replace(".", ",")}%`;
+export function formatShare(share: number, locale: string): string {
+  return new Intl.NumberFormat(intlLocale(locale), {
+    style: "percent",
+    maximumFractionDigits: 1,
+  }).format(share);
 }

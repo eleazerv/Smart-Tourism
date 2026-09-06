@@ -1,6 +1,7 @@
 "use client";
 
 import { Bookmark } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { useSaveToggle } from "@/lib/use-save-toggle";
 import { AlbumPicker } from "@/components/destination/album-picker";
 import {
@@ -26,6 +27,7 @@ export function SaveButton({
   name: string;
   initialSaved?: boolean;
 }) {
+  const t = useTranslations("destination");
   const { saved, pending, toggle, pickerOpen, closePicker } = useSaveToggle(
     destinationId,
     initialSaved,
@@ -53,14 +55,14 @@ export function SaveButton({
             saved && "fill-brand-700 text-brand-700",
           )}
         />
-        {saved ? `${name} tersimpan` : "Simpan"}
+        {saved ? t("savedName", { name }) : t("save")}
       </button>
 
       {pickerOpen && (
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label="Simpan ke album"
+          label={t("saveToAlbum")}
         >
           <AlbumPicker destinationId={destinationId} onClose={closePicker} />
         </AnchoredPanel>

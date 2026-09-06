@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight, BedDouble } from "lucide-react";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import { listAccommodationBookings, type AccommodationBookingSummary } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { formatDateTime } from "@/lib/format-date";
 import { formatIDR } from "@/lib/seeded-random";
+import { useLocale, useTranslations } from "next-intl";
 
 export function AccommodationBookingList() {
+  const t = useTranslations("bookings");
+  const locale = useLocale();
+
   const [bookings, setBookings] = useState<AccommodationBookingSummary[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -28,7 +32,7 @@ export function AccommodationBookingList() {
   if (error) {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Daftar pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -53,16 +57,16 @@ export function AccommodationBookingList() {
           <BedDouble className="h-6 w-6" />
         </span>
         <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-          Belum ada pesanan penginapan
+          {t("emptyStays")}
         </h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-          Penginapan yang Anda pesan langsung akan muncul di sini.
+          {t("emptyStaysBody")}
         </p>
         <Link
           href="/hotels"
           className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Cari penginapan
+          {t("findStay")}
         </Link>
       </div>
     );
@@ -89,7 +93,7 @@ export function AccommodationBookingList() {
               <div className="min-w-0 flex-1">
                 <p className="truncate text-sm font-semibold">{name}</p>
                 <p className="mt-0.5 truncate font-mono text-xs text-muted-foreground">
-                  {booking.booking_code} · Dipesan {formatDateTime(booking.created_at)}
+                  {booking.booking_code} · Dipesan {formatDateTime(booking.created_at, locale)}
                 </p>
               </div>
               <div className="shrink-0 text-right">

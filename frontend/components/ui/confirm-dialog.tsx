@@ -20,7 +20,7 @@ export function ConfirmDialog({
   icon,
   confirmLabel,
   confirmIcon,
-  cancelLabel = "Batal",
+  cancelLabel,
   destructive = false,
   pending = false,
   footnote,

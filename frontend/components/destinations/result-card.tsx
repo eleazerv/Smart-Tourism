@@ -1,8 +1,9 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, Eye, MapPin } from "lucide-react";
 import type { RecommendedDestination } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCount } from "@/lib/destination-data";
 import { FavoriteButton } from "@/components/home/favorite-button";
 import { Rating } from "@/components/home/rating";
@@ -44,6 +45,7 @@ export function ResultRow({
   saved,
   priority,
 }: ResultProps) {
+  const t = useTranslations("catalogue");
   const place = placeOf(destination);
   const href = `/destinations/${destination.id}`;
 
@@ -106,7 +108,7 @@ export function ResultRow({
             aria-hidden="true"
             className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700"
           >
-            Lihat detail
+            {t("viewDetail")}
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
           </span>
         </div>
@@ -185,6 +187,8 @@ function RatingLine({
   destination: RecommendedDestination;
   reviews?: number;
 }) {
+  const t = useTranslations("catalogue");
+
   // The API reports an unreviewed destination as 0 rather than null, and a
   // "0,0 — Biasa" line reads as a bad score instead of a missing one.
   const rating =
@@ -194,7 +198,7 @@ function RatingLine({
 
   if (rating === null) {
     return (
-      <p className="text-xs text-muted-foreground">Belum ada ulasan</p>
+      <p className="text-xs text-muted-foreground">{t("noReviews")}</p>
     );
   }
 
@@ -207,10 +211,13 @@ function RatingLine({
 }
 
 function ViewCount({ destination }: { destination: RecommendedDestination }) {
+  const t = useTranslations("catalogue");
+  const locale = useLocale();
+
   return (
     <p className="flex items-center gap-1 text-xs text-muted-foreground">
       <Eye className="h-3 w-3 shrink-0" />
-      {formatCount(destination.view_count)} kali dilihat
+      {t("viewCount", { count: formatCount(destination.view_count, locale) })}
     </p>
   );
 }

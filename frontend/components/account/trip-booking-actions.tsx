@@ -1,13 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { CreditCard, Loader2, XCircle } from "lucide-react";
 import { payTripBooking, cancelTripBooking } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useTranslations } from "next-intl";
 
 export function TripBookingActions({ bookingId }: { bookingId: string }) {
+  const ui = useTranslations("ui");
+  const t = useTranslations("bookings");
+
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, startPaying] = useTransition();
@@ -23,7 +27,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
         const result = await payTripBooking(bookingId, { token });
         window.location.assign(result.invoice_url);
       } catch {
-        setError("Gagal membuka pembayaran. Coba lagi sebentar lagi.");
+        setError(t("openPaymentFailed"));
         router.refresh();
       }
     });
@@ -37,7 +41,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
       try {
         await cancelTripBooking(bookingId, { token });
       } catch {
-        setError("Gagal membatalkan pesanan.");
+        setError(t("cancelFailed"));
       }
       setConfirming(false);
       router.refresh();
@@ -60,7 +64,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
           ) : (
             <CreditCard className="h-4 w-4" />
           )}
-          {paying ? "Membuka pembayaran..." : "Bayar sekarang"}
+          {paying ? t("openingPayment") : t("payNow")}
         </button>
 
         <button
@@ -70,7 +74,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
           className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           <XCircle className="h-4 w-4" />
-          Batalkan
+          {t("cancel")}
         </button>
       </div>
 
@@ -83,10 +87,10 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
       <ConfirmDialog
         open={confirming}
         icon={<XCircle className="h-5 w-5" />}
-        title="Batalkan paket trip ini?"
-        description="Semua penerbangan dan penginapan yang ditahan dalam paket ini akan dilepas kembali. Tindakan ini tidak bisa dibatalkan."
+        title={t("cancelTripTitle")}
+        description={t("cancelTripBody")}
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}
-        cancelLabel="Kembali"
+        cancelLabel={ui("back")}
         destructive
         pending={cancelling}
         onConfirm={cancel}

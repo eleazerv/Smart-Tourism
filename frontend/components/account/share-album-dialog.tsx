@@ -1,10 +1,11 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Check, Copy, Link2, Loader2, Share2, X } from "lucide-react";
 import { shareAlbum, unshareAlbum, type Album } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
+import { useTranslations } from "next-intl";
 
 /**
  * Turns an album's public link on and off.
@@ -25,6 +26,7 @@ export function ShareAlbumDialog({
   album: Album;
   onClose: () => void;
 }) {
+  const t = useTranslations("albums");
   const [token, setToken] = useState<string | null>(album.share_token);
   const [busy, setBusy] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -60,7 +62,7 @@ export function ShareAlbumDialog({
       setToken(await shareAlbum(album.id, { token: auth }));
       router.refresh();
     } catch {
-      setError("Tautan gagal dibuat. Coba lagi.");
+      setError(t("createLinkFailed"));
     } finally {
       setBusy(false);
     }
@@ -79,7 +81,7 @@ export function ShareAlbumDialog({
       setCopied(false);
       router.refresh();
     } catch {
-      setError("Tautan gagal dicabut. Coba lagi.");
+      setError(t("revokeFailed"));
     } finally {
       setBusy(false);
     }
@@ -94,7 +96,7 @@ export function ShareAlbumDialog({
     } catch {
       // Clipboard is blocked on insecure origins and in some embedded
       // browsers; the field below is selectable, so this is not a dead end.
-      setError("Tidak bisa menyalin otomatis. Salin manual dari kolom di atas.");
+      setError(t("copyFailed"));
     }
   };
 
@@ -103,7 +105,7 @@ export function ShareAlbumDialog({
       className="fixed inset-0 z-50 grid place-items-center bg-brand-900/50 p-4 backdrop-blur-sm"
       role="dialog"
       aria-modal="true"
-      aria-label={`Bagikan album ${album.name}`}
+      aria-label={t("shareAlbum", { name: album.name })}
       onClick={(event) => {
         if (event.target === event.currentTarget) onClose();
       }}
@@ -119,17 +121,17 @@ export function ShareAlbumDialog({
             </span>
             <div className="min-w-0">
               <h2 className="truncate font-display text-base font-bold tracking-tight">
-                Bagikan {album.name}
+                {t("shareHeading", { name: album.name })}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {album.item_count} destinasi
+                {t("itemCount", { count: album.item_count })}
               </p>
             </div>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup"
+            aria-label={t("close")}
             className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -139,10 +141,7 @@ export function ShareAlbumDialog({
         {token === null ? (
           <>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Album ini masih pribadi. Membuat tautan berarti siapa pun yang
-              memegangnya bisa melihat daftar destinasinya tanpa perlu akun —
-              tapi tidak bisa mengubah apa pun, dan namamu tidak ikut
-              ditampilkan.
+              {t("privateNote")}
             </p>
             <button
               type="button"
@@ -155,13 +154,13 @@ export function ShareAlbumDialog({
               ) : (
                 <Link2 className="h-4 w-4" />
               )}
-              {busy ? "Membuat tautan..." : "Buat tautan"}
+              {busy ? t("creatingLink") : t("createLink")}
             </button>
           </>
         ) : (
           <>
             <p className="mt-4 text-sm leading-relaxed text-muted-foreground">
-              Siapa pun yang punya tautan ini bisa melihat isinya.
+              {t("linkNote")}
             </p>
 
             <div className="mt-3 flex items-center gap-2">
@@ -181,7 +180,7 @@ export function ShareAlbumDialog({
                 ) : (
                   <Copy className="h-3.5 w-3.5" />
                 )}
-                {copied ? "Tersalin" : "Salin"}
+                {copied ? t("copied") : t("copy")}
               </button>
             </div>
 
@@ -192,11 +191,10 @@ export function ShareAlbumDialog({
               className="mt-3 inline-flex items-center gap-1.5 text-sm font-semibold text-destructive underline-offset-4 hover:underline disabled:opacity-60"
             >
               {busy && <Loader2 className="h-3.5 w-3.5 animate-spin" />}
-              Cabut tautan
+              {t("revoke")}
             </button>
             <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-              Mencabut membuat tautan ini langsung mati. Membagikan lagi nanti
-              menghasilkan tautan baru, bukan yang ini.
+              {t("revokeNote")}
             </p>
           </>
         )}

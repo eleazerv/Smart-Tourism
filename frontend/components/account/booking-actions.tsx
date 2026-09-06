@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { CreditCard, Loader2, XCircle } from "lucide-react";
 import { cancelBooking, payBooking } from "@/lib/booking-actions";
 import {
@@ -9,6 +9,7 @@ import {
   payStayBooking,
 } from "@/lib/stay-booking-actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { useTranslations } from "next-intl";
 
 /**
  * Pay or release one pending booking, flight or accommodation.
@@ -26,10 +27,13 @@ export function BookingActions({
   bookingId: string;
   kind?: "flight" | "stay";
 }) {
+  const t = useTranslations("bookings");
+  const ui = useTranslations("ui");
+
   const actions =
     kind === "stay"
-      ? { pay: payStayBooking, cancel: cancelStayBooking, held: "Kamar" }
-      : { pay: payBooking, cancel: cancelBooking, held: "Kursi" };
+      ? { pay: payStayBooking, cancel: cancelStayBooking, held: t("rooms") }
+      : { pay: payBooking, cancel: cancelBooking, held: t("seats") };
 
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -77,7 +81,7 @@ export function BookingActions({
           ) : (
             <CreditCard className="h-4 w-4" />
           )}
-          {paying ? "Membuka pembayaran..." : "Bayar sekarang"}
+          {paying ? t("openingPayment") : t("payNow")}
         </button>
 
         <button
@@ -87,7 +91,7 @@ export function BookingActions({
           className="inline-flex items-center gap-2 rounded-full border border-border px-5 py-2.5 text-sm font-medium transition hover:bg-muted disabled:cursor-not-allowed disabled:opacity-60"
         >
           <XCircle className="h-4 w-4" />
-          Batalkan
+          {t("cancel")}
         </button>
       </div>
 
@@ -100,10 +104,10 @@ export function BookingActions({
       <ConfirmDialog
         open={confirming}
         icon={<XCircle className="h-5 w-5" />}
-        title="Batalkan pesanan ini?"
-        description={`${actions.held} yang ditahan akan dilepas kembali dan tautan pembayarannya dimatikan. Tindakan ini tidak bisa dibatalkan.`}
+        title={t("cancelTitle")}
+        description={t("cancelBody", { held: actions.held })}
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}
-        cancelLabel="Kembali"
+        cancelLabel={ui("back")}
         destructive
         pending={cancelling}
         onConfirm={cancel}

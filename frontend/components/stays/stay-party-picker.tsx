@@ -7,6 +7,7 @@ import {
   useAnchoredPanel,
 } from "@/components/ui/anchored-panel";
 import { MAX_GUESTS, MAX_ROOMS } from "@/lib/stays-search";
+import { useTranslations } from "next-intl";
 
 /**
  * Guests and rooms behind one field, opened by tapping anywhere on it — the
@@ -33,6 +34,8 @@ export function StayPartyPicker({
   rooms: number | null;
   onChange: (next: { guests: number; rooms: number }) => void;
 }) {
+  const t = useTranslations("stays");
+
   // The panel always has concrete numbers to step from; the trigger keeps
   // showing a placeholder until one of them is actually committed.
   const shownGuests = guests ?? START_GUESTS;
@@ -60,7 +63,7 @@ export function StayPartyPicker({
         <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Tamu &amp; kamar
+            {t("guestsAndRooms")}
           </span>
           <span
             className={
@@ -69,14 +72,16 @@ export function StayPartyPicker({
                 : "block truncate text-sm font-semibold text-muted-foreground"
             }
           >
-            {chosen ? `${shownGuests} tamu, ${shownRooms} kamar` : "Pilih tamu"}
+            {chosen
+              ? t("guestsRooms", { guests: shownGuests, rooms: shownRooms })
+              : t("pickGuests")}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
             {!chosen
-              ? "Belum diisi"
+              ? t("notSet")
               : shownRooms > 1
-                ? `${Math.ceil(shownGuests / shownRooms)} tamu per kamar`
-                : "Satu kamar"}
+                ? t("perRoom", { count: Math.ceil(shownGuests / shownRooms) })
+                : t("oneRoom")}
           </span>
         </span>
       </button>
@@ -85,10 +90,10 @@ export function StayPartyPicker({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label="Atur jumlah tamu dan kamar"
+          label={t("setGuestsRooms")}
         >
           <Stepper
-            label="Tamu"
+            label={t("guestLabel")}
             hint="Termasuk anak-anak"
             value={shownGuests}
             min={1}
@@ -97,8 +102,8 @@ export function StayPartyPicker({
           />
           <div className="my-2 border-t border-border" />
           <Stepper
-            label="Kamar"
-            hint="Kapasitas dihitung per kamar"
+            label={t("roomLabel")}
+            hint={t("capacityHint")}
             value={shownRooms}
             min={1}
             max={MAX_ROOMS}
@@ -125,6 +130,8 @@ function Stepper({
   max: number;
   onChange: (value: number) => void;
 }) {
+  const ui = useTranslations("ui");
+
   return (
     <div className="flex items-center justify-between gap-3 px-1 py-1.5">
       <div className="min-w-0">
@@ -146,7 +153,7 @@ function Stepper({
           {value}
         </span>
         <Round
-          label={`Tambah ${label.toLowerCase()}`}
+          label={ui("increase", { label: label.toLowerCase() })}
           disabled={value >= max}
           onClick={() => onChange(value + 1)}
         >

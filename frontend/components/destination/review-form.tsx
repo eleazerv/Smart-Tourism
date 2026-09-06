@@ -1,8 +1,9 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useRef, useState, useTransition } from "react";
 import { ImagePlus, Loader2, Star, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 export type ReviewResult = { ok: boolean; message?: string };
@@ -20,6 +21,7 @@ export function ReviewForm({
   /** `submitReview` bound to this destination. */
   action: (formData: FormData) => Promise<ReviewResult>;
 }) {
+  const t = useTranslations("destination");
   const [rating, setRating] = useState(0);
   const [hover, setHover] = useState(0);
   const [photoName, setPhotoName] = useState<string | null>(null);
@@ -33,13 +35,13 @@ export function ReviewForm({
     return (
       <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-5 sm:flex-row sm:items-center sm:justify-between">
         <p className="text-sm text-muted-foreground">
-          Sudah pernah ke sini? Masuk untuk membagikan penilaian Anda.
+          {t("reviewSignInPrompt")}
         </p>
         <Link
           href="/auth/login"
           className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Masuk
+          {t("reviewSignIn")}
         </Link>
       </div>
     );
@@ -48,7 +50,7 @@ export function ReviewForm({
   const submit = (formData: FormData) => {
     if (rating === 0) {
       setOk(false);
-      setMessage("Pilih bintang dulu, dari 1 sampai 5.");
+      setMessage(t("pickStars"));
       return;
     }
     formData.set("rating", String(rating));
@@ -57,7 +59,7 @@ export function ReviewForm({
       const result = await action(formData);
       setOk(result.ok);
       setMessage(
-        result.message ?? (result.ok ? "Ulasan Anda terkirim." : "Gagal mengirim ulasan."),
+        result.message ?? (result.ok ? t("reviewSent") : t("reviewFailed")),
       );
       if (result.ok) {
         formRef.current?.reset();
@@ -78,11 +80,11 @@ export function ReviewForm({
       action={submit}
       className="rounded-2xl border border-border bg-card p-5"
     >
-      <p className="text-sm font-semibold">Bagikan pengalaman Anda</p>
+      <p className="text-sm font-semibold">{t("reviewFormHeading")}</p>
 
       <div
         role="radiogroup"
-        aria-label="Penilaian bintang"
+        aria-label={t("starGroup")}
         className="mt-2 flex items-center gap-1"
         onMouseLeave={() => setHover(0)}
       >
@@ -92,7 +94,7 @@ export function ReviewForm({
             type="button"
             role="radio"
             aria-checked={rating === star}
-            aria-label={`${star} bintang`}
+            aria-label={t("starLabel", { star })}
             onMouseEnter={() => setHover(star)}
             onClick={() => {
               setRating(star);
@@ -112,27 +114,27 @@ export function ReviewForm({
         ))}
         {rating > 0 && (
           <span className="ml-2 text-sm text-muted-foreground">
-            {rating} dari 5
+            {t("ratingOutOf", { rating })}
           </span>
         )}
       </div>
 
       <label htmlFor="review-comment" className="sr-only">
-        Komentar
+        {t("comment")}
       </label>
       <textarea
         id="review-comment"
         name="comment"
         rows={4}
         maxLength={2000}
-        placeholder="Ceritakan kapan Anda datang, seramai apa, dan apa yang perlu disiapkan pengunjung berikutnya."
+        placeholder={t("commentPlaceholder")}
         className="mt-3 w-full resize-y rounded-xl border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700"
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
         <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-brand-tint/10">
           <ImagePlus className="h-4 w-4" />
-          Tambah foto
+          {t("addPhoto")}
           <input
             ref={fileRef}
             type="file"
@@ -151,7 +153,7 @@ export function ReviewForm({
             <button
               type="button"
               onClick={clearPhoto}
-              aria-label="Hapus foto terpilih"
+              aria-label={t("removePhoto")}
               className="shrink-0 rounded-full p-0.5 hover:bg-background"
             >
               <X className="h-3 w-3" />
@@ -165,7 +167,7 @@ export function ReviewForm({
           className="ml-auto inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
-          {pending ? "Mengirim..." : "Kirim ulasan"}
+          {pending ? t("sendingReview") : t("submitReview")}
         </button>
       </div>
 

@@ -1,3 +1,4 @@
+import { intlLocale } from "@/lib/intl";
 /**
  * URL state for `/flights`, following the same link-driven pattern as the
  * destination and hotel searches.
@@ -16,11 +17,11 @@ import type { FlightOption } from "@/lib/api";
 export const PAGE_SIZE = 10;
 
 export const SORTS = [
-  { key: "termurah", label: "Harga terendah" },
-  { key: "tercepat", label: "Durasi tersingkat" },
-  { key: "pagi", label: "Berangkat paling awal" },
-  { key: "malam", label: "Berangkat paling akhir" },
-  { key: "tiba", label: "Tiba paling awal" },
+  { key: "termurah" },
+  { key: "tercepat" },
+  { key: "pagi" },
+  { key: "malam" },
+  { key: "tiba" },
 ] as const;
 
 export type SortKey = (typeof SORTS)[number]["key"];
@@ -28,10 +29,10 @@ const SORT_KEYS = SORTS.map((sort) => sort.key) as readonly SortKey[];
 
 /** Departure windows, in minutes past midnight. */
 export const TIME_WINDOWS = [
-  { key: "pagi", label: "Pagi", hint: "05.00 – 11.00", from: 300, to: 660 },
-  { key: "siang", label: "Siang", hint: "11.00 – 15.00", from: 660, to: 900 },
-  { key: "sore", label: "Sore", hint: "15.00 – 19.00", from: 900, to: 1140 },
-  { key: "malam", label: "Malam", hint: "19.00 – 05.00", from: 1140, to: 1740 },
+  { key: "pagi", hint: "05.00 – 11.00", from: 300, to: 660 },
+  { key: "siang", hint: "11.00 – 15.00", from: 660, to: 900 },
+  { key: "sore", hint: "15.00 – 19.00", from: 900, to: 1140 },
+  { key: "malam", hint: "19.00 – 05.00", from: 1140, to: 1740 },
 ] as const;
 
 export type TimeWindowKey = (typeof TIME_WINDOWS)[number]["key"];
@@ -289,10 +290,10 @@ export function availableCount(views: FlightView[]): number {
 }
 
 /** "Sab, 30 Agu 2026" */
-export function formatDateLabel(iso: string): string {
+export function formatDateLabel(iso: string, locale: string): string {
   const date = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString(intlLocale(locale), {
     weekday: "short",
     day: "numeric",
     month: "short",

@@ -1,3 +1,4 @@
+import { useTranslations } from "next-intl";
 import { API_BASE_URL } from "@/lib/api";
 
 /**
@@ -5,9 +6,11 @@ import { API_BASE_URL } from "@/lib/api";
  * endpoint degrades a single rail instead of taking down the whole page.
  */
 export function LoadError({ what }: { what: string }) {
+  const t = useTranslations("common");
+
   return (
     <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-      {what} belum bisa dimuat. Pastikan API di {API_BASE_URL} sedang berjalan.
+      {t("loadError", { what, url: API_BASE_URL })}
     </p>
   );
 }

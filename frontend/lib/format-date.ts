@@ -1,8 +1,10 @@
+import { intlLocale } from "@/lib/intl";
+
 /** "27 Agu 2026, 21.05" — timestamps the API returns with a zone. */
-export function formatDateTime(iso: string): string {
+export function formatDateTime(iso: string, locale: string): string {
   const date = new Date(iso);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleString("id-ID", {
+  return date.toLocaleString(intlLocale(locale), {
     day: "numeric",
     month: "short",
     year: "numeric",

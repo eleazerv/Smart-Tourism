@@ -6,15 +6,13 @@ import { Loader2, Trash2 } from "lucide-react";
 import type { AccommodationReview } from "@/lib/api";
 import { Avatar } from "@/components/account/avatar";
 import { Rating } from "@/components/home/rating";
-import { relativeDate } from "@/lib/destination-data";
+import { useTranslations } from "next-intl";
+import { relativeStamp } from "@/lib/destination-data";
 import { cn } from "@/lib/utils";
 
 type Sort = "recent" | "rating";
 
-const SORTS: { value: Sort; label: string }[] = [
-  { value: "recent", label: "Terbaru" },
-  { value: "rating", label: "Nilai tertinggi" },
-];
+const SORTS = ["recent", "rating"] as const satisfies readonly Sort[];
 
 /**
  * Accommodation reviews. Deliberately not the destination `ReviewList`: these
@@ -32,11 +30,12 @@ export function StayReviewList({
   onDelete: (reviewId: string) => Promise<{ ok: boolean; message?: string }>;
 }) {
   const [sort, setSort] = useState<Sort>("recent");
+  const t = useTranslations("stays");
 
   if (reviews.length === 0) {
     return (
       <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-        Belum ada ulasan untuk penginapan ini. Jadilah yang pertama.
+        {t("stayReviewsEmpty")}
       </p>
     );
   }
@@ -53,18 +52,18 @@ export function StayReviewList({
       <div className="mb-3 flex items-center gap-1">
         {SORTS.map((option) => (
           <button
-            key={option.value}
+            key={option}
             type="button"
-            aria-pressed={sort === option.value}
-            onClick={() => setSort(option.value)}
+            aria-pressed={sort === option}
+            onClick={() => setSort(option)}
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
-              sort === option.value
+              sort === option
                 ? "bg-brand-700 text-white"
                 : "border border-border hover:bg-brand-tint/10",
             )}
           >
-            {option.label}
+            {option === "recent" ? t("sortRecent") : t("sortRating")}
           </button>
         ))}
       </div>
@@ -94,9 +93,14 @@ function StayReviewCard({
   onDelete: (reviewId: string) => Promise<{ ok: boolean; message?: string }>;
 }) {
   const [error, setError] = useState<string | null>(null);
+  const t = useTranslations("stays");
+  const time = useTranslations("time");
+  const destination = useTranslations("destination");
+  const stamp = relativeStamp(review.created_at);
+
   const [deleting, startDelete] = useTransition();
 
-  const name = review.users?.full_name?.trim() || "Pengguna Jelantara";
+  const name = review.users?.full_name?.trim() || destination("anonymousReviewer");
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4">
@@ -112,7 +116,12 @@ function StayReviewCard({
           <div className="flex flex-wrap items-baseline justify-between gap-x-3">
             <p className="truncate text-sm font-semibold">{name}</p>
             <p className="text-xs text-muted-foreground">
-              {relativeDate(review.created_at)}
+              {/* Selisih waktunya dihitung di sini, bentuk jamaknya di kamus. */}
+              {stamp
+                ? "value" in stamp
+                  ? time(stamp.unit, { value: stamp.value })
+                  : time(stamp.unit)
+                : null}
             </p>
           </div>
           <Rating value={review.rating} className="mt-0.5" />
@@ -129,7 +138,7 @@ function StayReviewCard({
         <div className="relative mt-3 aspect-[3/2] w-full max-w-xs overflow-hidden rounded-xl bg-muted">
           <Image
             src={review.photo_url}
-            alt={`Foto dari ulasan ${name}`}
+            alt={t("reviewPhotoAlt", { name })}
             fill
             sizes="320px"
             className="object-cover"
@@ -145,7 +154,8 @@ function StayReviewCard({
             onClick={() =>
               startDelete(async () => {
                 const result = await onDelete(review.id);
-                if (!result.ok) setError(result.message ?? "Gagal menghapus.");
+                if (!result.ok)
+                  setError(result.message ?? destination("deleteFailed"));
               })
             }
             className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium text-destructive transition hover:bg-destructive/10 disabled:opacity-60"
@@ -155,7 +165,7 @@ function StayReviewCard({
             ) : (
               <Trash2 className="h-3.5 w-3.5" />
             )}
-            Hapus
+            {destination("deleteReview")}
           </button>
         </div>
       )}

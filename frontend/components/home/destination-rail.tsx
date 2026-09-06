@@ -1,4 +1,5 @@
 import { cacheLife } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { getAllDestinations, type Destination } from "@/lib/api";
 import { DestinationCard } from "@/components/home/destination-card";
 import { LoadError } from "@/components/home/load-error";
@@ -21,13 +22,16 @@ async function loadPopular() {
 }
 
 export async function DestinationRail() {
+  const t = await getTranslations("home.popular");
+  const common = await getTranslations("common");
+
   let destinations: Destination[];
   try {
     destinations = await loadPopular();
   } catch {
     return (
-      <Section title="Destinasi populer di Indonesia">
-        <LoadError what="Destinasi populer" />
+      <Section title={t("title")}>
+        <LoadError what={t("loadErrorWhat")} />
       </Section>
     );
   }
@@ -39,10 +43,10 @@ export async function DestinationRail() {
 
   return (
     <Section
-      title="Destinasi populer di Indonesia"
-      action={{ label: "Jelajahi semua", href: "/destinations" }}
+      title={t("title")}
+      action={{ label: common("exploreAll"), href: "/destinations" }}
     >
-      <Rail label="Destinasi populer">
+      <Rail label={t("railLabel")}>
         {destinations.map((destination) => (
           <DestinationCard
             key={destination.id}

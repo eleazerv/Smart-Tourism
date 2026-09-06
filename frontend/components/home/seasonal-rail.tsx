@@ -1,12 +1,13 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
+import { getLocale, getTranslations } from "next-intl/server";
 import {
   getSeasonalRecommendations,
   type SeasonalRecommendations,
 } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
-import { dominantSeason, monthName } from "@/lib/recommendations-data";
+import { dominantSeason } from "@/lib/recommendations-data";
 import { LoadError } from "@/components/home/load-error";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
@@ -19,13 +20,17 @@ async function loadSeasonal() {
 }
 
 export async function SeasonalRail() {
+  const t = await getTranslations("home.seasonal");
+  const common = await getTranslations("common");
+  const locale = await getLocale();
+
   let recommendations: SeasonalRecommendations;
   try {
     recommendations = await loadSeasonal();
   } catch {
     return (
-      <Section title="Cocok dikunjungi bulan ini">
-        <LoadError what="Rekomendasi musiman" />
+      <Section title={t("titleFallback")}>
+        <LoadError what={t("loadErrorWhat")} />
       </Section>
     );
   }
@@ -33,22 +38,22 @@ export async function SeasonalRail() {
   const { month, season_info, destinations } = recommendations;
   if (destinations.length === 0) return null;
 
-  const name = monthName(month);
+  // Nama bulan diambil dari Intl, bukan daftar kata di `recommendations-data`,
+  // supaya ikut bahasa yang sedang dipakai tanpa kamus tambahan.
+  const name = new Intl.DateTimeFormat(locale, { month: "long" }).format(
+    new Date(Date.UTC(2000, month - 1, 1)),
+  );
   // Nationally the months split across two seasons, so the honest summary is
   // the one most provinces are in — not a list of every season on the map.
   const season = dominantSeason(season_info);
 
   return (
     <Section
-      title={`Cocok dikunjungi di ${name}`}
-      subtitle={
-        season
-          ? `Sebagian besar provinsi sedang musim ${season}`
-          : undefined
-      }
-      action={{ label: "Lihat semua", href: "/recommendations" }}
+      title={t("title", { month: name })}
+      subtitle={season ? t("season", { season }) : undefined}
+      action={{ label: common("seeAll"), href: "/recommendations" }}
     >
-      <Rail label={`Rekomendasi ${name}`}>
+      <Rail label={t("railLabel", { month: name })}>
         {destinations.map((destination) => (
           <Link
             key={destination.id}

@@ -1,5 +1,6 @@
 "use client";
 
+import { useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -8,10 +9,11 @@ import {
   AuthLink,
   AuthSubmit,
 } from "@/components/auth/auth-shell";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 
 export function LoginForm({ redirectTo }: { redirectTo?: string }) {
+  const t = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [error, setError] = useState<string | null>(null);
@@ -36,9 +38,7 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
       router.refresh();
     } catch (error: unknown) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Terjadi kesalahan. Coba lagi.",
+        error instanceof Error ? error.message : t("genericError"),
       );
     } finally {
       setIsLoading(false);
@@ -48,12 +48,12 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
   return (
     <form onSubmit={handleLogin} className="flex flex-col gap-5">
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="nama@email.com"
+          placeholder={t("emailPlaceholder")}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -62,8 +62,10 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
       <div className="grid gap-2">
         <div className="flex items-center justify-between">
-          <Label htmlFor="password">Kata sandi</Label>
-          <AuthLink href="/auth/forgot-password">Lupa kata sandi?</AuthLink>
+          <Label htmlFor="password">{t("password")}</Label>
+          <AuthLink href="/auth/forgot-password">
+            {t("login.forgotPassword")}
+          </AuthLink>
         </div>
         <Input
           id="password"
@@ -77,8 +79,8 @@ export function LoginForm({ redirectTo }: { redirectTo?: string }) {
 
       <AuthError message={error} />
 
-      <AuthSubmit pending={isLoading} pendingLabel="Memproses...">
-        Masuk
+      <AuthSubmit pending={isLoading} pendingLabel={t("processing")}>
+        {t("login.submit")}
       </AuthSubmit>
     </form>
   );

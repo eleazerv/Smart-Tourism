@@ -1,7 +1,9 @@
 import { cacheLife } from "next/cache";
 import { CalendarClock, PartyPopper } from "lucide-react";
+import { getLocale, getTranslations } from "next-intl/server";
 import { getEvents, type EventItem } from "@/lib/api";
-import { MONTHS, formatDate } from "@/lib/destination-data";
+import { formatDate } from "@/lib/destination-data";
+import { monthName } from "@/lib/intl";
 
 const SHOWN = 4;
 
@@ -23,6 +25,9 @@ export async function NearbyEvents({
   cityId: number;
   cityName: string;
 }) {
+  const t = await getTranslations("destination");
+  const locale = await getLocale();
+
   let events: EventItem[];
   try {
     events = await loadEvents(cityId);
@@ -41,10 +46,10 @@ export async function NearbyEvents({
     <section id="agenda" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
         <PartyPopper className="h-5 w-5 text-brand-700" />
-        Agenda di {cityName}
+        {t("eventsHeading", { city: cityName })}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
-        Acara yang bisa Anda selipkan ke dalam rencana perjalanan.
+        {t("eventsSubtitle")}
       </p>
 
       <ul className="mt-3 grid gap-3 sm:grid-cols-2">
@@ -55,8 +60,10 @@ export async function NearbyEvents({
           >
             <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">
               <CalendarClock className="h-3.5 w-3.5" />
-              {formatDate(event.start_date) ??
-                (event.month ? MONTHS[event.month - 1] : "Tanggal menyusul")}
+              {formatDate(event.start_date, locale) ??
+                (event.month
+                  ? monthName(event.month, locale)
+                  : t("eventsDateTba"))}
             </p>
             <p className="mt-1 font-semibold">{event.name}</p>
             {event.description && (

@@ -1,13 +1,17 @@
 "use client";
 
+import { useLocale, useTranslations } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { localisedPath } from "@/i18n/routing";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthError, AuthSubmit } from "@/components/auth/auth-shell";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
 
 export function SignUpForm() {
+  const t = useTranslations("auth");
+  const locale = useLocale();
   const [fullName, setFullName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -23,7 +27,7 @@ export function SignUpForm() {
     setError(null);
 
     if (password !== repeatPassword) {
-      setError("Konfirmasi kata sandi tidak cocok.");
+      setError(t("signUp.mismatch"));
       setIsLoading(false);
       return;
     }
@@ -36,7 +40,10 @@ export function SignUpForm() {
           // Tautan konfirmasi mendarat langsung di personalisasi -- itu layar
           // pertama akun baru. Proxy tetap mengarahkan ke sana dari mana pun
           // seandainya tautannya dibuka lewat jalur lain.
-          emailRedirectTo: `${window.location.origin}/onboarding`,
+          emailRedirectTo: `${window.location.origin}${localisedPath(
+            "/onboarding",
+            locale,
+          )}`,
           // Carried into the profile row, and used for the header greeting
           // before /api/auth/me has been called.
           data: { full_name: fullName.trim() },
@@ -46,9 +53,7 @@ export function SignUpForm() {
       router.push("/auth/sign-up-success");
     } catch (error: unknown) {
       setError(
-        error instanceof Error
-          ? error.message
-          : "Terjadi kesalahan. Coba lagi.",
+        error instanceof Error ? error.message : t("genericError"),
       );
     } finally {
       setIsLoading(false);
@@ -58,12 +63,12 @@ export function SignUpForm() {
   return (
     <form onSubmit={handleSignUp} className="flex flex-col gap-5">
       <div className="grid gap-2">
-        <Label htmlFor="full-name">Nama lengkap</Label>
+        <Label htmlFor="full-name">{t("signUp.fullName")}</Label>
         <Input
           id="full-name"
           type="text"
           autoComplete="name"
-          placeholder="Budi Santoso"
+          placeholder={t("signUp.fullNamePlaceholder")}
           required
           value={fullName}
           onChange={(e) => setFullName(e.target.value)}
@@ -71,12 +76,12 @@ export function SignUpForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="email">Email</Label>
+        <Label htmlFor="email">{t("email")}</Label>
         <Input
           id="email"
           type="email"
           autoComplete="email"
-          placeholder="nama@email.com"
+          placeholder={t("emailPlaceholder")}
           required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
@@ -84,7 +89,7 @@ export function SignUpForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="password">Kata sandi</Label>
+        <Label htmlFor="password">{t("password")}</Label>
         <Input
           id="password"
           type="password"
@@ -97,7 +102,7 @@ export function SignUpForm() {
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="repeat-password">Ulangi kata sandi</Label>
+        <Label htmlFor="repeat-password">{t("signUp.repeatPassword")}</Label>
         <Input
           id="repeat-password"
           type="password"
@@ -110,8 +115,8 @@ export function SignUpForm() {
 
       <AuthError message={error} />
 
-      <AuthSubmit pending={isLoading} pendingLabel="Membuat akun...">
-        Daftar
+      <AuthSubmit pending={isLoading} pendingLabel={t("signUp.creating")}>
+        {t("signUp.submit")}
       </AuthSubmit>
     </form>
   );

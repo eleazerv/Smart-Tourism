@@ -1,5 +1,6 @@
 import { Star } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * Five-star rating in the conventional rating gold, deliberately outside the
@@ -18,6 +19,7 @@ export function Rating({
   reviews?: number;
   className?: string;
 }) {
+  const t = useTranslations("destination");
   return (
     <div className={cn("flex items-center gap-1.5 text-xs", className)}>
       <span className="font-semibold tabular-nums">
@@ -26,7 +28,7 @@ export function Rating({
       <span
         className="flex items-center gap-0.5"
         role="img"
-        aria-label={`Peringkat ${value} dari 5`}
+        aria-label={t("ratingAria", { value })}
       >
         {[0, 1, 2, 3, 4].map((i) => {
           // Rounded so float noise like 70.00000000000001% stays out of the DOM.

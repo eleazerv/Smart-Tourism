@@ -1,6 +1,7 @@
 "use client";
 
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { ArrowUpDown } from "lucide-react";
 
 export type SortOption = {
@@ -21,13 +22,15 @@ export function SortSelect({
   /** Unique per page, so two sorts on one screen keep distinct labels. */
   id?: string;
 }) {
+  const t = useTranslations("ui");
+
   const router = useRouter();
 
   return (
     <div className="relative inline-flex items-center gap-2 rounded-full border border-border bg-card pl-3.5 pr-2 text-sm shadow-sm">
       <ArrowUpDown className="h-4 w-4 shrink-0 text-muted-foreground" />
       <label htmlFor={id} className="sr-only">
-        Urutkan hasil
+        {t("sortResults")}
       </label>
       <select
         id={id}

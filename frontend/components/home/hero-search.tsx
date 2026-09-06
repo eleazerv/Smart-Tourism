@@ -1,9 +1,10 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { BedDouble, Clock, Map, Mountain, Plane, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { quickLinks } from "@/lib/home-data";
 
 const icons = {
@@ -15,6 +16,7 @@ const icons = {
 } as const;
 
 export function HeroSearch() {
+  const t = useTranslations("home");
   const router = useRouter();
   const [query, setQuery] = useState("");
 
@@ -30,11 +32,10 @@ export function HeroSearch() {
     <section>
       <div className="container-page py-10 sm:py-14">
         <h1 className="text-center font-display text-4xl font-bold tracking-tight sm:text-5xl">
-          Ke mana?
+          {t("heroTitle")}
         </h1>
         <p className="mx-auto mt-3 max-w-xl text-center text-sm text-muted-foreground">
-          Cari destinasi, lihat kepadatannya, lalu pilih waktu kunjungan yang
-          paling nyaman.
+          {t("heroSubtitle")}
         </p>
 
         <form
@@ -43,25 +44,25 @@ export function HeroSearch() {
         >
           <Search className="h-5 w-5 shrink-0 text-muted-foreground" />
           <label htmlFor="hero-search" className="sr-only">
-            Cari destinasi, kota, atau taman nasional
+            {t("searchLabel")}
           </label>
           <input
             id="hero-search"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Destinasi, kota, atau taman nasional..."
+            placeholder={t("searchPlaceholder")}
             className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
           />
           <button
             type="submit"
             className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
           >
-            Cari
+            {t("searchButton")}
           </button>
         </form>
 
         <nav
-          aria-label="Pintasan"
+          aria-label={t("shortcuts")}
           className="mt-5 flex flex-wrap justify-center gap-2"
         >
           {quickLinks.map((link) => {
@@ -73,7 +74,7 @@ export function HeroSearch() {
                 className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 hover:text-brand-700"
               >
                 <Icon className="h-4 w-4" />
-                {link.label}
+                {t(`quick.${link.key}`)}
               </Link>
             );
           })}

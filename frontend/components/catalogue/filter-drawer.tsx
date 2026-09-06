@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import { useTranslations } from "next-intl";
 import { SlidersHorizontal, X } from "lucide-react";
 
 /**
@@ -19,6 +20,8 @@ export function FilterDrawer({
   children: React.ReactNode;
 }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("ui");
+
 
   // A sheet over the results should not let the page scroll behind it, and
   // Escape is the expected way out.
@@ -47,7 +50,7 @@ export function FilterDrawer({
         className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition hover:border-brand-700 hover:bg-brand-tint/10 lg:hidden"
       >
         <SlidersHorizontal className="h-4 w-4" />
-        Filter
+        {t("filter")}
         {activeCount > 0 && (
           <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-700 px-1.5 text-[11px] font-bold text-white">
             {activeCount}
@@ -59,14 +62,14 @@ export function FilterDrawer({
         <div className="fixed inset-0 z-[60] lg:hidden">
           <button
             type="button"
-            aria-label="Tutup filter"
+            aria-label={t("closeFilter")}
             onClick={() => setOpen(false)}
             className="absolute inset-0 h-full w-full bg-brand-900/50 backdrop-blur-sm"
           />
           <div
             role="dialog"
             aria-modal="true"
-            aria-label="Saring hasil"
+            aria-label={t("filterSheet")}
             className="absolute inset-x-0 bottom-0 max-h-[85vh] overflow-y-auto rounded-t-3xl border-t border-border bg-background p-5 pb-8 shadow-pop"
           >
             <span
@@ -77,7 +80,7 @@ export function FilterDrawer({
               <button
                 type="button"
                 onClick={() => setOpen(false)}
-                aria-label="Tutup filter"
+                aria-label={t("closeFilter")}
                 className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-muted"
               >
                 <X className="h-5 w-5" />

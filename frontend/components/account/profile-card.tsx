@@ -1,6 +1,7 @@
 import type { Profile } from "@/lib/api";
 import { Avatar } from "@/components/account/avatar";
 import { NameEditor } from "@/components/account/name-editor";
+import { useTranslations } from "next-intl";
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -19,6 +20,8 @@ export function ProfileCard({
   profile: Profile | null;
   fallbackEmail: string;
 }) {
+  const t = useTranslations("profile");
+
   const email = profile?.email ?? fallbackEmail;
   const name = profile?.full_name?.trim() || email.split("@")[0];
   const joined = profile?.created_at
@@ -54,8 +57,7 @@ export function ProfileCard({
         // The API detail (a missing `users` row behind a 404) stays in the logs;
         // the visitor only needs to know the extra fields are unavailable.
         <p className="text-sm text-muted-foreground">
-          Sebagian detail profil belum tersedia. Coba muat ulang halaman ini
-          nanti.
+          {t("partial")}
         </p>
       )}
     </div>

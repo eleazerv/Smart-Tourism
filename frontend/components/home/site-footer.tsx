@@ -1,8 +1,56 @@
-import Link from "next/link";
-import { footerColumns } from "@/lib/home-data";
+"use client";
+
+/**
+ * Komponen klien, walaupun tidak ada satu pun interaksi di dalamnya.
+ *
+ * Alasannya prerender: footer ini ikut dirender di cangkang statis setiap
+ * halaman, termasuk rute berparameter dinamis seperti /destinations/[id].
+ * Sebagai komponen server, `useTranslations` di sana membaca bahasa dari
+ * request — data runtime, yang membatalkan prerender seluruh cangkang. Di
+ * sisi klien ia membacanya dari NextIntlClientProvider, dan tidak ada yang
+ * perlu dibaca saat request.
+ */
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Logo } from "@/components/home/logo";
 
+/**
+ * Struktur tautan pindah ke sini dari `lib/home-data.ts`: labelnya sekarang
+ * kunci terjemahan, bukan teks, dan menyimpannya sebagai data mentah hanya
+ * memaksa komponen ini menebak namespace mana yang harus dipakai.
+ */
+const COLUMNS = [
+  {
+    titleKey: "platform",
+    links: [
+      { key: "destinations", href: "/destinations" },
+      { key: "hotels", href: "/hotels" },
+      { key: "flights", href: "/flights" },
+      { key: "map", href: "/peta" },
+      { key: "bestTime", href: "/recommendations" },
+    ],
+  },
+  {
+    titleKey: "information",
+    links: [
+      { key: "about", href: "/about" },
+      { key: "contact", href: "/kontak" },
+    ],
+  },
+] as const;
+
 export function SiteFooter() {
+  const t = useTranslations("footer");
+  const nav = useTranslations("nav");
+
+  // `bestTime`, `about`, dan `contact` hanya ada di kamus footer; sisanya
+  // memakai label navigasi yang sama dengan header supaya tidak pernah
+  // berbeda satu sama lain.
+  const label = (key: string) =>
+    key === "bestTime" || key === "about" || key === "contact"
+      ? t(key)
+      : nav(key);
+
   return (
     <footer className="border-t border-border bg-muted">
       <div className="container-page py-12">
@@ -12,16 +60,15 @@ export function SiteFooter() {
           <div className="md:col-span-4">
             <Logo />
             <p className="mt-4 max-w-xs text-sm leading-relaxed text-muted-foreground">
-              Platform pengelolaan kunjungan wisata berbasis data untuk mencegah
-              overtourism di destinasi Indonesia.
+              {t("tagline")}
             </p>
           </div>
 
           <div className="grid grid-cols-2 gap-8 md:col-span-5 md:col-start-8">
-            {footerColumns.map((column) => (
-              <div key={column.title}>
+            {COLUMNS.map((column) => (
+              <div key={column.titleKey}>
                 <h3 className="text-xs font-semibold uppercase tracking-wider text-muted-foreground">
-                  {column.title}
+                  {t(column.titleKey)}
                 </h3>
                 <ul className="mt-4 space-y-2.5">
                   {column.links.map((link) => (
@@ -30,7 +77,7 @@ export function SiteFooter() {
                         href={link.href}
                         className="text-sm text-foreground/80 underline-offset-4 transition-colors hover:text-brand-700 hover:underline"
                       >
-                        {link.label}
+                        {label(link.key)}
                       </Link>
                     </li>
                   ))}
@@ -43,12 +90,9 @@ export function SiteFooter() {
         <div className="mt-10 flex flex-col items-start gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              &copy; 2026 Jelantara. Seluruh hak cipta dilindungi.
+              {t("copyright", { year: "2026" })}
             </p>
-            <p className="text-xs text-muted-foreground">
-              Sumber data: BPS, BMKG, dan pencatatan pengelola destinasi.
-              Prediksi kepadatan bersifat estimasi.
-            </p>
+            <p className="text-xs text-muted-foreground">{t("dataSource")}</p>
           </div>
         </div>
       </div>

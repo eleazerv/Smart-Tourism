@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import { Check, Share2 } from "lucide-react";
+import { useTranslations } from "next-intl";
 
 /**
  * Native share sheet where the browser has one, clipboard copy everywhere
  * else — the pattern every booking site falls back to on desktop.
  */
 export function ShareButton({ name }: { name: string }) {
+  const t = useTranslations("destination");
   const [copied, setCopied] = useState(false);
 
   const share = async () => {
@@ -40,7 +42,7 @@ export function ShareButton({ name }: { name: string }) {
       ) : (
         <Share2 className="h-4 w-4" />
       )}
-      {copied ? "Tautan disalin" : "Bagikan"}
+      {copied ? t("linkCopied") : t("share")}
     </button>
   );
 }

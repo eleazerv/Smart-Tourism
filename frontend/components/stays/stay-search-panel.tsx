@@ -1,7 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Search } from "lucide-react";
 import { StayCityPicker } from "@/components/stays/stay-city-picker";
 import { StayDatePicker } from "@/components/stays/stay-date-picker";
@@ -28,6 +29,8 @@ export function StaySearchPanel({
   state: StaySearchState;
   cities: CityFacet[];
 }) {
+  const t = useTranslations("stays");
+
   const router = useRouter();
 
   const [cityId, setCityId] = useState(state.cityId);
@@ -101,7 +104,7 @@ export function StaySearchPanel({
           className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 sm:col-span-2 lg:col-span-1"
         >
           <Search className="h-4 w-4" />
-          Cari
+          {t("search")}
         </button>
       </div>
     </form>

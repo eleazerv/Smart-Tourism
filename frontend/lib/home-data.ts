@@ -29,39 +29,19 @@ export function coverImage(
 }
 
 export type QuickLink = {
-  label: string;
+  /** Kunci di namespace `home.quick`, bukan teks jadi. */
+  key: "destinations" | "hotels" | "flights" | "map" | "quietTime";
   icon: "destination" | "hotel" | "flight" | "crowd" | "time";
   href: string;
 };
 
 /** Shortcuts under the search field: what to browse, and the two data tools. */
 export const quickLinks: QuickLink[] = [
-  { label: "Destinasi", icon: "destination", href: "/destinations" },
-  { label: "Hotel", icon: "hotel", href: "/hotels" },
-  { label: "Tiket Pesawat", icon: "flight", href: "/flights" },
-  { label: "Peta Wisata", icon: "crowd", href: "/peta" },
-  { label: "Waktu Sepi", icon: "time", href: "/recommendations" },
+  { key: "destinations", icon: "destination", href: "/destinations" },
+  { key: "hotels", icon: "hotel", href: "/hotels" },
+  { key: "flights", icon: "flight", href: "/flights" },
+  { key: "map", icon: "crowd", href: "/peta" },
+  { key: "quietTime", icon: "time", href: "/recommendations" },
 ];
 
-export const footerColumns: {
-  title: string;
-  links: { label: string; href: string }[];
-}[] = [
-  {
-    title: "Platform",
-    links: [
-      { label: "Destinasi", href: "/destinations" },
-      { label: "Hotel", href: "/hotels" },
-      { label: "Tiket Pesawat", href: "/flights" },
-      { label: "Peta Wisata", href: "/peta" },
-      { label: "Waktu Terbaik", href: "/recommendations" },
-    ],
-  },
-  {
-    title: "Informasi",
-    links: [
-      { label: "Tentang Kami", href: "/about" },
-      { label: "Hubungi Kami", href: "/kontak" },
-    ],
-  },
-];
+

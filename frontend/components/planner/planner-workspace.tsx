@@ -39,6 +39,7 @@ import {
 } from "@/lib/api";
 import type { StopPatch } from "@/components/planner/plan-panel";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
+import { useTranslations } from "next-intl";
 
 /** Id sementara untuk pesan pengguna yang belum punya baris di database. */
 function draftId() {
@@ -47,6 +48,7 @@ function draftId() {
 
 export function PlannerWorkspace() {
   const [rooms, setRooms] = useState<ChatRoom[]>([]);
+  const t = useTranslations("planner");
   const [roomId, setRoomId] = useState<string | null>(null);
   const [tripId, setTripId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
@@ -84,12 +86,12 @@ export function PlannerWorkspace() {
       try {
         setRooms(await listChatRooms(await auth()));
       } catch (err) {
-        report(err, "Daftar percakapan belum bisa dimuat.");
+        report(err, t("roomsLoadFailed"));
       } finally {
         setLoading(false);
       }
     })();
-  }, [auth, report]);
+  }, [auth, report, t]);
 
 
 useEffect(() => {
@@ -111,7 +113,7 @@ useEffect(() => {
       try {
         const room = await getChatRoom(id, await auth());
         if (!room) {
-          setNotice("Percakapan itu sudah tidak ada.");
+          setNotice(t("roomGone"));
           setRoomId(null);
           return;
         }
@@ -119,10 +121,10 @@ useEffect(() => {
         setMessages(room.messages);
         setCanvas(room.canvas);
       } catch (err) {
-        report(err, "Percakapan itu belum bisa dibuka.");
+        report(err, t("roomOpenFailed"));
       }
     },
-    [auth, report],
+    [auth, report, t],
   );
 
   async function newRoom() {
@@ -132,7 +134,7 @@ useEffect(() => {
       setRooms((prev) => [room, ...prev]);
       await openRoom(room.id);
     } catch (err) {
-      report(err, "Percakapan baru gagal dibuat.");
+      report(err, t("roomCreateFailed"));
     } finally {
       setBusy(false);
     }
@@ -182,7 +184,7 @@ useEffect(() => {
           // Panel menyusul lewat balasan gilirannya sendiri.
         }
       } catch (err) {
-        report(err, "Percakapan baru gagal dibuat.");
+        report(err, t("roomCreateFailed"));
         setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
         setSending(false);
         return;
@@ -209,7 +211,7 @@ useEffect(() => {
       // supaya label di sidebar tidak tertinggal "Percakapan baru".
       setRooms(await listChatRooms(await auth()));
     } catch (err) {
-      report(err, "Pesan gagal diproses. Coba lagi sebentar lagi.");
+      report(err, t("messageFailed"));
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     } finally {
       setSending(false);
@@ -237,10 +239,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => addTripItem(tripId, destinationId, token),
-        "Destinasi itu gagal ditambahkan.",
+        t("addDestinationFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const pickAccommodation = useCallback(
@@ -254,10 +256,10 @@ useEffect(() => {
             { accommodation_id: accommodationId },
             token,
           ),
-        "Penginapan itu gagal dipilih.",
+        t("stayPickFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const patchStop = useCallback(
@@ -265,10 +267,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => updateTripStop(tripId, stopId, patch, token),
-        "Perubahan itu gagal disimpan.",
+        t("saveChangeFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropStop = useCallback(
@@ -276,10 +278,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripStop(tripId, stopId, token),
-        "Kota itu gagal dihapus.",
+        t("removeCityFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const pickFlight = useCallback(
@@ -297,10 +299,17 @@ useEffect(() => {
       const existing = stop?.trip_flights.find((f) => f.flight_role === role);
       if (existing && !existing.booked_at) {
         const current = existing.flight_options;
-        const where = stop?.cities?.name ?? "kota ini";
-        const what = role === "arrival" ? "masuk ke" : "keluar dari";
+        const where = stop?.cities?.name ?? t("thisCity");
+        const what = role === "arrival" ? t("intoCity") : t("outOfCity");
         const ok = window.confirm(
-          `Penerbangan ${what} ${where} sudah diisi ${current?.airline} ${current?.flight_number}. Ganti dengan ${option.airline} ${option.flight_number}?`,
+          t("replaceFlight", {
+            what,
+            where,
+            airline: current?.airline ?? "",
+            number: current?.flight_number ?? "",
+            newAirline: option.airline,
+            newNumber: option.flight_number,
+          }),
         );
         if (!ok) return;
       }
@@ -313,10 +322,10 @@ useEffect(() => {
             { flight_option_id: option.id, flight_role: role },
             token,
           ),
-        "Penerbangan itu gagal dipakai. Kursinya mungkin sudah habis.",
+        t("flightPickFailed"),
       );
     },
-    [canvas, mutate, tripId],
+    [canvas, mutate, t, tripId],
   );
 
   const patchItem = useCallback(
@@ -324,10 +333,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => updateTripItem(tripId, itemId, patch, token),
-        "Perubahan itu gagal disimpan.",
+        t("saveChangeFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropItem = useCallback(
@@ -335,10 +344,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripItem(tripId, itemId, token),
-        "Destinasi itu gagal dihapus.",
+        t("removeDestinationFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropFlight = useCallback(
@@ -346,10 +355,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripFlight(tripId, stopId, role, token),
-        "Penerbangan itu gagal dilepas.",
+        t("flightDropFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   /**
@@ -382,16 +391,18 @@ async function checkout(passengerNames: string[]) {
             onClick={newRoom}
           >
             <Plus className="h-4 w-4" />
-            Rencana baru
+            {t("newPlan")}
           </Button>
         </div>
         <nav className="flex-1 space-y-0.5 overflow-y-auto px-2 pb-3">
           {loading && (
-            <p className="px-2 py-3 text-xs text-muted-foreground">Memuat…</p>
+            <p className="px-2 py-3 text-xs text-muted-foreground">
+              {t("loading")}
+            </p>
           )}
           {!loading && rooms.length === 0 && (
             <p className="px-2 py-3 text-xs leading-relaxed text-muted-foreground">
-              Belum ada percakapan. Buat satu untuk mulai.
+              {t("noRooms")}
             </p>
           )}
           {rooms.map((room) => (

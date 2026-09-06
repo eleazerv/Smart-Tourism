@@ -1,15 +1,19 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight, Ticket } from "lucide-react";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import { listFlightBookings, type FlightBookingSummary } from "@/lib/api";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
 import { formatDateTime } from "@/lib/format-date";
 import { formatIDR } from "@/lib/seeded-random";
+import { useLocale, useTranslations } from "next-intl";
 
 export function FlightBookingList() {
+  const t = useTranslations("bookings");
+  const locale = useLocale();
+
   const [bookings, setBookings] = useState<FlightBookingSummary[] | null>(null);
   const [error, setError] = useState(false);
 
@@ -28,7 +32,7 @@ export function FlightBookingList() {
   if (error) {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Daftar pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -53,16 +57,16 @@ export function FlightBookingList() {
           <Ticket className="h-6 w-6" />
         </span>
         <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-          Belum ada pesanan penerbangan
+          {t("emptyFlights")}
         </h2>
         <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-          Tiket yang Anda pesan langsung akan muncul di sini.
+          {t("emptyFlightsBody")}
         </p>
         <Link
           href="/flights"
           className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Cari penerbangan
+          {t("findFlight")}
         </Link>
       </div>
     );
@@ -87,7 +91,9 @@ export function FlightBookingList() {
                 {booking.booking_code}
               </p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                Dipesan {formatDateTime(booking.created_at)}
+                {t("bookedAt", {
+                  date: formatDateTime(booking.created_at, locale),
+                })}
               </p>
             </div>
             <div className="shrink-0 text-right">

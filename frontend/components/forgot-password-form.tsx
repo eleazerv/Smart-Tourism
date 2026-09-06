@@ -1,12 +1,18 @@
 "use client";
 
+import { useLocale } from "next-intl";
 import { createClient } from "@/lib/supabase/client";
+import { localisedPath } from "@/i18n/routing";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthError, AuthSubmit } from "@/components/auth/auth-shell";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 export function ForgotPasswordForm() {
+  const locale = useLocale();
+  const t = useTranslations("password");
+  const auth = useTranslations("auth");
   const [email, setEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
@@ -22,7 +28,10 @@ export function ForgotPasswordForm() {
       // This URL must also be listed under Authentication > URL Configuration
       // in the Supabase dashboard.
       const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${window.location.origin}/auth/update-password`,
+        redirectTo: `${window.location.origin}${localisedPath(
+          "/auth/update-password",
+          locale,
+        )}`,
       });
       if (error) throw error;
       setSuccess(true);
@@ -30,7 +39,7 @@ export function ForgotPasswordForm() {
       setError(
         error instanceof Error
           ? error.message
-          : "Terjadi kesalahan. Coba lagi.",
+          : auth("genericError"),
       );
     } finally {
       setIsLoading(false);
@@ -40,8 +49,7 @@ export function ForgotPasswordForm() {
   if (success) {
     return (
       <p className="text-sm text-muted-foreground">
-        Jika email tersebut terdaftar, kami sudah mengirimkan tautan untuk
-        mengatur ulang kata sandi. Periksa kotak masuk Anda.
+        {t("resetSent")}
       </p>
     );
   }

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { RotateCcw, Star } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import {
@@ -23,11 +24,13 @@ export function FilterGroups({
   tags: Tag[];
   provinces: ProvinceFacet[];
 }) {
+  const t = useTranslations("catalogue");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-base font-bold tracking-tight">
-          Saring hasil
+          {t("filterHeading")}
         </h2>
         {hasFilters(state) && (
           <Link
@@ -35,12 +38,12 @@ export function FilterGroups({
             className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline"
           >
             <RotateCcw className="h-3 w-3" />
-            Atur ulang
+            {t("reset")}
           </Link>
         )}
       </div>
 
-      <FilterGroup title="Jenis destinasi">
+      <FilterGroup title={t("typeGroup")}>
         {tags.map((tag) => (
           <CheckRow
             key={tag.id}
@@ -52,7 +55,7 @@ export function FilterGroups({
       </FilterGroup>
 
       {provinces.length > 1 && (
-        <FilterGroup title="Provinsi">
+        <FilterGroup title={t("provinceGroup")}>
           {provinces.map((province) => (
             <CheckRow
               key={province.id}
@@ -69,7 +72,7 @@ export function FilterGroups({
         </FilterGroup>
       )}
 
-      <FilterGroup title="Rating pengunjung">
+      <FilterGroup title={t("ratingGroup")}>
         {RATING_STEPS.map((step) => (
           <CheckRow
             key={step}
@@ -80,7 +83,7 @@ export function FilterGroups({
             label={
               <span className="inline-flex items-center gap-1.5">
                 <Star className="h-3.5 w-3.5 fill-amber-400 text-amber-400" />
-                {formatRating(step)} ke atas
+                {t("ratingAndUp", { rating: formatRating(step) })}
               </span>
             }
             checked={state.minRating === step}
@@ -89,8 +92,7 @@ export function FilterGroups({
       </FilterGroup>
 
       <p className="rounded-xl bg-muted/60 px-3 py-2.5 text-[11px] leading-snug text-muted-foreground">
-        Rating dihitung dari ulasan pengunjung yang sudah masuk. Destinasi baru
-        yang belum punya ulasan tidak muncul saat filter rating aktif.
+        {t("ratingNote")}
       </p>
     </div>
   );

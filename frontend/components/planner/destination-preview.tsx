@@ -15,7 +15,7 @@
 
 import { useCallback, useEffect, useId, useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   ArrowUpRight,
   CalendarRange,
@@ -33,7 +33,8 @@ import { Button } from "@/components/ui/button";
 import { Rating } from "@/components/home/rating";
 import { Avatar } from "@/components/account/avatar";
 import { coverImage } from "@/lib/home-data";
-import { MONTHS, MONTHS_SHORT, relativeDate } from "@/lib/destination-data";
+import { relativeStamp } from "@/lib/destination-data";
+import { joinList, monthNames } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 import {
   getDestination,
@@ -41,6 +42,7 @@ import {
   type DestinationDetail,
   type Review,
 } from "@/lib/api";
+import { useLocale, useTranslations } from "next-intl";
 
 type SeasonWindow = { months: number[]; seasons: string[] };
 
@@ -84,6 +86,7 @@ export function DestinationPreview({
   onAdd,
   onClose,
 }: Props) {
+  const t = useTranslations("planner");
   const [detail, setDetail] = useState<DestinationDetail | null>(null);
   const [reviews, setReviews] = useState<Review[]>([]);
   const [season, setSeason] = useState<SeasonWindow | null>(null);
@@ -145,7 +148,7 @@ export function DestinationPreview({
 
   if (!destinationId) return null;
 
-  const name = detail?.name ?? fallbackName ?? "Destinasi";
+  const name = detail?.name ?? fallbackName ?? t("aDestinationTitle");
   const place = [detail?.cities?.name, detail?.provinces?.name]
     .filter(Boolean)
     .join(", ");
@@ -181,7 +184,7 @@ export function DestinationPreview({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup pratinjau"
+          aria-label={t("closePreview")}
           className="absolute right-2 top-2 grid h-8 w-8 place-items-center rounded-full bg-background/85 backdrop-blur-sm transition hover:bg-background"
         >
           <X className="h-4 w-4" />
@@ -209,7 +212,7 @@ export function DestinationPreview({
               <Rating value={detail.avg_rating} reviews={reviews.length} />
             ) : (
               <span className="text-xs text-muted-foreground">
-                Belum ada ulasan
+                {t("noReviews")}
               </span>
             )}
             {detail?.view_count ? (
@@ -224,13 +227,13 @@ export function DestinationPreview({
         {loading && (
           <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Memuat detail destinasi…
+            {t("loadingDetail")}
           </p>
         )}
 
         {failed && !loading && (
           <p className="rounded-xl border border-border px-4 py-5 text-sm text-muted-foreground">
-            Detail destinasi ini belum bisa dimuat. Coba lagi sebentar lagi.
+            {t("detailLoadFailed")}
           </p>
         )}
 
@@ -243,7 +246,7 @@ export function DestinationPreview({
         {detail?.tags && detail.tags.length > 0 && (
           <section>
             <SectionTitle icon={<TagIcon className="h-3.5 w-3.5" />}>
-              Cocok untuk
+              {t("goodFor")}
             </SectionTitle>
             <ul className="flex flex-wrap gap-1.5">
               {detail.tags.map((tag) => (
@@ -265,7 +268,7 @@ export function DestinationPreview({
         {photos.length > 0 && (
           <section>
             <SectionTitle icon={<Camera className="h-3.5 w-3.5" />}>
-              Foto dari pengunjung
+              {t("visitorPhotos")}
             </SectionTitle>
             {/* Digeser mendatar supaya galeri sepanjang apa pun tidak mendorong
                 ulasannya keluar dari layar. */}
@@ -289,11 +292,11 @@ export function DestinationPreview({
 
         <section>
           <SectionTitle icon={<MessageSquare className="h-3.5 w-3.5" />}>
-            Ulasan
+            {t("reviews")}
           </SectionTitle>
           {reviews.length === 0 ? (
             <p className="rounded-xl border border-dashed border-border px-4 py-6 text-center text-xs text-muted-foreground">
-              Belum ada ulasan untuk tempat ini.
+              {t("noReviewsHere")}
             </p>
           ) : (
             <ul className="space-y-3">
@@ -307,7 +310,7 @@ export function DestinationPreview({
               href={`/destinations/${destinationId}`}
               className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
             >
-              Lihat {reviews.length - REVIEWS_SHOWN} ulasan lainnya
+              {t("moreReviews", { count: reviews.length - REVIEWS_SHOWN })}
               <ArrowUpRight className="h-3.5 w-3.5" />
             </Link>
           )}
@@ -316,7 +319,7 @@ export function DestinationPreview({
 
       <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card/95 px-5 py-4 backdrop-blur-sm">
         <Button variant="outline" className="shrink-0 rounded-full" asChild>
-          <Link href={`/destinations/${destinationId}`}>Halaman lengkap</Link>
+          <Link href={`/destinations/${destinationId}`}>{t("fullPage")}</Link>
         </Button>
         <Button
           className="flex-1 rounded-full"
@@ -380,23 +383,31 @@ function BestMonths({
   months: number[];
   seasons: string[];
 }) {
+  const t = useTranslations("planner");
+  const locale = useLocale();
+  const long = monthNames(locale);
   const currentMonth = new Date().getMonth() + 1;
   const good = new Set(months);
 
   return (
     <section>
       <SectionTitle icon={<CalendarRange className="h-3.5 w-3.5" />}>
-        Waktu terbaik berkunjung
+        {t("bestTime")}
       </SectionTitle>
 
       <ul className="grid grid-cols-6 gap-1 sm:grid-cols-12">
-        {MONTHS_SHORT.map((short, i) => {
+        {monthNames(locale, "short").map((short, i) => {
           const month = i + 1;
           return (
             <li key={short}>
               <div
-                title={MONTHS[i]}
-                aria-label={`${MONTHS[i]}: ${good.has(month) ? "direkomendasikan" : "kurang direkomendasikan"}`}
+                title={long[i]}
+                aria-label={t("monthAria", {
+                  month: long[i],
+                  state: good.has(month)
+                    ? t("monthRecommended")
+                    : t("monthNotRecommended"),
+                })}
                 className={cn(
                   "rounded-lg border py-1.5 text-center text-[10px] font-semibold",
                   good.has(month)
@@ -414,15 +425,18 @@ function BestMonths({
       </ul>
 
       <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-        Bulan yang disorot cocok dengan aktivitas di sini
-        {seasons.length > 0 && <> selama musim {seasons.join(" dan ")}</>}.
-        Bulan berjalan ({MONTHS[currentMonth - 1]}) ditandai lingkaran.
+        {t("monthNote")}
+        {seasons.length > 0 &&
+          t("monthSeason", { seasons: joinList(seasons, locale) })}
+        {t("monthCurrent", { month: long[currentMonth - 1] })}
       </p>
     </section>
   );
 }
 
 function ReviewRow({ review }: { review: Review }) {
+  const time = useTranslations("time");
+  const stamp = relativeStamp(review.created_at);
   const author = review.users?.full_name ?? "Pengguna";
 
   return (
@@ -438,7 +452,11 @@ function ReviewRow({ review }: { review: Review }) {
         <div className="flex items-center gap-2">
           <span className="truncate text-xs font-medium">{author}</span>
           <span className="shrink-0 text-[11px] text-muted-foreground">
-            {relativeDate(review.created_at)}
+            {stamp
+              ? "value" in stamp
+                ? time(stamp.unit, { value: stamp.value })
+                : time(stamp.unit)
+              : null}
           </span>
         </div>
         <Rating value={review.rating} className="mt-0.5" />
