@@ -1,6 +1,5 @@
-import { Compass, Landmark, MapPinned, TrendingUp } from "lucide-react";
+import { Compass, Landmark, MapPinned } from "lucide-react";
 import type { DestinationDetail } from "@/lib/api";
-import { formatCount } from "@/lib/destination-data";
 
 /** Quick-facts strip under the title, the way a guide opens a place entry. */
 export function Facts({ destination }: { destination: DestinationDetail }) {
@@ -20,12 +19,7 @@ export function Facts({ destination }: { destination: DestinationDetail }) {
       label: "Provinsi",
       value: destination.provinces?.name ?? "—",
     },
-    // frontend-lele
-    // {
-    //   icon: TrendingUp,
-    //   label: "Popularitas",
-    //   value: `${formatCount(destination.view_count)} kunjungan halaman`,
-    // },
+
   ];
 
   return (

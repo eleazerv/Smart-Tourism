@@ -8,6 +8,8 @@ import { TripBookingList } from "@/components/account/trip-booking-list";
 import { AccommodationBookingList } from "@/components/account/accommodation-booking-list";
 import { cn } from "@/lib/utils";
 
+export const metadata: Metadata = { title: "Detail Pesanan" };
+
 const TABS = [
   { key: "trip", label: "Paket Trip" },
   { key: "flight", label: "Penerbangan" },

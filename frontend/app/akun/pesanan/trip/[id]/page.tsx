@@ -6,7 +6,7 @@ import { AlertTriangle, ArrowLeft, BedDouble, ExternalLink, Plane, Search } from
 import { AccountSection } from "@/components/account/account-section";
 import { TripBookingActions } from "@/components/account/trip-booking-actions";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
-import { clockOf, dateOf } from "@/lib/airports";
+import { dateOf } from "@/lib/airports";
 import {
   getTripBooking,
   type PaymentStatus,
