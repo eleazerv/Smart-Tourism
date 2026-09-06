@@ -1,9 +1,23 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { hasEnvVars } from "../utils";
+import {
+  ONBOARDED_COOKIE,
+  ONBOARDING_EXEMPT_PREFIXES,
+  ONBOARDING_PATH,
+  hasOnboarded,
+} from "../onboarding";
 
 /** Route prefixes that require a signed-in user. */
-const PROTECTED_PREFIXES = ["/akun"];
+const PROTECTED_PREFIXES = ["/akun", ONBOARDING_PATH];
+
+/** Halaman yang tetap terbuka walau personalisasi belum pernah diisi. */
+function isOnboardingExempt(request: NextRequest) {
+  const path = request.nextUrl.pathname;
+  return ONBOARDING_EXEMPT_PREFIXES.some(
+    (prefix) => path === prefix || path.startsWith(`${prefix}/`),
+  );
+}
 
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
@@ -60,6 +74,24 @@ export async function updateSession(request: NextRequest) {
     const url = request.nextUrl.clone();
     url.pathname = "/auth/login";
     return NextResponse.redirect(url);
+  }
+
+  // Akun yang belum pernah melewati personalisasi dibawa ke wizard lebih dulu,
+  // dari halaman mana pun ia mendarat -- tautan konfirmasi email dan tombol
+  // masuk sama-sama bermuara di sini. Hanya untuk navigasi biasa: memantulkan
+  // POST akan mematahkan server action yang sedang berjalan, termasuk milik
+  // wizard itu sendiri.
+  if (user && request.method === "GET" && !isOnboardingExempt(request)) {
+    const onboarded =
+      hasOnboarded((user as Record<string, unknown>).user_metadata) ||
+      request.cookies.has(ONBOARDED_COOKIE);
+
+    if (!onboarded) {
+      const url = request.nextUrl.clone();
+      url.pathname = ONBOARDING_PATH;
+      url.search = "";
+      return NextResponse.redirect(url);
+    }
   }
 
   // IMPORTANT: You *must* return the supabaseResponse object as it is.

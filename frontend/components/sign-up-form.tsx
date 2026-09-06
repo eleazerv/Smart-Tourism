@@ -33,7 +33,10 @@ export function SignUpForm() {
         email,
         password,
         options: {
-          emailRedirectTo: `${window.location.origin}/akun`,
+          // Tautan konfirmasi mendarat langsung di personalisasi -- itu layar
+          // pertama akun baru. Proxy tetap mengarahkan ke sana dari mana pun
+          // seandainya tautannya dibuka lewat jalur lain.
+          emailRedirectTo: `${window.location.origin}/onboarding`,
           // Carried into the profile row, and used for the header greeting
           // before /api/auth/me has been called.
           data: { full_name: fullName.trim() },
