@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * test-all-endpoints.js — Smoke test semua endpoint Smart Tourism Indonesia
+ * test-all-endpoints.js — Smoke test semua endpoint Jelantara
  *
  * Update terbaru: menambah section Cities, Rute peta (OpenRouteService),
  * Trip non-AI (panel/checkbox langsung), dan AI Trip Planner (chat, gerbang
@@ -2165,7 +2165,7 @@ async function cleanup() {
 // MAIN
 // ═════════════════════════════════════════════════════════════
 async function main() {
-  console.log(`${C.bold}Smart Tourism — Test Semua Endpoint${C.reset}`);
+  console.log(`${C.bold}Jelantara — Test Semua Endpoint${C.reset}`);
   console.log(`${C.gray}Target : ${CONFIG.BASE_URL}${C.reset}`);
 
   const ping = await GET('/');

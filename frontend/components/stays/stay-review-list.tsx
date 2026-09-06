@@ -96,7 +96,7 @@ function StayReviewCard({
   const [error, setError] = useState<string | null>(null);
   const [deleting, startDelete] = useTransition();
 
-  const name = review.users?.full_name?.trim() || "Pengguna Smart Tourism";
+  const name = review.users?.full_name?.trim() || "Pengguna Jelantara";
 
   return (
     <article className="rounded-2xl border border-border bg-card p-4">

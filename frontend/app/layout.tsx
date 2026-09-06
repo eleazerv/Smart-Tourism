@@ -7,8 +7,8 @@ const defaultUrl = process.env.VERCEL_URL
   ? `https://${process.env.VERCEL_URL}`
   : "http://localhost:3000";
 
-const siteName = "Smart Tourism";
-const title = "Smart Tourism — Pantau Kepadatan Wisata & Waktu Terbaik";
+const siteName = "Jelantara";
+const title = "Jelantara — Explore the Wonders of Indonesia";
 const description =
   "Lihat prediksi kepadatan destinasi wisata Indonesia, temukan waktu kunjungan paling sepi, dan bantu cegah overtourism. Data BPS, BMKG, dan pengelola destinasi.";
 

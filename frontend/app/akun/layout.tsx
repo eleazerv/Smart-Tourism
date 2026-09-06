@@ -7,9 +7,9 @@ import { SiteHeader } from "@/components/home/site-header";
 export const metadata: Metadata = {
   // Re-declared here: a plain string title on this layout otherwise stops the
   // root template from reaching /akun/minat and /akun/kata-sandi.
-  title: { default: "Akun Saya", template: "%s | Smart Tourism" },
+  title: { default: "Akun Saya", template: "%s | Jelantara" },
   description:
-    "Kelola profil, minat perjalanan, dan keamanan akun Smart Tourism Anda.",
+    "Kelola profil, minat perjalanan, dan keamanan akun Jelantara Anda.",
   robots: { index: false, follow: false },
 };
 
