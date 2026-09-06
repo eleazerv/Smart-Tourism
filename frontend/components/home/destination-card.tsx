@@ -77,7 +77,7 @@ export function DestinationCard({
         </p>
         {place && <p className="text-xs text-muted-foreground">{place}</p>}
         {note && (
-          <p className="truncate text-xs font-medium text-brand-700 dark:text-brand-100">
+          <p className="truncate text-xs font-medium text-brand-700">
             {note}
           </p>
         )}

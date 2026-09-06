@@ -192,7 +192,7 @@ async function Guide({ params }: PageProps) {
               )}
               {place && <span>{place}</span>}
               {destination.category && (
-                <span className="rounded-full bg-brand-tint/10 px-2.5 py-0.5 text-xs font-semibold text-brand-900 dark:bg-brand-700/40 dark:text-brand-50">
+                <span className="rounded-full bg-brand-tint/10 px-2.5 py-0.5 text-xs font-semibold text-brand-900">
                   {destination.category}
                 </span>
               )}
@@ -238,7 +238,7 @@ async function Guide({ params }: PageProps) {
                     <li key={tag.id}>
                       <a
                         href={`/destinations?tags=${tag.slug}`}
-                        className="inline-block rounded-full border border-border px-3.5 py-1.5 text-xs font-medium transition hover:border-brand-700 hover:text-brand-700 dark:hover:border-brand-100 dark:hover:text-brand-100"
+                        className="inline-block rounded-full border border-border px-3.5 py-1.5 text-xs font-medium transition hover:border-brand-700 hover:text-brand-700"
                       >
                         {tag.name}
                       </a>

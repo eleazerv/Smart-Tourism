@@ -175,7 +175,7 @@ async function Board({ searchParams }: PageProps) {
             <div className="flex flex-wrap items-center gap-2">
               <Link
                 href={swappedHref(state)}
-                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium shadow-sm transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+                className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-3.5 py-2 text-sm font-medium shadow-sm transition hover:border-brand-700 hover:bg-brand-tint/10"
               >
                 <ArrowLeftRight className="h-4 w-4" />
                 Balik rute
@@ -238,7 +238,7 @@ function NoFlights({
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
         aria-hidden="true"
-        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
       >
         <PlaneTakeoff className="h-6 w-6" />
       </span>
@@ -259,7 +259,7 @@ function NoFlights({
             windows: [],
             availableOnly: false,
           })}
-          className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           Hapus semua filter
         </Link>
@@ -280,7 +280,7 @@ function UnknownRoute({ state }: { state: FlightSearchState }) {
       </p>
       <Link
         href="/flights"
-        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Mulai pencarian baru
       </Link>
@@ -307,7 +307,7 @@ function ApiDown({ state }: { state: FlightSearchState }) {
       </p>
       <Link
         href={withFilter(state, {})}
-        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Coba lagi
       </Link>

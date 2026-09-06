@@ -39,7 +39,7 @@ export function FlightFilters({
         {activeFilterCount(state) > 0 && (
           <Link
             href={resetHref}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-100"
+            className="inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline"
           >
             <RotateCcw className="h-3 w-3" />
             Atur ulang

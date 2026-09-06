@@ -111,7 +111,7 @@ export function StayCityPicker({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition hover:bg-brand-tint/10"
       >
         <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
@@ -217,7 +217,7 @@ function Option({
         onMouseMove={onHover}
         className={cn(
           "flex w-full items-center gap-2 rounded-lg px-3 py-2 text-left transition",
-          active && "bg-brand-tint/10 dark:bg-brand-tint/15",
+          active && "bg-brand-tint/10",
         )}
       >
         <span className="min-w-0 flex-1">
@@ -234,7 +234,7 @@ function Option({
           </span>
         )}
         {selected && (
-          <Check className="h-4 w-4 shrink-0 text-brand-700 dark:text-brand-100" />
+          <Check className="h-4 w-4 shrink-0 text-brand-700" />
         )}
       </button>
     </li>

@@ -63,8 +63,8 @@ export function AccountNav() {
                 className={cn(
                   "flex items-center gap-2.5 whitespace-nowrap rounded-full px-4 py-2.5 text-sm font-medium transition md:rounded-lg",
                   active
-                    ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                    : "text-foreground/80 hover:bg-brand-tint/10 hover:text-brand-700 dark:hover:bg-brand-tint/15 dark:hover:text-brand-100",
+                    ? "bg-brand-700 text-white"
+                    : "text-foreground/80 hover:bg-brand-tint/10 hover:text-brand-700",
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
@@ -78,7 +78,7 @@ export function AccountNav() {
       <button
         type="button"
         onClick={() => setConfirming(true)}
-        className="mt-2 hidden w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700 md:flex dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
+        className="mt-2 hidden w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700 md:flex"
       >
         <LogOut className="h-4 w-4 shrink-0" />
         Keluar

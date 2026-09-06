@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { footerColumns } from "@/lib/home-data";
 import { Logo } from "@/components/home/logo";
-import { ThemeSwitcher } from "@/components/theme-switcher";
 
 export function SiteFooter() {
   return (
@@ -29,7 +28,7 @@ export function SiteFooter() {
                     <li key={link.href}>
                       <Link
                         href={link.href}
-                        className="text-sm text-foreground/80 underline-offset-4 transition-colors hover:text-brand-700 hover:underline dark:hover:text-brand-100"
+                        className="text-sm text-foreground/80 underline-offset-4 transition-colors hover:text-brand-700 hover:underline"
                       >
                         {link.label}
                       </Link>
@@ -51,7 +50,6 @@ export function SiteFooter() {
               Prediksi kepadatan bersifat estimasi.
             </p>
           </div>
-          <ThemeSwitcher />
         </div>
       </div>
     </footer>

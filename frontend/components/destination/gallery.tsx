@@ -60,7 +60,7 @@ export function Gallery({ images, name }: { images: string[]; name: string }) {
       <button
         type="button"
         onClick={() => setOpen(0)}
-        className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold shadow-card transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+        className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold shadow-card transition hover:bg-brand-tint/10"
       >
         <Images className="h-4 w-4" />
         {images.length} foto

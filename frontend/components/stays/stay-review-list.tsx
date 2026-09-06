@@ -60,8 +60,8 @@ export function StayReviewList({
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
               sort === option.value
-                ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                : "border border-border hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                ? "bg-brand-700 text-white"
+                : "border border-border hover:bg-brand-tint/10",
             )}
           >
             {option.label}

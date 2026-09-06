@@ -175,7 +175,7 @@ export function BookingForm({
       <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
-            <UserRound className="h-4 w-4 text-brand-700 dark:text-brand-100" />
+            <UserRound className="h-4 w-4 text-brand-700" />
             Penumpang
           </h2>
           <label className="flex items-center gap-2 text-sm">
@@ -208,7 +208,7 @@ export function BookingForm({
                 <span className="text-xs font-medium text-muted-foreground">
                   Penumpang {index + 1}
                   {passenger.seat && (
-                    <span className="ml-1.5 font-semibold text-brand-700 dark:text-brand-100">
+                    <span className="ml-1.5 font-semibold text-brand-700">
                       · kursi {passenger.seat}
                     </span>
                   )}
@@ -237,13 +237,13 @@ export function BookingForm({
       <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
-            <ArmchairIcon className="h-4 w-4 text-brand-700 dark:text-brand-100" />
+            <ArmchairIcon className="h-4 w-4 text-brand-700" />
             Kursi
           </h2>
           <button
             type="button"
             onClick={() => setSeatOpen(true)}
-            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
+            className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
           >
             <ArmchairIcon className="h-4 w-4" />
             {seatedCount > 0 ? "Ubah kursi" : "Pilih kursi"}
@@ -267,7 +267,7 @@ export function BookingForm({
               <span
                 className={
                   passenger.seat
-                    ? "shrink-0 font-semibold tabular-nums text-brand-700 dark:text-brand-100"
+                    ? "shrink-0 font-semibold tabular-nums text-brand-700"
                     : "shrink-0 text-xs text-muted-foreground"
                 }
               >
@@ -302,7 +302,7 @@ export function BookingForm({
             if (validate()) setConfirming(true);
           }}
           disabled={pending}
-          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {pending ? (
             <Loader2 className="h-4 w-4 animate-spin" />
@@ -338,13 +338,13 @@ export function BookingForm({
         {warning && (
           <div
             role="alert"
-            className="mt-3 rounded-xl border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900 dark:bg-amber-500/10 dark:text-amber-200"
+            className="mt-3 rounded-xl border border-amber-500/40 bg-amber-50 p-3 text-sm text-amber-900"
           >
             <p>{warning.message}</p>
             <button
               type="button"
               onClick={() => window.location.assign(warning.invoiceUrl)}
-              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white dark:bg-brand-100 dark:text-brand-900"
+              className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white"
             >
               <CreditCard className="h-3.5 w-3.5" />
               Lanjut ke pembayaran
@@ -417,7 +417,7 @@ function Itinerary({
                 className="absolute -top-[7px] right-0 h-3.5 w-3.5 text-muted-foreground"
               />
             </div>
-            <p className="text-center text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+            <p className="text-center text-[11px] font-medium text-emerald-700">
               Langsung
             </p>
           </div>
@@ -457,7 +457,7 @@ function Itinerary({
         </p>
       </div>
 
-      <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-50 px-3.5 py-3 text-[11px] leading-snug text-amber-900 dark:bg-amber-500/10 dark:text-amber-200">
+      <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-50 px-3.5 py-3 text-[11px] leading-snug text-amber-900">
         <ShieldCheck className="mt-px h-4 w-4 shrink-0" />
         <span>
           Kursi ditahan sejak pesanan dibuat, bukan setelah dibayar. Kalau

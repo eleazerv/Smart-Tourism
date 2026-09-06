@@ -26,7 +26,7 @@ export function BestTime({
   return (
     <section id="waktu-terbaik" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-        <CalendarRange className="h-5 w-5 text-brand-700 dark:text-brand-100" />
+        <CalendarRange className="h-5 w-5 text-brand-700" />
         Waktu terbaik berkunjung
       </h2>
 

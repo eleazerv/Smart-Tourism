@@ -40,7 +40,7 @@ export async function NearbyEvents({
   return (
     <section id="agenda" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-        <PartyPopper className="h-5 w-5 text-brand-700 dark:text-brand-100" />
+        <PartyPopper className="h-5 w-5 text-brand-700" />
         Agenda di {cityName}
       </h2>
       <p className="mt-1 text-sm text-muted-foreground">
@@ -53,7 +53,7 @@ export async function NearbyEvents({
             key={event.id}
             className="rounded-2xl border border-border bg-card p-4"
           >
-            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700 dark:text-brand-100">
+            <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-brand-700">
               <CalendarClock className="h-3.5 w-3.5" />
               {formatDate(event.start_date) ??
                 (event.month ? MONTHS[event.month - 1] : "Tanggal menyusul")}

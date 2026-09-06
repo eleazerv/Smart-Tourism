@@ -48,7 +48,7 @@ export function ResultRow({
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
         <FavoriteButton
           destinationId={destination.id}
@@ -65,7 +65,7 @@ export function ResultRow({
           className="object-cover"
         />
         {destination.category && (
-          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
+          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur">
             {destination.category}
           </span>
         )}
@@ -104,7 +104,7 @@ export function ResultRow({
           <ViewCount destination={destination} />
           <span
             aria-hidden="true"
-            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700 dark:text-brand-100"
+            className="inline-flex items-center gap-1 text-sm font-semibold text-brand-700"
           >
             Lihat detail
             <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
@@ -126,7 +126,7 @@ export function ResultTile({
   const href = `/destinations/${destination.id}`;
 
   return (
-    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30">
+    <article className="group relative flex flex-col overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40">
       <div className="relative aspect-[4/3] overflow-hidden bg-brand-700">
         <FavoriteButton
           destinationId={destination.id}
@@ -143,7 +143,7 @@ export function ResultTile({
           className="object-cover"
         />
         {destination.category && (
-          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
+          <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur">
             {destination.category}
           </span>
         )}

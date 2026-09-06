@@ -100,7 +100,7 @@ export async function ForYouPrompt() {
         </div>
         <Link
           href="/auth/login"
-          className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           Masuk
         </Link>

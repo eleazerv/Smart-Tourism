@@ -75,9 +75,9 @@ export function SeatPicker({
                         "cursor-not-allowed border-transparent bg-muted text-muted-foreground/50",
                       !isTaken &&
                         mine < 0 &&
-                        "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-700/30",
+                        "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
                       mine >= 0 &&
-                        "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900",
+                        "border-brand-700 bg-brand-700 text-white",
                     )}
                   >
                     {mine >= 0 ? mine + 1 : isTaken ? "×" : ""}

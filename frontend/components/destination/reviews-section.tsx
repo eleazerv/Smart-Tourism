@@ -38,7 +38,7 @@ export async function ReviewsSection({
   return (
     <section id="ulasan" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
-        <MessagesSquare className="h-5 w-5 text-brand-700 dark:text-brand-100" />
+        <MessagesSquare className="h-5 w-5 text-brand-700" />
         Ulasan pengunjung
       </h2>
 

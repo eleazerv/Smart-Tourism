@@ -54,28 +54,6 @@
     --radius: 0.75rem;
   }
 
-  .dark {
-    --background: 176 48% 9%;
-    --foreground: 176 100% 92%;
-    --card: 176 48% 13%;
-    --card-foreground: 176 100% 92%;
-    --popover: 176 48% 13%;
-    --popover-foreground: 176 100% 92%;
-    --primary: 176 100% 84%;
-    --primary-foreground: 176 48% 13%;
-    --secondary: 176 46% 18%;
-    --secondary-foreground: 176 100% 92%;
-    --muted: 176 40% 15%;
-    --muted-foreground: 176 25% 68%;
-    /* Pasangan gelapnya: --brand-tint pada 15% di atas latar gelap. */
-    --accent: 190 58% 14%;
-    --accent-foreground: 0 0% 82%; /* = --brand-100 */
-    --destructive: 0 62% 45%;
-    --destructive-foreground: 0 0% 98%;
-    --border: 176 30% 22%;
-    --input: 176 30% 22%;
-    --ring: 176 100% 84%;
-  }
 }
 
 @layer base {
@@ -204,9 +182,6 @@
   box-shadow: 0 1px 4px hsl(var(--brand-900) / 0.45);
 }
 
-.dark .place-map-pin {
-  background: hsl(var(--brand-100));
-}
 
 /* Numbered stop pins for the trip planner. Leaflet's `divIcon` ships with a
    white box and border of its own, so both are cleared before restyling. */
@@ -230,11 +205,6 @@
   box-shadow: 0 1px 4px rgb(0 0 0 / 0.35);
 }
 
-.dark .crowd-map .crowd-map-pin {
-  border-color: #042f2e;
-  background: #aefffa;
-  color: #042f2e;
-}
 
 /* Pointing at a city in the side panel lights its pin up on the map. */
 .crowd-map .crowd-map-pin--lit {
@@ -244,11 +214,6 @@
     0 1px 4px rgb(0 0 0 / 0.35);
 }
 
-.dark .crowd-map .crowd-map-pin--lit {
-  box-shadow:
-    0 0 0 4px rgb(174 255 250 / 0.35),
-    0 1px 4px rgb(0 0 0 / 0.35);
-}
 
 
 /* Chrome, Edge, Safari (WebKit-based) */

@@ -100,8 +100,8 @@ function ViewToggle({ state }: { state: SearchState }) {
           className={cn(
             "grid h-8 w-9 place-items-center rounded-full transition",
             state.view === mode
-              ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-              : "text-muted-foreground hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+              ? "bg-brand-700 text-white"
+              : "text-muted-foreground hover:bg-brand-tint/10",
           )}
         >
           <Icon className="h-4 w-4" />
@@ -169,7 +169,7 @@ function ActiveChips({
         <li key={chip.key}>
           <Link
             href={chip.href}
-            className="inline-flex max-w-56 items-center gap-1.5 rounded-full bg-brand-tint/10 py-1.5 pl-3 pr-2 text-xs font-semibold text-brand-900 transition hover:bg-brand-100 dark:bg-brand-700/50 dark:text-brand-50 dark:hover:bg-brand-700"
+            className="inline-flex max-w-56 items-center gap-1.5 rounded-full bg-brand-tint/10 py-1.5 pl-3 pr-2 text-xs font-semibold text-brand-900 transition hover:bg-brand-100"
           >
             <span className="truncate">{chip.label}</span>
             <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
@@ -180,7 +180,7 @@ function ActiveChips({
       <li>
         <Link
           href="/destinations"
-          className="rounded-full px-2 py-1.5 text-xs font-semibold text-muted-foreground underline-offset-2 transition hover:text-brand-700 hover:underline dark:hover:text-brand-100"
+          className="rounded-full px-2 py-1.5 text-xs font-semibold text-muted-foreground underline-offset-2 transition hover:text-brand-700 hover:underline"
         >
           Hapus semua
         </Link>

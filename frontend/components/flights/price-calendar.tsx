@@ -62,7 +62,7 @@ export function PriceCalendar({
                   active
                     ? "opacity-80"
                     : best
-                      ? "font-semibold text-emerald-700 dark:text-emerald-400"
+                      ? "font-semibold text-emerald-700"
                       : "text-muted-foreground",
                 )}
               >
@@ -84,7 +84,7 @@ export function PriceCalendar({
                   className={cn(
                     box,
                     active
-                      ? "border-brand-700 bg-brand-700 text-white shadow-sm dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                      ? "border-brand-700 bg-brand-700 text-white shadow-sm"
                       : "border-dashed border-border/70 text-muted-foreground",
                   )}
                 >
@@ -96,10 +96,10 @@ export function PriceCalendar({
                   aria-label={`${longDate(day.date)}, mulai ${shortIDR(day.price!)}`}
                   className={cn(
                     box,
-                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background dark:focus-visible:ring-brand-100",
+                    "transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 focus-visible:ring-offset-background",
                     best
-                      ? "border-emerald-600/40 bg-emerald-50 hover:border-emerald-600 dark:border-emerald-400/30 dark:bg-emerald-950/40 dark:hover:border-emerald-400"
-                      : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                      ? "border-emerald-600/40 bg-emerald-50 hover:border-emerald-600"
+                      : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
                   )}
                 >
                   {content}

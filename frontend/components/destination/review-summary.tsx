@@ -51,7 +51,7 @@ export function ReviewSummary({
             </span>
             <span className="h-2 flex-1 overflow-hidden rounded-full bg-muted">
               <span
-                className="block h-full rounded-full bg-brand-700 dark:bg-brand-100"
+                className="block h-full rounded-full bg-brand-700"
                 style={{ width: `${(count / max) * 100}%` }}
               />
             </span>

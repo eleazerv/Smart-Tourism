@@ -46,11 +46,11 @@ async function BookingList() {
         <li key={booking.id}>
           <Link
             href={`/akun/pesanan/${booking.id}`}
-            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition hover:border-brand-700/40 dark:hover:border-brand-100/30"
+            className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition hover:border-brand-700/40"
           >
             <span
               aria-hidden="true"
-              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+              className="grid h-10 w-10 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
             >
               <Ticket className="h-5 w-5" />
             </span>
@@ -93,7 +93,7 @@ function Empty() {
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
         aria-hidden="true"
-        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
       >
         <Ticket className="h-6 w-6" />
       </span>
@@ -106,7 +106,7 @@ function Empty() {
       </p>
       <Link
         href="/flights"
-        className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Cari penerbangan
       </Link>

@@ -96,7 +96,7 @@ export function ConfirmDialog({
               "mb-3 grid h-11 w-11 place-items-center rounded-full",
               destructive
                 ? "bg-destructive/10 text-destructive"
-                : "bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50",
+                : "bg-brand-tint/10 text-brand-700",
             )}
           >
             {icon}
@@ -137,7 +137,7 @@ export function ConfirmDialog({
               "inline-flex items-center justify-center gap-2 rounded-full px-5 py-2.5 text-sm font-semibold text-white transition disabled:opacity-60",
               destructive
                 ? "bg-destructive hover:bg-destructive/90"
-                : "bg-brand-700 hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50",
+                : "bg-brand-700 hover:bg-brand-900",
             )}
           >
             {pending ? (

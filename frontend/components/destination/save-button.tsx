@@ -45,12 +45,12 @@ export function SaveButton({
         aria-pressed={saved}
         aria-busy={pending}
         onClick={() => void toggle()}
-        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium underline-offset-4 transition hover:bg-brand-tint/10 hover:underline dark:hover:bg-brand-tint/15"
+        className="inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-sm font-medium underline-offset-4 transition hover:bg-brand-tint/10 hover:underline"
       >
         <Bookmark
           className={cn(
             "h-4 w-4 transition-colors",
-            saved && "fill-brand-700 text-brand-700 dark:fill-brand-100 dark:text-brand-100",
+            saved && "fill-brand-700 text-brand-700",
           )}
         />
         {saved ? `${name} tersimpan` : "Simpan"}

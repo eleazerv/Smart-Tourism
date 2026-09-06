@@ -270,7 +270,7 @@ export function FlightPicker({
                         setPicking(null);
                       }
                     }}
-                    className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+                    className="flex w-full items-center justify-between gap-2 px-2.5 py-2 text-left transition hover:bg-brand-tint/10"
                   >
                     <span className="min-w-0">
                       <span className="block truncate text-xs font-medium">

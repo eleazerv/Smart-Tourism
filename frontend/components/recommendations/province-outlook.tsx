@@ -100,7 +100,7 @@ export function ProvinceOutlook({
       <div className="mt-4 border-t border-border pt-4">
         <Link
           href={timingHref(state, { provinceId: null })}
-          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-100"
+          className="inline-flex items-center gap-1.5 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
           <Compass className="h-4 w-4" />
           Provinsi lain yang kemarau bulan {month}

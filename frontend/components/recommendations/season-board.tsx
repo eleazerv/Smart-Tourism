@@ -56,7 +56,7 @@ export function SeasonBoard({
                 <li key={entry.province.code}>
                   <Link
                     href={timingHref(state, { provinceId: entry.province.id })}
-                    className="inline-block rounded-full border border-border px-2.5 py-1 text-xs font-medium transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+                    className="inline-block rounded-full border border-border px-2.5 py-1 text-xs font-medium transition hover:bg-brand-tint/10"
                   >
                     {entry.province.name}
                   </Link>

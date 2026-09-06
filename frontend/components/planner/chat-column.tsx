@@ -84,7 +84,7 @@ export function ChatColumn({
                         // nilainya biru pucat dan terbaca kotor di atas hijau
                         // tua. Mode gelap tetap memakai tinta gelapnya karena
                         // di sana gelembungnya justru berwarna terang.
-                        "max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-white dark:text-primary-foreground"
+                        "max-w-[85%] rounded-2xl rounded-br-sm bg-primary px-3.5 py-2 text-sm text-white"
                       : "max-w-[95%] rounded-2xl rounded-bl-sm border border-border bg-card px-3.5 py-2 text-sm"
                   }
                 >
@@ -244,7 +244,7 @@ function ProvenanceNote({
   if (!mentionsData) return null;
 
   return (
-    <p className="mt-2 flex max-w-lg items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800 dark:bg-amber-500/15 dark:text-amber-300">
+    <p className="mt-2 flex max-w-lg items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
       <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
       Jawaban ini tidak mengambil data dari katalog. Cek ulang nama tempat dan
       harganya sebelum dipakai.

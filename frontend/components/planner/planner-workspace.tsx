@@ -399,8 +399,8 @@ export function PlannerWorkspace() {
               aria-current={room.id === roomId ? "true" : undefined}
               className={`w-full truncate rounded-full px-3 py-2 text-left text-xs transition ${
                 room.id === roomId
-                  ? "bg-brand-tint/10 font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100"
-                  : "text-muted-foreground hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+                  ? "bg-brand-tint/10 font-medium text-brand-700"
+                  : "text-muted-foreground hover:bg-brand-tint/10"
               }`}
             >
               {room.title}

@@ -55,7 +55,7 @@ export function EmptyResults({
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
         aria-hidden="true"
-        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
       >
         <Compass className="h-6 w-6" />
       </span>
@@ -74,7 +74,7 @@ export function EmptyResults({
             <li key={option.href}>
               <Link
                 href={option.href}
-                className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 hover:text-brand-700 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
+                className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 hover:text-brand-700"
               >
                 {option.label}
               </Link>
@@ -85,7 +85,7 @@ export function EmptyResults({
 
       <Link
         href="/destinations"
-        className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Lihat semua destinasi
       </Link>

@@ -2,9 +2,7 @@
  * Basemap tiles for every Leaflet map in the app, in one place so the provider
  * can be swapped without hunting through map components.
  *
- * Esri's gray canvas, which needs no API key and ships a light and a dark
- * variant — the app's theme switch reaches the map, so a provider with only
- * one of the two is not usable here.
+ * Esri's light gray canvas, which needs no API key.
  *
  * This replaced CARTO's `basemaps.cartocdn.com`, which now stamps
  * "API KEY REQUIRED" across the tile artwork while still answering `200
@@ -18,10 +16,7 @@
 
 const CANVAS = "https://services.arcgisonline.com/ArcGIS/rest/services/Canvas";
 
-export const MAP_TILES = {
-  light: `${CANVAS}/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
-  dark: `${CANVAS}/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}`,
-};
+export const MAP_TILE_URL = `${CANVAS}/World_Light_Gray_Base/MapServer/tile/{z}/{y}/{x}`;
 
 /** Required by Esri's terms; rendered in the map's attribution control. */
 export const MAP_ATTRIBUTION =
@@ -34,7 +29,3 @@ export const MAP_ATTRIBUTION =
  */
 export const BOUNDARY_ATTRIBUTION =
   'Batas wilayah: <a href="https://www.geoboundaries.org/">geoBoundaries.org</a> (ODbL)';
-
-export function tileUrl(theme: "light" | "dark"): string {
-  return theme === "dark" ? MAP_TILES.dark : MAP_TILES.light;
-}

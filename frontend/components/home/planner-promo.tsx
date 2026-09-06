@@ -34,7 +34,7 @@ const STEPS = [
 export function PlannerPromo() {
   return (
     <section className="container-page py-8 sm:py-10">
-      <div className="relative isolate overflow-hidden rounded-3xl bg-brand-900 px-6 py-10 sm:px-10 sm:py-12 dark:bg-brand-700">
+      <div className="relative isolate overflow-hidden rounded-3xl bg-brand-900 px-6 py-10 sm:px-10 sm:py-12">
         <Ornament />
 
         <div className="relative grid gap-10 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center">

@@ -27,7 +27,7 @@ import { cn } from "@/lib/utils";
  * juga mewarnai ikonnya, yang tidak dilakukan token mana pun.
  */
 const ITEM =
-  "cursor-pointer gap-2.5 rounded-lg px-2.5 py-2 text-sm focus:bg-brand-tint/10 focus:text-brand-700 dark:focus:bg-brand-tint/15 dark:focus:text-brand-100 [&>svg]:text-muted-foreground focus:[&>svg]:text-current";
+  "cursor-pointer gap-2.5 rounded-lg px-2.5 py-2 text-sm focus:bg-brand-tint/10 focus:text-brand-700 [&>svg]:text-muted-foreground focus:[&>svg]:text-current";
 
 /** Best available display name, without a round-trip to /api/auth/me. */
 function displayName(user: User) {
@@ -95,7 +95,7 @@ export function AccountMenu({ className }: { className?: string }) {
       <Link
         href="/auth/login"
         className={cn(
-          "rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50",
+          "rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900",
           className,
         )}
       >
@@ -155,7 +155,7 @@ export function AccountMenu({ className }: { className?: string }) {
         <DropdownMenuTrigger
           aria-label={`Menu akun ${name}`}
           className={cn(
-            "group flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2.5 text-sm font-medium transition hover:border-brand-700/30 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 data-[state=open]:border-brand-700/30 data-[state=open]:bg-brand-tint/10 dark:hover:border-brand-100/30 dark:hover:bg-brand-tint/15 dark:data-[state=open]:bg-brand-tint/15",
+            "group flex items-center gap-2 rounded-full border border-border py-1 pl-1 pr-2.5 text-sm font-medium transition hover:border-brand-700/30 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 data-[state=open]:border-brand-700/30 data-[state=open]:bg-brand-tint/10",
             className,
           )}
         >

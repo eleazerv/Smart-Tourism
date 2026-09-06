@@ -47,7 +47,7 @@ export function StayPartyPicker({
         onClick={() => setOpen((previous) => !previous)}
         aria-haspopup="dialog"
         aria-expanded={open}
-        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+        className="flex w-full min-w-0 items-center gap-2.5 rounded-xl px-3 py-2 text-left transition hover:bg-brand-tint/10"
       >
         <Users className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
@@ -158,7 +158,7 @@ function Round({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border transition hover:bg-brand-tint/10 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-brand-tint/15"
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border transition hover:bg-brand-tint/10 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

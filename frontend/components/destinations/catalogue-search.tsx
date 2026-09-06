@@ -26,7 +26,7 @@ export function CatalogueSearch({ state }: { state: SearchState }) {
     <form
       onSubmit={submit}
       role="search"
-      className="flex flex-1 items-center gap-2 rounded-full border border-border bg-card py-1 pl-4 pr-1 shadow-sm focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20 dark:focus-within:border-brand-100"
+      className="flex flex-1 items-center gap-2 rounded-full border border-border bg-card py-1 pl-4 pr-1 shadow-sm focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20"
     >
       <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
       <label htmlFor="catalogue-search" className="sr-only">
@@ -51,7 +51,7 @@ export function CatalogueSearch({ state }: { state: SearchState }) {
       )}
       <button
         type="submit"
-        className="shrink-0 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="shrink-0 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Cari
       </button>

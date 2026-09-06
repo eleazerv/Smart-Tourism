@@ -5,7 +5,7 @@ import { photo } from "@/lib/home-data";
 export function PromoBanner() {
   return (
     <section className="container-page py-4">
-      <div className="grid overflow-hidden rounded-2xl bg-brand-700 md:grid-cols-2 dark:bg-brand-600">
+      <div className="grid overflow-hidden rounded-2xl bg-brand-700 md:grid-cols-2">
         <div className="relative min-h-[220px] md:min-h-[300px]">
           <Image
             src={photo("bali-temple-gate", 900, 700)}
@@ -24,7 +24,7 @@ export function PromoBanner() {
           <h2 className="font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
             Temukan hal yang dapat dilakukan untuk semua yang Anda inginkan
           </h2>
-          <p className="text-sm text-white/80 sm:text-base dark:text-white/80">
+          <p className="text-sm text-white/80 sm:text-base">
             Telusuri lebih dari 40.000 pengalaman di seluruh Nusantara dan pesan
             melalui kami.
           </p>
@@ -32,7 +32,7 @@ export function PromoBanner() {
               button into the panel behind it, which is only a shade lighter. */}
           <Link
             href="/destinations"
-            className="w-fit rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700 dark:focus-visible:ring-offset-brand-600"
+            className="w-fit rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-neutral-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-white focus-visible:ring-offset-2 focus-visible:ring-offset-brand-700"
           >
             Pesan sekarang
           </Link>

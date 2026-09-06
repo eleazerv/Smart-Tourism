@@ -111,8 +111,8 @@ export function SeatDialog({
                   className={cn(
                     "rounded-full px-3 py-1.5 text-xs font-semibold transition",
                     activeIndex === index
-                      ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                      : "border border-border bg-card hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                      ? "bg-brand-700 text-white"
+                      : "border border-border bg-card hover:bg-brand-tint/10",
                   )}
                 >
                   {passenger.name.trim() || `Penumpang ${index + 1}`}
@@ -125,7 +125,7 @@ export function SeatDialog({
           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-[11px] text-muted-foreground">
             <Legend className="border-border bg-card" label="Tersedia" />
             <Legend
-              className="border-brand-700 bg-brand-700 dark:border-brand-100 dark:bg-brand-100"
+              className="border-brand-700 bg-brand-700"
               label="Pilihan Anda"
             />
             <Legend
@@ -156,7 +156,7 @@ export function SeatDialog({
             type="button"
             autoFocus
             onClick={onClose}
-            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+            className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
           >
             <Check className="h-4 w-4" />
             Selesai
