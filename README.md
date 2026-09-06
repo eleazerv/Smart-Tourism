@@ -1,6 +1,6 @@
 <div align="center">
 
-# 🗺️ Jelantara
+# 🗺️ Jelantara 
 
 ### Explore the Wonders of Indonesia — Karena Indonesia Bukan Cuma Bali
 
@@ -81,7 +81,7 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
 |-------|-----------|------------|
 | **Rekomendasi Destinasi Personal** | Sistem rekomendasi yang mencocokkan destinasi dengan preferensi pengguna berdasarkan tag minat, lokasi, dan kedekatan geografis | Ranking tidak semata-mata berbasis popularitas, sehingga destinasi di Kalimantan, Papua, dan Sumatera mendapat eksposur yang setara |
 | **Trip Planner Multi-Kota** | Susun satu perjalanan yang terdiri dari beberapa kota singgah, masing-masing dengan tanggal, akomodasi, dan penerbangan kedatangan/keberangkatan sendiri | Memungkinkan perjalanan lintas provinsi dirangkai dalam satu itinerary, bukan dipesan terpisah-pisah |
-| **Estimasi Budget Otomatis** | Kalkulasi perkiraan total biaya perjalanan mencakup akomodasi, penerbangan, dan komponen biaya lain berdasarkan itinerary yang disusun | Pengguna tahu gambaran biaya sebelum berkomitmen memesan, mengurangi keraguan berangkat |
+Konsultasi Trip dengan AI | Pengguna bisa berdiskusi dengan AI untuk menyusun rencana perjalanan secara matang — mulai dari destinasi, akomodasi, hingga penerbangan — lengkap dengan estimasi biayanya. Begitu rencananya sudah sesuai, pengguna bisa langsung checkout dari situ tanpa menyusun ulang di tempat lain | Perjalanan dirancang dengan pertimbangan matang sebelum dipesan, dan begitu yakin, prosesnya lanjut tanpa jeda
 | **Checkout Satu Invoice** | Seluruh pemesanan dalam satu trip (akomodasi di berbagai kota + penerbangan antar-kota) digabung menjadi satu tagihan pembayaran | Menghilangkan kerepotan membayar ke banyak vendor secara terpisah |
 | **Pembayaran Lokal via Xendit** | Mendukung QRIS, Virtual Account, dan e-wallet dengan konfirmasi status melalui webhook | Metode pembayaran yang familiar bagi pengguna Indonesia, dengan status pembayaran yang akurat tanpa bergantung pada polling frontend |
 
@@ -277,7 +277,7 @@ Backend menggunakan dua klien Supabase dengan tingkat hak akses berbeda:
 
 ### Database Schema
 
-Skema database Jelantara terdiri dari 33 tabel yang mencakup master data wisata (provinsi, kota, destinasi, akomodasi, penerbangan), data transaksional (trips, bookings), serta data interaksi pengguna (reviews, saved destinations, chat).
+Skema database Jelantara terdiri dari 37 tabel yang mencakup master data wisata (provinsi, kota, destinasi, akomodasi, penerbangan), data transaksional (trips, bookings), serta data interaksi pengguna (reviews, saved destinations, chat).
 
 **Ringkasan struktur:**
 
@@ -287,11 +287,12 @@ Skema database Jelantara terdiri dari 33 tabel yang mencakup master data wisata 
 - **Hirarki trip** — Model perjalanan memakai struktur `trips` → `trip_stops` → `trip_items` / `trip_flights`. Setiap stop mewakili satu kota dengan akomodasi dan tanggalnya sendiri, sehingga perjalanan lintas provinsi bisa dimodelkan secara akurat.
 - **Booking & pembayaran** — Booking dipecah per domain (`flight_bookings` + `flight_booking_items` + `flight_tickets` + `flight_seats`, `accommodation_bookings` + `accommodation_booking_rooms`), lalu bisa disatukan lewat `trip_bookings` untuk checkout satu invoice. Semua status pembayaran mengikuti alur `pending → paid/failed` yang diatur lewat function `settle_booking`.
 - **Logic di database** — Sebagian besar aturan bisnis booking (alokasi kamar/kursi, pembuatan kode booking, pelunasan, pembatalan) ditulis sebagai PL/pgSQL function `SECURITY DEFINER` (`create_flight_booking`, `create_accommodation_booking`, `create_trip_booking`, `settle_booking`, `cancel_booking`, `claim_flight_seat`) agar validasi ketersediaan tetap atomik meski diakses concurrent.
-- **Row Level Security** — RLS aktif di seluruh 33 tabel; tabel milik pengguna (trips, bookings, reviews, chat, dst) dibatasi dengan policy `auth.uid() = user_id` atau join ke tabel induk, sementara tabel master data bersifat `read` publik.
+- **Row Level Security** — RLS aktif di seluruh 37 tabel; tabel milik pengguna (trips, bookings, reviews, chat, dst) dibatasi dengan policy `auth.uid() = user_id` atau join ke tabel induk, sementara tabel master data bersifat `read` publik.
 - **Rating otomatis** — Trigger `trg_update_rating` dan `trg_update_accommodation_rating` menghitung ulang `avg_rating` setiap kali ada perubahan pada `reviews`/`accommodation_reviews`.
 
 <details>
-<summary><strong>📄 Lihat full SQL schema export (tables, constraints, indexes, RLS policies, functions, triggers)</strong></summary>
+<summary><strong>📄 Lihat full SQL schema export (tables, constraints, indexes, RLS policies, functions, triggers)
+</strong></summary>
 
 ```sql
 -- Export schema - dikelompokkan per kategori - Sun Sep  6 19:56:11 SEAST 2026

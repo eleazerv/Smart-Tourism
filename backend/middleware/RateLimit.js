@@ -44,3 +44,16 @@ export const chatLimiter = rateLimit({
   keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
   handler: rateLimitResponse,
 })
+
+export const chatDailyLimiter = rateLimit({
+  windowMs: 24 * 60 * 60 * 1000, // 24 jam
+  max: 200,
+  standardHeaders: true,
+  legacyHeaders: false,
+  keyGenerator: (req) => req.user?.id || ipKeyGenerator(req.ip),
+  handler: (req, res) => {
+    return res.status(429).json({
+      error: 'Batas 200 pesan per hari sudah tercapai. Coba lagi besok.'
+    })
+  },
+})
