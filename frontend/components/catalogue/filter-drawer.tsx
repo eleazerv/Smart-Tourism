@@ -44,12 +44,12 @@ export function FilterDrawer({
         type="button"
         onClick={() => setOpen(true)}
         aria-expanded={open}
-        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15 lg:hidden"
+        className="inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium shadow-sm transition hover:border-brand-700 hover:bg-brand-tint/10 lg:hidden"
       >
         <SlidersHorizontal className="h-4 w-4" />
         Filter
         {activeCount > 0 && (
-          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-700 px-1.5 text-[11px] font-bold text-white dark:bg-brand-100 dark:text-brand-900">
+          <span className="grid h-5 min-w-5 place-items-center rounded-full bg-brand-700 px-1.5 text-[11px] font-bold text-white">
             {activeCount}
           </span>
         )}

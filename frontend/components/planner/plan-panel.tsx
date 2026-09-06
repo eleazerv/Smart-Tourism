@@ -476,7 +476,7 @@ function FlightRow({
           {ROLE_LABEL[role]}
         </span>
         {leg.booked_at ? (
-          <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100">
+          <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700">
             dipesan
           </span>
         ) : (
@@ -768,8 +768,8 @@ function StayPicker({
                     className={cn(
                       "flex w-full items-center justify-between gap-2 px-3 py-2 text-left transition",
                       picked
-                        ? "bg-brand-tint/10 dark:bg-brand-tint/15"
-                        : "hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                        ? "bg-brand-tint/10"
+                        : "hover:bg-brand-tint/10",
                     )}
                   >
                     <span className="min-w-0">
@@ -784,7 +784,7 @@ function StayPicker({
                       </span>
                     </span>
                     {picked && (
-                      <Check className="h-3.5 w-3.5 shrink-0 text-brand-700 dark:text-brand-100" />
+                      <Check className="h-3.5 w-3.5 shrink-0 text-brand-700" />
                     )}
                   </button>
                 </li>

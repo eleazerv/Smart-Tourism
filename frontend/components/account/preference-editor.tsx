@@ -62,8 +62,8 @@ export function PreferenceEditor({
                 className={cn(
                   "inline-flex items-center gap-1.5 rounded-full border px-4 py-2 text-sm font-medium transition",
                   active
-                    ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-                    : "border-border bg-card hover:border-brand-700 hover:text-brand-700 dark:hover:border-brand-100 dark:hover:text-brand-100",
+                    ? "border-brand-700 bg-brand-700 text-white"
+                    : "border-border bg-card hover:border-brand-700 hover:text-brand-700",
                 )}
               >
                 {active && <Check className="h-3.5 w-3.5" />}
@@ -79,7 +79,7 @@ export function PreferenceEditor({
           type="button"
           onClick={submit}
           disabled={!dirty || pending}
-          className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
           {pending ? "Menyimpan..." : "Simpan minat"}

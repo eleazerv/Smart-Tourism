@@ -101,7 +101,7 @@ export function AlbumCard({
 
   return (
     <>
-      <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700 dark:hover:border-brand-100">
+      <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700">
         <Link
           href={`/akun/tersimpan/${album.id}`}
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
@@ -223,10 +223,10 @@ function CoverMosaic({
 }) {
   if (preview.length === 0) {
     return (
-      <div className="grid aspect-[4/3] place-items-center bg-brand-tint/10 dark:bg-brand-700/25">
+      <div className="grid aspect-[4/3] place-items-center bg-brand-tint/10">
         <Images
           aria-hidden="true"
-          className="h-7 w-7 text-brand-700/60 dark:text-brand-100/60"
+          className="h-7 w-7 text-brand-700/60"
         />
       </div>
     );

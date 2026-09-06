@@ -60,7 +60,7 @@ async function SavedSection() {
         </p>
         <Link
           href="/destinations"
-          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Compass className="h-4 w-4" />
           Jelajahi destinasi
@@ -83,7 +83,7 @@ async function SavedSection() {
           harus punya tempat yang bisa dibuka, bukan menghilang dari halaman
           hanya karena belum dikelompokkan. */}
       {loose.length > 0 && (
-        <article className="group overflow-hidden rounded-2xl border border-dashed border-border bg-card transition hover:border-brand-700 dark:hover:border-brand-100">
+        <article className="group overflow-hidden rounded-2xl border border-dashed border-border bg-card transition hover:border-brand-700">
           <Link
             href={`/akun/tersimpan/${LOOSE_SLUG}`}
             className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"

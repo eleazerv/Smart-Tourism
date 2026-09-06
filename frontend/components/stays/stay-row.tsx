@@ -36,7 +36,7 @@ export function StayRow({
     stay.avg_rating !== null && stay.avg_rating > 0 ? stay.avg_rating : null;
 
   return (
-    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:flex">
+    <article className="group relative overflow-hidden rounded-2xl border border-border bg-card shadow-card transition hover:border-brand-700/40 sm:flex">
       <div className="relative aspect-[16/10] shrink-0 overflow-hidden bg-brand-700 sm:aspect-auto sm:w-56 lg:w-64">
         <Image
           src={coverImage(stay, 640, 480)}
@@ -46,7 +46,7 @@ export function StayRow({
           sizes="(min-width: 1024px) 16rem, (min-width: 640px) 14rem, 100vw"
           className="object-cover"
         />
-        <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur dark:text-brand-50">
+        <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur">
           {tierLabel(stay.tier)}
         </span>
       </div>
@@ -106,7 +106,7 @@ export function StayRow({
             </p>
             <span
               aria-hidden="true"
-              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 dark:text-brand-100"
+              className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700"
             >
               Lihat detail
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />

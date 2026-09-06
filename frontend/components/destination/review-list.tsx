@@ -57,8 +57,8 @@ export function ReviewList({
             className={cn(
               "rounded-full px-3.5 py-1.5 text-xs font-semibold transition",
               sort === option.value
-                ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                : "border border-border hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                ? "bg-brand-700 text-white"
+                : "border border-border hover:bg-brand-tint/10",
             )}
           >
             {option.label}
@@ -168,8 +168,8 @@ function ReviewCard({
           disabled={busy}
           aria-pressed={liked}
           className={cn(
-            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:bg-brand-tint/10 disabled:opacity-60 dark:hover:bg-brand-tint/15",
-            liked && "text-brand-700 dark:text-brand-100",
+            "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-xs font-medium transition hover:bg-brand-tint/10 disabled:opacity-60",
+            liked && "text-brand-700",
           )}
         >
           <Heart className={cn("h-3.5 w-3.5", liked && "fill-current")} />

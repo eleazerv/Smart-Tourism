@@ -39,7 +39,7 @@ export function PaymentResult({
             className={cn(
               "grid h-14 w-14 place-items-center rounded-full",
               tone === "positive"
-                ? "bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100"
+                ? "bg-brand-tint/10 text-brand-700"
                 : "bg-destructive/10 text-destructive",
             )}
           >
@@ -57,13 +57,13 @@ export function PaymentResult({
           <div className="mt-6 flex flex-wrap justify-center gap-2">
             <Link
               href="/akun/pesanan"
-              className="rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+              className="rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
             >
               {primaryLabel}
             </Link>
             <Link
               href="/"
-              className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+              className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10"
             >
               Kembali ke beranda
             </Link>

@@ -134,8 +134,8 @@ export function TagChips({
               className={cn(
                 "inline-block whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
                 state.tags.length === 0
-                  ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-                  : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                  ? "border-brand-700 bg-brand-700 text-white"
+                  : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
               )}
             >
               Semua
@@ -151,8 +151,8 @@ export function TagChips({
                   className={cn(
                     "inline-block whitespace-nowrap rounded-full border px-3.5 py-1.5 text-sm font-medium transition",
                     active
-                      ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-                      : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                      ? "border-brand-700 bg-brand-700 text-white"
+                      : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
                   )}
                 >
                   {tag.name}

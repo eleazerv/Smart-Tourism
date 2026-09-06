@@ -27,7 +27,7 @@ export function CheckRow({
       <Link
         href={href}
         aria-pressed={checked}
-        className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+        className="group flex items-center gap-2.5 rounded-lg px-1.5 py-1.5 text-sm transition hover:bg-brand-tint/10"
       >
         <span
           aria-hidden="true"
@@ -35,8 +35,8 @@ export function CheckRow({
             "grid h-4 w-4 shrink-0 place-items-center border transition",
             shape === "radio" ? "rounded-full" : "rounded",
             checked
-              ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-              : "border-border group-hover:border-brand-700 dark:group-hover:border-brand-100",
+              ? "border-brand-700 bg-brand-700 text-white"
+              : "border-border group-hover:border-brand-700",
           )}
         >
           {checked &&

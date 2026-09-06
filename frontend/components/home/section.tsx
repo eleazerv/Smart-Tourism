@@ -33,7 +33,7 @@ export function Section({
           {action && (
             <Link
               href={action.href}
-              className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline sm:inline-flex dark:text-brand-100"
+              className="hidden shrink-0 items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline sm:inline-flex"
             >
               {action.label}
               <ArrowRight className="h-4 w-4" />

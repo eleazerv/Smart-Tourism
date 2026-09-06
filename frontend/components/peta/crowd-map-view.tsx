@@ -50,7 +50,7 @@ import type { CityStop } from "@/lib/trip-data";
 import {
   BOUNDARY_ATTRIBUTION,
   MAP_ATTRIBUTION,
-  tileUrl,
+  MAP_TILE_URL,
 } from "@/lib/map-tiles";
 
 /**
@@ -76,10 +76,9 @@ const FIT_PADDING: L.PointTuple = [28, 28];
 /** A one-stop route has no extent; without this the fit slams to max zoom. */
 const FIT_MAX_ZOOM = 8;
 
-/** Brand deep pine and glow mint — the trip planner's own colour, kept clear
- *  of the density ramp so the two layers never read as one. */
-const PLANNER_LIGHT = "#19443C";
-const PLANNER_DARK = "#aefffa";
+/** Brand deep pine — the trip planner's own colour, kept clear of the density
+ *  ramp so the two layers never read as one. */
+const PLANNER = "#19443C";
 
 const TOOLTIP_OPTIONS: L.TooltipOptions = {
   direction: "top",
@@ -119,7 +118,6 @@ export default function CrowdMapView({
   region,
   selectedCode,
   camera,
-  theme,
   onSelect,
   onToggleStop,
   highlighted,
@@ -132,7 +130,6 @@ export default function CrowdMapView({
   region: RegionKey | "semua";
   selectedCode: string | null;
   camera: Camera;
-  theme: "light" | "dark";
   onSelect: (code: string) => void;
   onToggleStop: (id: number) => void;
   /** City the reader is pointing at in the side panel, lit up here to tie the
@@ -198,14 +195,14 @@ export default function CrowdMapView({
     const map = mapRef.current;
     if (!map) return;
 
-    const layer = L.tileLayer(tileUrl(theme), {
+    const layer = L.tileLayer(MAP_TILE_URL, {
       attribution: `${MAP_ATTRIBUTION} | ${BOUNDARY_ATTRIBUTION}`,
     }).addTo(map);
 
     return () => {
       layer.remove();
     };
-  }, [generation, theme]);
+  }, [generation]);
 
   /* ---------------------------------------------------------- overlays --- */
 
@@ -213,13 +210,12 @@ export default function CrowdMapView({
     const map = mapRef.current;
     if (!map) return;
 
-    const dark = theme === "dark";
     // The selection ring has to read against the basemap, not against the fill.
-    const selectedStroke = dark ? "#ffffff" : "#0f172a";
-    // Deep pine / glow mint from the brand palette. Deliberately outside the
-    // density ramp: its cool end ("Sangat sepi") is teal too, and a teal city
-    // dot inside a teal province wash is unreadable over Papua and Maluku.
-    const planner = dark ? PLANNER_DARK : PLANNER_LIGHT;
+    const selectedStroke = "#0f172a";
+    // Deliberately outside the density ramp: its cool end ("Sangat sepi") is
+    // teal too, and a teal city dot inside a teal province wash is unreadable
+    // over Papua and Maluku.
+    const planner = PLANNER;
     const layers = L.layerGroup().addTo(map);
 
     // 1. Province crowding, first so it sits beneath everything else.
@@ -299,7 +295,7 @@ export default function CrowdMapView({
 
       L.circleMarker([stop.lat, stop.lng], {
         radius: lit ? 11 : 8,
-        color: lit ? selectedStroke : dark ? "#042f2e" : "#ffffff",
+        color: lit ? selectedStroke : "#ffffff",
         weight: lit ? 3 : 2,
         opacity: inRegion || lit ? 1 : 0.3,
         fillColor: planner,
@@ -345,7 +341,6 @@ export default function CrowdMapView({
     region,
     selectedCode,
     highlighted,
-    theme,
   ]);
 
   /* ----------------------------------------------------------- camera --- */

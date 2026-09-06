@@ -10,19 +10,19 @@ const LABELS: Record<PaymentStatus, Tone> = {
     label: "Menunggu pembayaran",
     icon: Clock,
     className:
-      "bg-amber-50 text-amber-800 dark:bg-amber-500/15 dark:text-amber-300",
+      "bg-amber-50 text-amber-800",
   },
   paid: {
     label: "Lunas",
     icon: CheckCircle2,
     className:
-      "bg-emerald-50 text-emerald-800 dark:bg-emerald-500/15 dark:text-emerald-300",
+      "bg-emerald-50 text-emerald-800",
   },
   failed: {
     label: "Gagal terbayar",
     icon: XCircle,
     className:
-      "bg-rose-50 text-rose-700 dark:bg-rose-500/15 dark:text-rose-300",
+      "bg-rose-50 text-rose-700",
   },
   expired: {
     label: "Kedaluwarsa",

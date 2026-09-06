@@ -16,7 +16,7 @@ export default function Page() {
       }
     >
       <div className="flex gap-3">
-        <MailCheck className="h-5 w-5 shrink-0 text-brand-700 dark:text-brand-100" />
+        <MailCheck className="h-5 w-5 shrink-0 text-brand-700" />
         <p className="text-sm text-muted-foreground">
           Kami mengirim tautan konfirmasi ke email Anda. Buka tautan tersebut
           untuk mengaktifkan akun sebelum masuk.

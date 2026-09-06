@@ -90,7 +90,7 @@ export function StaySearchPanel({
 
         <button
           type="submit"
-          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 sm:col-span-2 lg:col-span-1 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="inline-flex items-center justify-center gap-2 rounded-xl bg-brand-700 px-6 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 sm:col-span-2 lg:col-span-1"
         >
           <Search className="h-4 w-4" />
           Cari

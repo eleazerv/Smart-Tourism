@@ -113,7 +113,7 @@ export function ShareAlbumDialog({
           <div className="flex items-center gap-2">
             <span
               aria-hidden="true"
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
             >
               <Share2 className="h-4 w-4" />
             </span>
@@ -148,7 +148,7 @@ export function ShareAlbumDialog({
               type="button"
               onClick={() => void enable()}
               disabled={busy}
-              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:opacity-60 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+              className="mt-4 inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:opacity-60"
             >
               {busy ? (
                 <Loader2 className="h-4 w-4 animate-spin" />
@@ -174,7 +174,7 @@ export function ShareAlbumDialog({
               <button
                 type="button"
                 onClick={() => void copy()}
-                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900"
+                className="inline-flex shrink-0 items-center gap-1.5 rounded-lg bg-brand-700 px-3 py-2 text-xs font-semibold text-white transition hover:bg-brand-900"
               >
                 {copied ? (
                   <Check className="h-3.5 w-3.5" />

@@ -13,7 +13,7 @@ export function Breadcrumb({ items }: { items: Crumb[] }) {
             {item.href ? (
               <Link
                 href={item.href}
-                className="underline-offset-2 transition hover:text-brand-700 hover:underline dark:hover:text-brand-100"
+                className="underline-offset-2 transition hover:text-brand-700 hover:underline"
               >
                 {item.label}
               </Link>

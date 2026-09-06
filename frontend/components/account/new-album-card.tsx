@@ -52,7 +52,7 @@ export function NewAlbumCard() {
       <button
         type="button"
         onClick={() => setCreating(true)}
-        className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-muted-foreground transition hover:border-brand-700 hover:bg-brand-tint/5 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:hover:border-brand-100 dark:hover:text-brand-100"
+        className="flex aspect-[4/3] w-full flex-col items-center justify-center gap-2 rounded-2xl border border-dashed border-border text-muted-foreground transition hover:border-brand-700 hover:bg-brand-tint/5 hover:text-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
       >
         <FolderPlus className="h-6 w-6" />
         <span className="text-sm font-semibold">Album baru</span>
@@ -61,7 +61,7 @@ export function NewAlbumCard() {
   }
 
   return (
-    <div className="flex aspect-[4/3] w-full flex-col justify-center gap-2 rounded-2xl border border-brand-700 bg-card p-4 dark:border-brand-100">
+    <div className="flex aspect-[4/3] w-full flex-col justify-center gap-2 rounded-2xl border border-brand-700 bg-card p-4">
       <label className="text-xs font-medium text-muted-foreground">
         Nama album
         <input
@@ -88,7 +88,7 @@ export function NewAlbumCard() {
           type="button"
           onClick={() => void submit()}
           disabled={busy || !name.trim()}
-          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:opacity-50 dark:bg-brand-100 dark:text-brand-900"
+          className="inline-flex flex-1 items-center justify-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:opacity-50"
         >
           {busy ? (
             <Loader2 className="h-4 w-4 animate-spin" />

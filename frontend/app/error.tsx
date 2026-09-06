@@ -38,7 +38,7 @@ export default function AppError({
 
       <main className="flex-1">
         <div className="container-page flex flex-col items-center py-24 text-center">
-          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
+          <span className="grid h-14 w-14 place-items-center rounded-full bg-brand-tint/10 text-brand-700">
             <TriangleAlert className="h-6 w-6" />
           </span>
           <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
@@ -53,14 +53,14 @@ export default function AppError({
             <button
               type="button"
               onClick={reset}
-              className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+              className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
             >
               <RotateCcw className="h-4 w-4" />
               Coba lagi
             </button>
             <Link
               href="/"
-              className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+              className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10"
             >
               Kembali ke beranda
             </Link>

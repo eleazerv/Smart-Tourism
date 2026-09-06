@@ -61,8 +61,8 @@ export function FavoriteButton({
           className={cn(
             "h-4 w-4 transition-colors",
             saved
-              ? "fill-brand-700 text-brand-700 dark:fill-brand-100 dark:text-brand-100"
-              : "text-brand-900 dark:text-brand-50",
+              ? "fill-brand-700 text-brand-700"
+              : "text-brand-900",
           )}
         />
       </button>

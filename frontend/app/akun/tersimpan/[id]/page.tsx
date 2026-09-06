@@ -77,7 +77,7 @@ async function AlbumDetail({ params }: PageProps) {
           </p>
           <Link
             href="/destinations"
-            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+            className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
           >
             <Compass className="h-4 w-4" />
             Cari destinasi
@@ -119,7 +119,7 @@ function Shell({
           {count} destinasi
         </p>
         {shared && (
-          <span className="inline-flex items-center gap-1 rounded-full bg-brand-tint/10 px-2 py-0.5 text-xs font-semibold text-brand-700 dark:bg-brand-700/40 dark:text-brand-50">
+          <span className="inline-flex items-center gap-1 rounded-full bg-brand-tint/10 px-2 py-0.5 text-xs font-semibold text-brand-700">
             <Share2 className="h-3 w-3" />
             Dibagikan
           </span>

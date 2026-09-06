@@ -12,9 +12,9 @@ import {
 import { cn } from "@/lib/utils";
 
 const TONE = {
-  quiet: "bg-emerald-500/10 text-emerald-700 dark:text-emerald-300",
-  moderate: "bg-amber-500/10 text-amber-700 dark:text-amber-300",
-  busy: "bg-rose-500/10 text-rose-700 dark:text-rose-300",
+  quiet: "bg-emerald-500/10 text-emerald-700",
+  moderate: "bg-amber-500/10 text-amber-700",
+  busy: "bg-rose-500/10 text-rose-700",
 } as const;
 
 const BADGE =
@@ -30,8 +30,8 @@ export function SeasonBadge({ season }: { season: string }) {
       className={cn(
         BADGE,
         dry
-          ? "bg-amber-500/10 text-amber-700 dark:text-amber-300"
-          : "bg-sky-500/10 text-sky-700 dark:text-sky-300",
+          ? "bg-amber-500/10 text-amber-700"
+          : "bg-sky-500/10 text-sky-700",
       )}
     >
       <Icon className="h-3 w-3" />
@@ -71,7 +71,7 @@ export function TimingCard({
     <article className="flex flex-col rounded-2xl border border-border bg-card p-4 shadow-card">
       <div className="flex items-start gap-2">
         {rank !== undefined && (
-          <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
+          <span className="mt-0.5 grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white">
             {rank}
           </span>
         )}
@@ -103,7 +103,7 @@ export function TimingCard({
       {state.provinceId !== info.province.id && (
         <Link
           href={timingHref(state, { provinceId: info.province.id })}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-100"
+          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
           Lihat rekomendasi provinsi ini
           <ArrowRight className="h-4 w-4" />

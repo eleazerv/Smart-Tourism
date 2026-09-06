@@ -36,7 +36,7 @@ export function FilterGroup({
         <button
           type="button"
           onClick={() => setExpanded((value) => !value)}
-          className="mt-1.5 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline dark:text-brand-100"
+          className="mt-1.5 text-xs font-semibold text-brand-700 underline-offset-2 hover:underline"
         >
           {expanded
             ? "Tampilkan lebih sedikit"

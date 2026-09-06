@@ -120,7 +120,7 @@ async function BookingDetail({ params }: PageProps) {
                   href={booking.invoice_url}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2 dark:text-brand-100"
+                  className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2"
                 >
                   Buka tagihan yang sudah dibuat
                   <ExternalLink className="h-3.5 w-3.5" />
@@ -172,7 +172,7 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
     <div
       className={
         alarming
-          ? "mt-4 flex gap-3 rounded-xl border border-rose-200 bg-rose-50/70 p-4 dark:border-rose-500/30 dark:bg-rose-500/10"
+          ? "mt-4 flex gap-3 rounded-xl border border-rose-200 bg-rose-50/70 p-4"
           : "mt-4 flex gap-3 rounded-xl border border-border bg-muted/50 p-4"
       }
     >
@@ -180,7 +180,7 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
         aria-hidden="true"
         className={
           alarming
-            ? "mt-0.5 h-5 w-5 shrink-0 text-rose-600 dark:text-rose-300"
+            ? "mt-0.5 h-5 w-5 shrink-0 text-rose-600"
             : "mt-0.5 h-5 w-5 shrink-0 text-muted-foreground"
         }
       />
@@ -191,7 +191,7 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
 
         <Link
           href="/flights"
-          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Search className="h-4 w-4" />
           Cari penerbangan lagi

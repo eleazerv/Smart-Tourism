@@ -21,7 +21,6 @@
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { useTheme } from "next-themes";
 import {
   ArrowRight,
   ChevronDown,
@@ -94,8 +93,6 @@ export function CrowdMapPanel({
     token: 0,
   });
 
-  const { resolvedTheme } = useTheme();
-  const theme = resolvedTheme === "dark" ? "dark" : "light";
 
   // The itinerary outlives a reload. Restoring has to happen after mount —
   // reading storage during render would not match the server's empty trip.
@@ -224,7 +221,6 @@ export function CrowdMapPanel({
           region={region}
           selectedCode={selectedCode}
           camera={camera}
-          theme={theme}
           onSelect={pickProvince}
           onToggleStop={toggleStop}
           highlighted={hovered}
@@ -248,8 +244,8 @@ export function CrowdMapPanel({
                 className={cn(
                   "shrink-0 rounded-full border px-3.5 py-1.5 text-sm font-semibold transition",
                   region === entry.key
-                    ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
-                    : "border-border bg-background hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15",
+                    ? "border-brand-700 bg-brand-700 text-white"
+                    : "border-border bg-background hover:bg-brand-tint/10",
                 )}
               >
                 {entry.label}
@@ -294,7 +290,7 @@ export function CrowdMapPanel({
             <p className="flex items-center gap-1.5 border-t border-border pt-1 text-xs text-muted-foreground">
               <span
                 aria-hidden="true"
-                className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-background bg-brand-700 dark:bg-brand-100"
+                className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-background bg-brand-700"
               />
               Titik kota — klik untuk menambahkannya ke rute
             </p>
@@ -393,9 +389,9 @@ function TripCard({
             onMouseLeave={() => onHover(null)}
             onFocus={() => onHover(stop.id)}
             onBlur={() => onHover(null)}
-            className="flex items-center gap-2 rounded-xl px-1 py-1 transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+            className="flex items-center gap-2 rounded-xl px-1 py-1 transition hover:bg-brand-tint/10"
           >
-            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
+            <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white">
               {index + 1}
             </span>
             <span className="min-w-0 flex-1">
@@ -452,7 +448,7 @@ function TripCard({
         <button
           type="button"
           onClick={onFit}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-brand-tint/10"
         >
           <MapPin className="h-3.5 w-3.5" />
           Lihat seluruh rute
@@ -480,7 +476,7 @@ function StopRecommendations({
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center gap-2">
-        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
+        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white">
           {order}
         </span>
         <div className="min-w-0">
@@ -496,7 +492,7 @@ function StopRecommendations({
           <li key={highlight.id}>
             <Link
               href={`/destinations/${highlight.id}`}
-              className="group block rounded-lg px-1 py-1 transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+              className="group block rounded-lg px-1 py-1 transition hover:bg-brand-tint/10"
             >
               <span className="flex items-center gap-1 text-sm font-medium">
                 <span className="truncate">{highlight.name}</span>
@@ -521,7 +517,7 @@ function StopRecommendations({
         // everything filed under one city.
         <Link
           href={`/destinations?q=${encodeURIComponent(stop.name)}`}
-          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-100"
+          className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
           Lihat semua {stop.total} destinasi
           <ArrowRight className="h-3.5 w-3.5" />
@@ -573,7 +569,7 @@ function StopPicker({
         </span>
       </div>
 
-      <div className="mt-2 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20 dark:focus-within:border-brand-100">
+      <div className="mt-2 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <label htmlFor="trip-city-search" className="sr-only">
           Cari kota atau provinsi
@@ -618,7 +614,7 @@ function StopPicker({
                   onFocus={() => onHover(stop.id)}
                   onBlur={() => onHover(null)}
                   aria-pressed={chosen}
-                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+                  className="flex w-full items-center gap-2 rounded-xl px-2 py-1.5 text-left transition hover:bg-brand-tint/10"
                 >
                   <span className="min-w-0 flex-1">
                     <span className="block truncate text-sm font-medium">
@@ -629,7 +625,7 @@ function StopPicker({
                     </span>
                   </span>
                   {chosen ? (
-                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white dark:bg-brand-100 dark:text-brand-900">
+                    <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-brand-700 text-xs font-bold text-white">
                       {order + 1}
                     </span>
                   ) : (
@@ -745,7 +741,7 @@ function ProvinceCard({ point, total }: { point: DensityPoint; total: number }) 
       {point.place && (
         <Link
           href={`/destinations?province_id=${point.place.id}`}
-          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-100"
+          className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
           Lihat destinasi di sini
           <ArrowRight className="h-4 w-4" />

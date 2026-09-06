@@ -113,12 +113,12 @@ export function MonthCalendar({
                 "flex flex-col items-center justify-center rounded-lg border text-center transition",
                 compact ? "h-9" : "h-12",
                 selected
-                  ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                  ? "border-brand-700 bg-brand-700 text-white"
                   : disabled
                     ? "cursor-not-allowed border-transparent text-muted-foreground/50"
                     : ranged
-                      ? "border-transparent bg-brand-tint/15 dark:bg-brand-tint/20"
-                      : "border-transparent hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                      ? "border-transparent bg-brand-tint/15"
+                      : "border-transparent hover:border-brand-700 hover:bg-brand-tint/10",
               )}
             >
               <span className="text-sm font-semibold tabular-nums leading-none">
@@ -156,7 +156,7 @@ function MonthButton({
       aria-label={label}
       disabled={disabled}
       onClick={onClick}
-      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border transition hover:bg-brand-tint/10 disabled:cursor-not-allowed disabled:opacity-40 dark:hover:bg-brand-tint/15"
+      className="grid h-8 w-8 shrink-0 place-items-center rounded-full border border-border transition hover:bg-brand-tint/10 disabled:cursor-not-allowed disabled:opacity-40"
     >
       {children}
     </button>

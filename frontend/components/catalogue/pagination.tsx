@@ -71,8 +71,8 @@ export function Pagination({
             className={cn(
               "grid h-9 min-w-9 place-items-center rounded-full px-3 text-sm font-medium tabular-nums transition",
               entry === page
-                ? "bg-brand-700 text-white dark:bg-brand-100 dark:text-brand-900"
-                : "border border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15",
+                ? "bg-brand-700 text-white"
+                : "border border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
             )}
           >
             {entry}
@@ -118,7 +118,7 @@ function Step({
     <Link
       href={href}
       aria-label={label}
-      className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+      className="grid h-9 w-9 place-items-center rounded-full border border-border bg-card transition hover:border-brand-700 hover:bg-brand-tint/10"
     >
       <Icon className="h-4 w-4" />
     </Link>

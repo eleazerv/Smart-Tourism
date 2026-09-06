@@ -23,7 +23,7 @@ export function AuthShell({
         <Logo />
         <Link
           href="/"
-          className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700 dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
+          className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700"
         >
           <ArrowLeft className="h-4 w-4" />
           Kembali ke beranda
@@ -68,7 +68,7 @@ export function AuthSubmit({
     <button
       type="submit"
       disabled={pending}
-      className="w-full rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+      className="w-full rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60"
     >
       {pending ? pendingLabel : children}
     </button>
@@ -98,7 +98,7 @@ export function AuthLink({
   return (
     <Link
       href={href}
-      className="font-semibold text-brand-700 underline-offset-4 hover:underline dark:text-brand-100"
+      className="font-semibold text-brand-700 underline-offset-4 hover:underline"
     >
       {children}
     </Link>

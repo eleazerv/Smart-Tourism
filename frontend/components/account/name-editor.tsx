@@ -70,7 +70,7 @@ export function NameEditor({ name }: { name: string }) {
           type="button"
           onClick={open}
           aria-label="Ubah nama"
-          className="shrink-0 rounded-full p-1.5 text-muted-foreground transition hover:bg-brand-tint/10 hover:text-brand-700 dark:hover:bg-brand-tint/15 dark:hover:text-brand-100"
+          className="shrink-0 rounded-full p-1.5 text-muted-foreground transition hover:bg-brand-tint/10 hover:text-brand-700"
         >
           <Pencil className="h-3.5 w-3.5" />
         </button>
@@ -100,7 +100,7 @@ export function NameEditor({ name }: { name: string }) {
           type="submit"
           disabled={pending}
           aria-label="Simpan nama"
-          className="shrink-0 rounded-full bg-brand-700 p-2 text-white transition hover:bg-brand-900 disabled:opacity-50 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="shrink-0 rounded-full bg-brand-700 p-2 text-white transition hover:bg-brand-900 disabled:opacity-50"
         >
           {pending ? (
             <Loader2 className="h-3.5 w-3.5 animate-spin" />

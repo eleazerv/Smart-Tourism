@@ -17,8 +17,7 @@
 import { useEffect, useRef, useState } from "react";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
-import { useTheme } from "next-themes";
-import { MAP_ATTRIBUTION, tileUrl } from "@/lib/map-tiles";
+import { MAP_ATTRIBUTION, MAP_TILE_URL } from "@/lib/map-tiles";
 
 /** Close enough to read the surrounding streets without losing the district. */
 const ZOOM = 14;
@@ -57,8 +56,6 @@ export default function PlaceMap({
   // it rather than against a map that has just been removed.
   const [generation, setGeneration] = useState(0);
 
-  const { resolvedTheme } = useTheme();
-  const theme = resolvedTheme === "dark" ? "dark" : "light";
 
   useEffect(() => {
     const element = containerRef.current;
@@ -97,7 +94,7 @@ export default function PlaceMap({
     const map = mapRef.current;
     if (!map) return;
 
-    const layer = L.tileLayer(tileUrl(theme), {
+    const layer = L.tileLayer(MAP_TILE_URL, {
       attribution: MAP_ATTRIBUTION,
       // Beyond MAX_NATIVE_ZOOM the provider 404s; capping it here makes
       // Leaflet stretch the last real tile instead of showing blank squares.
@@ -109,7 +106,7 @@ export default function PlaceMap({
     return () => {
       layer.remove();
     };
-  }, [generation, theme]);
+  }, [generation]);
 
   useEffect(() => {
     const map = mapRef.current;

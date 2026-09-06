@@ -15,9 +15,9 @@ import {
 import { cn } from "@/lib/utils";
 
 const TONE: Record<CrowdLevel["tone"], { bar: string; text: string }> = {
-  quiet: { bar: "bg-emerald-500", text: "text-emerald-700 dark:text-emerald-300" },
-  moderate: { bar: "bg-amber-500", text: "text-amber-700 dark:text-amber-300" },
-  busy: { bar: "bg-rose-500", text: "text-rose-700 dark:text-rose-300" },
+  quiet: { bar: "bg-emerald-500", text: "text-emerald-700" },
+  moderate: { bar: "bg-amber-500", text: "text-amber-700" },
+  busy: { bar: "bg-rose-500", text: "text-rose-700" },
 };
 
 /**
@@ -76,7 +76,7 @@ export function PlanCard({
         id="plan-month"
         value={month}
         onChange={(event) => setMonth(Number(event.target.value))}
-        className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 dark:focus-visible:ring-brand-100"
+        className="mt-2 w-full rounded-xl border border-input bg-background px-3 py-2.5 text-sm font-medium focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700"
       >
         {MONTHS.map((name, i) => (
           <option key={name} value={i + 1}>
@@ -91,7 +91,7 @@ export function PlanCard({
           bestMonths.length === 0
             ? "bg-muted text-muted-foreground"
             : suits
-              ? "bg-brand-tint/10 text-brand-900 dark:bg-brand-700/40 dark:text-brand-50"
+              ? "bg-brand-tint/10 text-brand-900"
               : "bg-muted text-muted-foreground",
         )}
       >
@@ -137,13 +137,13 @@ export function PlanCard({
           href={`/recommendations?month=${month}${
             destination.province_id ? `&province_id=${destination.province_id}` : ""
           }`}
-          className="block rounded-full bg-brand-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="block rounded-full bg-brand-700 px-5 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           Lihat rekomendasi {MONTHS[month - 1]}
         </Link>
         <a
           href="#ulasan"
-          className="flex items-center justify-center gap-2 rounded-full border border-border px-5 py-3 text-sm font-semibold transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15"
+          className="flex items-center justify-center gap-2 rounded-full border border-border px-5 py-3 text-sm font-semibold transition hover:bg-brand-tint/10"
         >
           <MessageSquarePlus className="h-4 w-4" />
           Tulis ulasan

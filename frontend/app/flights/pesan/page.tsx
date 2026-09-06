@@ -108,7 +108,7 @@ async function Booking({ searchParams }: PageProps) {
         </div>
         <Link
           href={backHref}
-          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+          className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
         >
           <ArrowLeft className="h-4 w-4" />
           Ganti penerbangan
@@ -172,7 +172,7 @@ async function Booking({ searchParams }: PageProps) {
             </ul>
             <Link
               href="/akun/pesanan"
-              className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2 dark:text-brand-100"
+              className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
             >
               Lihat Pesanan saya
             </Link>
@@ -232,7 +232,7 @@ function ItineraryCard({
               className="absolute -top-[7px] right-0 h-3.5 w-3.5 text-muted-foreground"
             />
           </div>
-          <p className="text-center text-[11px] font-medium text-emerald-700 dark:text-emerald-400">
+          <p className="text-center text-[11px] font-medium text-emerald-700">
             Langsung
           </p>
         </div>
@@ -278,7 +278,7 @@ function SignInFirst({ nextHref }: { nextHref: string }) {
     <div className="space-y-3">
       <Link
         href={`/auth/login?next=${encodeURIComponent(nextHref)}`}
-        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         <LogIn className="h-4 w-4" />
         Masuk untuk memesan
@@ -307,7 +307,7 @@ function Missing() {
       </p>
       <Link
         href="/flights"
-        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+        className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         Cari penerbangan
       </Link>

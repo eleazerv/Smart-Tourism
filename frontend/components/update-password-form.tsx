@@ -171,7 +171,7 @@ export function UpdatePasswordForm({
       {done && (
         <p
           role="status"
-          className="rounded-lg border border-brand-700/30 bg-brand-tint/10 px-3 py-2 text-sm text-brand-900 dark:border-brand-100/30 dark:bg-brand-tint/15 dark:text-brand-100"
+          className="rounded-lg border border-brand-700/30 bg-brand-tint/10 px-3 py-2 text-sm text-brand-900"
         >
           Kata sandi berhasil diperbarui.
         </p>

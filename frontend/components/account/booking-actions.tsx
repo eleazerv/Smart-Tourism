@@ -52,7 +52,7 @@ export function BookingActions({ bookingId }: { bookingId: string }) {
           type="button"
           onClick={pay}
           disabled={busy}
-          className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-60"
         >
           {paying ? (
             <Loader2 className="h-4 w-4 animate-spin" />

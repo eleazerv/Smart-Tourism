@@ -249,7 +249,7 @@ export function DestinationPreview({
               {detail.tags.map((tag) => (
                 <li
                   key={tag.id}
-                  className="rounded-full bg-brand-tint/10 px-2.5 py-1 text-[11px] font-medium text-brand-700 dark:bg-brand-tint/15 dark:text-brand-100"
+                  className="rounded-full bg-brand-tint/10 px-2.5 py-1 text-[11px] font-medium text-brand-700"
                 >
                   {tag.name}
                 </li>
@@ -305,7 +305,7 @@ export function DestinationPreview({
           {reviews.length > REVIEWS_SHOWN && (
             <Link
               href={`/destinations/${destinationId}`}
-              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline-offset-2 hover:underline dark:text-brand-100"
+              className="mt-2 inline-flex items-center gap-1 text-xs font-medium text-brand-700 underline-offset-2 hover:underline"
             >
               Lihat {reviews.length - REVIEWS_SHOWN} ulasan lainnya
               <ArrowUpRight className="h-3.5 w-3.5" />
@@ -400,7 +400,7 @@ function BestMonths({
                 className={cn(
                   "rounded-lg border py-1.5 text-center text-[10px] font-semibold",
                   good.has(month)
-                    ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                    ? "border-brand-700 bg-brand-700 text-white"
                     : "border-border bg-card text-muted-foreground",
                   month === currentMonth &&
                     "ring-2 ring-brand-tint ring-offset-1 ring-offset-background",

@@ -32,7 +32,7 @@ export function Facts({ destination }: { destination: DestinationDetail }) {
     <dl className="grid grid-cols-2 gap-3 rounded-2xl border border-border bg-card p-4 sm:grid-cols-3">
       {facts.map(({ icon: Icon, label, value }) => (
         <div key={label} className="flex items-start gap-2.5">
-          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/40 dark:text-brand-100">
+          <span className="grid h-8 w-8 shrink-0 place-items-center rounded-full bg-brand-tint/10 text-brand-700">
             <Icon className="h-4 w-4" />
           </span>
           <div className="min-w-0">

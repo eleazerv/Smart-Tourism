@@ -173,14 +173,14 @@ export function AlbumPicker({
                   aria-checked={on}
                   disabled={busy}
                   onClick={() => toggle(album.id)}
-                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-brand-tint/10 disabled:opacity-60 dark:hover:bg-brand-tint/15"
+                  className="flex w-full items-center gap-2.5 rounded-lg px-2 py-2 text-left transition hover:bg-brand-tint/10 disabled:opacity-60"
                 >
                   <span
                     aria-hidden="true"
                     className={cn(
                       "grid h-4 w-4 shrink-0 place-items-center rounded border transition",
                       on
-                        ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+                        ? "border-brand-700 bg-brand-700 text-white"
                         : "border-border",
                     )}
                   >
@@ -231,7 +231,7 @@ export function AlbumPicker({
               type="button"
               onClick={() => void submitNew()}
               disabled={busy || !name.trim()}
-              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-700 text-white transition hover:bg-brand-900 disabled:opacity-50 dark:bg-brand-100 dark:text-brand-900"
+              className="grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-brand-700 text-white transition hover:bg-brand-900 disabled:opacity-50"
               aria-label="Buat album"
             >
               {busy ? (
@@ -245,7 +245,7 @@ export function AlbumPicker({
           <button
             type="button"
             onClick={() => setCreating(true)}
-            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-medium text-brand-700 transition hover:bg-brand-tint/10 dark:text-brand-100 dark:hover:bg-brand-tint/15"
+            className="flex w-full items-center gap-2 rounded-lg px-2 py-2 text-left font-medium text-brand-700 transition hover:bg-brand-tint/10"
           >
             <FolderPlus className="h-4 w-4 shrink-0" />
             Album baru

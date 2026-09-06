@@ -91,8 +91,8 @@ export async function AvailabilityCard({
                 <span
                   className={
                     enough
-                      ? "text-emerald-700 dark:text-emerald-400"
-                      : "text-rose-700 dark:text-rose-400"
+                      ? "text-emerald-700"
+                      : "text-rose-700"
                   }
                 >
                   {availability.available} dari {availability.room_count} kamar
@@ -128,7 +128,7 @@ export async function AvailabilityCard({
 
         <Link
           href={toHref({ ...state, cityId: stay.cities?.id ?? null, page: 1 })}
-          className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:text-brand-100 dark:hover:border-brand-100 dark:hover:bg-brand-700/30"
+          className="mt-3 inline-flex w-full items-center justify-center rounded-full border border-border px-4 py-2.5 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
         >
           Bandingkan penginapan lain
         </Link>

@@ -223,7 +223,7 @@ function EmptyStays({
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
         aria-hidden="true"
-        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700 dark:bg-brand-700/50 dark:text-brand-50"
+        className="mx-auto grid h-12 w-12 place-items-center rounded-full bg-brand-tint/10 text-brand-700"
       >
         <Compass className="h-6 w-6" />
       </span>
@@ -238,7 +238,7 @@ function EmptyStays({
         {activeFilterCount(state) > 0 && (
           <Link
             href={resetHref}
-            className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+            className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
           >
             Hapus semua filter
           </Link>
@@ -246,14 +246,14 @@ function EmptyStays({
         {state.cityId !== null && (
           <Link
             href={withFilter(state, { cityId: null })}
-            className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10 dark:hover:border-brand-100 dark:hover:bg-brand-tint/15"
+            className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
           >
             Cari di seluruh kota
           </Link>
         )}
         <Link
           href={toHref({ ...state, cityId: null, page: 1 })}
-          className="inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           Lihat semua penginapan
         </Link>

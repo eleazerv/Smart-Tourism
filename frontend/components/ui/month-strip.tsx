@@ -40,13 +40,13 @@ export function MonthStrip({
           const className = cn(
             "flex flex-col items-center gap-1 rounded-xl border px-1 py-2 text-center text-xs font-semibold",
             good
-              ? "border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+              ? "border-brand-700 bg-brand-700 text-white"
               : "border-border bg-card text-muted-foreground",
             // Sits outside the border, so it reads the same over a filled
             // month and an empty one.
             now && "ring-2 ring-foreground/50 ring-offset-2 ring-offset-background",
             hrefFor &&
-              "transition hover:border-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2 dark:hover:border-brand-100",
+              "transition hover:border-brand-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2",
           );
 
           const label = `${MONTHS[i]}: ${good ? activeLabel : inactiveLabel}${
@@ -88,7 +88,7 @@ export function MonthStrip({
         <li className="flex items-center gap-1.5">
           <span
             aria-hidden="true"
-            className="grid h-4 w-4 place-items-center rounded-md border border-brand-700 bg-brand-700 text-white dark:border-brand-100 dark:bg-brand-100 dark:text-brand-900"
+            className="grid h-4 w-4 place-items-center rounded-md border border-brand-700 bg-brand-700 text-white"
           >
             <Mark good />
           </span>

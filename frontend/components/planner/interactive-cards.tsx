@@ -150,7 +150,7 @@ function Row({
 
 function Added({ label }: { label: string }) {
   return (
-    <span className="flex items-center gap-1 text-xs font-medium text-brand-700 dark:text-brand-100">
+    <span className="flex items-center gap-1 text-xs font-medium text-brand-700">
       <Check className="h-3.5 w-3.5" />
       {label}
     </span>
@@ -240,7 +240,7 @@ function DestinationCard({
               return (
                 <article
                   key={d.id}
-                  className="w-44 shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:border-brand-700/40 dark:hover:border-brand-100/30 sm:w-48"
+                  className="w-44 shrink-0 snap-start overflow-hidden rounded-2xl border border-border bg-card shadow-sm transition hover:border-brand-700/40 sm:w-48"
                 >
                   {/* Seluruh bagian atas kartu jadi satu tombol pembuka
                       pratinjau. Tombol "Tambahkan" sengaja di luar tombol ini

@@ -37,7 +37,7 @@ export function ReviewForm({
         </p>
         <Link
           href="/auth/login"
-          className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           Masuk
         </Link>
@@ -98,7 +98,7 @@ export function ReviewForm({
               setRating(star);
               setMessage(null);
             }}
-            className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 dark:focus-visible:ring-brand-100"
+            className="rounded p-0.5 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700"
           >
             <Star
               className={cn(
@@ -126,11 +126,11 @@ export function ReviewForm({
         rows={4}
         maxLength={2000}
         placeholder="Ceritakan kapan Anda datang, seramai apa, dan apa yang perlu disiapkan pengunjung berikutnya."
-        className="mt-3 w-full resize-y rounded-xl border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 dark:focus-visible:ring-brand-100"
+        className="mt-3 w-full resize-y rounded-xl border border-input bg-background px-3 py-2.5 text-sm placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700"
       />
 
       <div className="mt-3 flex flex-wrap items-center gap-3">
-        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-brand-tint/10 dark:hover:bg-brand-tint/15">
+        <label className="inline-flex cursor-pointer items-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:bg-brand-tint/10">
           <ImagePlus className="h-4 w-4" />
           Tambah foto
           <input
@@ -162,7 +162,7 @@ export function ReviewForm({
         <button
           type="submit"
           disabled={pending}
-          className="ml-auto inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50 dark:bg-brand-100 dark:text-brand-900 dark:hover:bg-brand-50"
+          className="ml-auto inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
         >
           {pending && <Loader2 className="h-4 w-4 animate-spin" />}
           {pending ? "Mengirim..." : "Kirim ulasan"}
@@ -174,7 +174,7 @@ export function ReviewForm({
           role="status"
           className={cn(
             "mt-3 text-sm",
-            ok ? "text-brand-700 dark:text-brand-100" : "text-destructive",
+            ok ? "text-brand-700" : "text-destructive",
           )}
         >
           {message}
