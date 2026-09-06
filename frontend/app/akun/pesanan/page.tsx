@@ -1,6 +1,5 @@
 "use client";
 
-import type { Metadata } from "next";
 import { useState } from "react";
 import { AccountSection } from "@/components/account/account-section";
 import { FlightBookingList } from "@/components/account/flight-booking-list";
@@ -8,7 +7,6 @@ import { TripBookingList } from "@/components/account/trip-booking-list";
 import { AccommodationBookingList } from "@/components/account/accommodation-booking-list";
 import { cn } from "@/lib/utils";
 
-export const metadata: Metadata = { title: "Detail Pesanan" };
 
 const TABS = [
   { key: "trip", label: "Paket Trip" },
