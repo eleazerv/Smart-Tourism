@@ -381,6 +381,76 @@ export type NearbyAccommodation = {
   distance_km: number | null;
 };
 
+/* --------------------------------------------- accommodation bookings --- */
+
+/**
+ * The property as a booking carries it. Narrower than `Accommodation`: the
+ * booking join selects no price or review aggregate, because a booking records
+ * what was charged at the time (`price_per_night` on the room) rather than
+ * what the property costs today.
+ */
+export type BookedAccommodation = {
+  id: string;
+  name: string;
+  tier: AccommodationTier;
+  max_guests: number | null;
+  partner_name: string | null;
+  cover_image_url: string | null;
+  latitude: number | null;
+  longitude: number | null;
+  cities: (CityRef & { provinces: ProvinceRef | null }) | null;
+};
+
+/** The columns the list endpoint joins — no money, no guest count. */
+export type AccommodationBookingRoomSummary = {
+  id: string;
+  room_name: string;
+  check_in: string;
+  check_out: string;
+  nights: number;
+  accommodations: Pick<
+    BookedAccommodation,
+    "id" | "name" | "tier" | "cover_image_url"
+  > | null;
+};
+
+/**
+ * One room in a booking. A booking can hold up to five, each with its own
+ * dates and party size — the API never splits a party into rooms on its own,
+ * so this array is exactly what the reader asked for.
+ */
+export type AccommodationBookingRoom = AccommodationBookingRoomSummary & {
+  guests: number;
+  price_per_night: number;
+  subtotal: number;
+  accommodations: BookedAccommodation | null;
+};
+
+/** `GET /api/accommodation-bookings` — no invoice columns are selected. */
+export type AccommodationBookingSummary = {
+  id: string;
+  booking_code: string;
+  total_price: number;
+  payment_status: PaymentStatus;
+  created_at: string;
+  paid_at: string | null;
+  accommodation_booking_rooms: AccommodationBookingRoomSummary[];
+};
+
+export type AccommodationBooking = {
+  id: string;
+  booking_code: string;
+  total_price: number;
+  payment_status: PaymentStatus;
+  payment_method: string | null;
+  invoice_url: string | null;
+  /** Payment deadline. Read as UTC — Postgres returns it without a zone. */
+  invoice_expires_at: string | null;
+  created_at: string;
+  paid_at: string | null;
+  accommodation_booking_rooms: AccommodationBookingRoom[];
+};
+
 
 /**
  * Kartu pilihan yang menempel di bawah satu balasan AI.
@@ -646,41 +716,3 @@ export type TripBookingDetail = TripBookingSummary & {
   }[];
 };
 
-/* */
-export type AccommodationBookingRoom = {
-  id: string;
-  room_name: string;
-  check_in: string;
-  check_out: string;
-  guests: number;
-  nights: number;
-  subtotal: number;
-  price_per_night?: number;
-  accommodations: {
-    id: string;
-    name: string;
-    tier: AccommodationTier;
-    cover_image_url: string | null;
-    latitude?: number | null;
-    longitude?: number | null;
-    max_guests?: number | null;
-    partner_name?: string | null;
-    cities?: { id: number; name: string; provinces: ProvinceRef | null } | null;
-  } | null;
-};
-
-export type AccommodationBookingSummary = {
-  id: string;
-  booking_code: string;
-  total_price: number;
-  payment_status: PaymentStatus;
-  created_at: string;
-  paid_at: string | null;
-  accommodation_booking_rooms: AccommodationBookingRoom[];
-};
-
-export type AccommodationBooking = AccommodationBookingSummary & {
-  payment_method: string | null;
-  invoice_url: string | null;
-  invoice_expires_at: string | null;
-};

@@ -21,7 +21,7 @@ import {
   type PaymentStatus,
 } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
-import { formatDateTime } from "@/lib/format-date";
+import { deadlinePassed, formatDateTime } from "@/lib/format-date";
 import { formatDateLabel } from "@/lib/flights-search";
 import { formatIDR } from "@/lib/seeded-random";
 
@@ -73,7 +73,7 @@ async function BookingDetail({ params }: PageProps) {
   const invoiceLive =
     booking.payment_status === "pending" &&
     booking.invoice_url !== null &&
-    !isExpired(booking.invoice_expires_at);
+    !deadlinePassed(booking.invoice_expires_at);
 
   return (
     <AccountSection
@@ -310,13 +310,6 @@ function ItemCard({
 }
 
 /** `invoice_expires_at` comes back without a zone; the API reads it as UTC. */
-function isExpired(expiresAt: string | null): boolean {
-  if (!expiresAt) return true;
-  const parsed = Date.parse(
-    expiresAt.endsWith("Z") ? expiresAt : `${expiresAt}Z`,
-  );
-  return Number.isNaN(parsed) || parsed <= Date.now();
-}
 
 function Row({ label, value }: { label: string; value: string }) {
   return (

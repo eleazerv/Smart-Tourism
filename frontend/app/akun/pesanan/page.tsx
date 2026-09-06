@@ -1,5 +1,6 @@
 "use client";
 
+import type { Metadata } from "next";
 import { useState } from "react";
 import { AccountSection } from "@/components/account/account-section";
 import { FlightBookingList } from "@/components/account/flight-booking-list";
@@ -21,7 +22,7 @@ export default function AccountBookingsPage() {
   return (
     <AccountSection
       title="Pesanan saya"
-      description="Semua pesanan Anda, dikelompokkan berdasarkan jenis."
+      description="Semua pesanan Anda — paket trip, tiket pesawat, dan penginapan — beserta status pembayarannya."
     >
       <div className="flex gap-1 border-b border-border">
         {TABS.map((t) => (
@@ -29,6 +30,7 @@ export default function AccountBookingsPage() {
             key={t.key}
             type="button"
             onClick={() => setTab(t.key)}
+            aria-current={tab === t.key ? "page" : undefined}
             className={cn(
               "border-b-2 px-4 py-2.5 text-sm font-medium transition",
               tab === t.key

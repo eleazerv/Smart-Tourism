@@ -6,6 +6,8 @@
 import { apiFetch, type ApiFetchOptions } from "@/lib/api/client";
 import type {
   Accommodation,
+  AccommodationBooking,
+  AccommodationBookingSummary,
   Album,
   AlbumDetail,
   AccommodationAvailability,
@@ -39,8 +41,7 @@ import type {
   TripBookingSummary,
   TripCanvas,
   TripFlightRole,
-  AccommodationBookingSummary,
-  AccommodationBooking,
+
 } from "@/lib/api/types";
 
 type Auth = Pick<ApiFetchOptions, "token" | "signal">;
@@ -673,6 +674,83 @@ export async function cancelFlightBooking(id: string, auth: Auth) {
   });
 }
 
+/* ----------------------------------------------- accommodation bookings --- */
+
+/**
+ * One room to reserve. The server recomputes nights and price from its own
+ * catalogue, so nothing about money is sent from here — only what to book.
+ */
+export type AccommodationRoomInput = {
+  /** `YYYY-MM-DD`. */
+  check_in: string;
+  check_out: string;
+  guests: number;
+};
+
+/**
+ * Reserves one or more rooms at one property, all on a single invoice.
+ *
+ * The room count is the length of `rooms`, never derived from the guest total:
+ * how a party splits across rooms is the traveller's decision. The API caps a
+ * booking at five rooms and refuses a party larger than the room capacity.
+ */
+export async function createAccommodationBooking(
+  accommodationId: string,
+  rooms: AccommodationRoomInput[],
+  auth: Auth,
+): Promise<AccommodationBooking> {
+  const { data } = await apiFetch<{ data: AccommodationBooking }>(
+    "/api/accommodation-bookings",
+    {
+      ...auth,
+      method: "POST",
+      body: { accommodation_id: accommodationId, rooms },
+    },
+  );
+  return data;
+}
+
+export async function listAccommodationBookings(
+  auth: Auth,
+): Promise<AccommodationBookingSummary[]> {
+  const { data } = await apiFetch<{ data: AccommodationBookingSummary[] }>(
+    "/api/accommodation-bookings",
+    auth,
+  );
+  return data;
+}
+
+export async function getAccommodationBooking(
+  id: string,
+  auth: Auth,
+): Promise<AccommodationBooking | null> {
+  const result = await apiFetch<{ data: AccommodationBooking }>(
+    `/api/accommodation-bookings/${id}`,
+    { ...auth, nullOn404: true },
+  );
+  return result?.data ?? null;
+}
+
+/** Opens (or re-opens) a Xendit invoice. Send the reader to `invoice_url`. */
+export async function payAccommodationBooking(
+  id: string,
+  auth: Auth,
+): Promise<PaymentIntent> {
+  const { data } = await apiFetch<{ data: PaymentIntent }>(
+    `/api/accommodation-bookings/${id}/pay`,
+    { ...auth, method: "POST" },
+  );
+  return data;
+}
+
+/** Releases the held rooms. Only works while the booking is still unpaid. */
+export async function cancelAccommodationBooking(id: string, auth: Auth) {
+  await apiFetch(`/api/accommodation-bookings/${id}/cancel`, {
+    ...auth,
+    method: "POST",
+  });
+}
+
 /* ------------------------------------------------- AI trip planner --- */
 
 export async function listChatRooms(auth: Auth): Promise<ChatRoom[]> {
@@ -980,41 +1058,3 @@ export async function cancelTripBooking(id: string, auth: Auth) {
 
 /* ---------------------------------------------------- accommodation bookings --- */
 
-export async function listAccommodationBookings(
-  auth: Auth,
-): Promise<AccommodationBookingSummary[]> {
-  const { data } = await apiFetch<{ data: AccommodationBookingSummary[] }>(
-    "/api/accommodation-bookings",
-    auth,
-  );
-  return data ?? [];
-}
-
-export async function getAccommodationBooking(
-  id: string,
-  auth: Auth,
-): Promise<AccommodationBooking | null> {
-  const result = await apiFetch<{ data: AccommodationBooking }>(
-    `/api/accommodation-bookings/${id}`,
-    { ...auth, nullOn404: true },
-  );
-  return result?.data ?? null;
-}
-
-export async function payAccommodationBooking(
-  id: string,
-  auth: Auth,
-): Promise<PaymentIntent> {
-  const { data } = await apiFetch<{ data: PaymentIntent }>(
-    `/api/accommodation-bookings/${id}/pay`,
-    { ...auth, method: "POST" },
-  );
-  return data;
-}
-
-export async function cancelAccommodationBooking(id: string, auth: Auth) {
-  await apiFetch(`/api/accommodation-bookings/${id}/cancel`, {
-    ...auth,
-    method: "POST",
-  });
-}

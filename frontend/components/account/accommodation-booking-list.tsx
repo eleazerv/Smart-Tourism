@@ -77,7 +77,7 @@ export function AccommodationBookingList() {
         return (
           <li key={booking.id}>
             <Link
-              href={`/akun/pesanan/accommodation/${booking.id}`}
+              href={`/akun/pesanan/penginapan/${booking.id}`}
               className="flex items-center gap-4 rounded-2xl border border-border bg-card p-4 transition hover:border-brand-700/40"
             >
               <span
