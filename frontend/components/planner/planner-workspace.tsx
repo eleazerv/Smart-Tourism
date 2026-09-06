@@ -35,6 +35,7 @@ import {
   type PlannerFlightOption,
   type TripCanvas,
   type TripFlightRole,
+  payTripBooking,
 } from "@/lib/api";
 import type { StopPatch } from "@/components/planner/plan-panel";
 import { getBrowserAccessToken } from "@/lib/api/session-browser";
@@ -356,32 +357,20 @@ useEffect(() => {
    * pesanan terpisah — jadi hasilnya satu kode booking dan satu total, dan
    * kegagalan datang sebagai error dari endpoint-nya, bukan daftar per baris.
    */
-  async function checkout(passengerNames: string[]) {
-    if (!tripId) return;
-    setBusy(true);
-    setNotice(null);
-    try {
-      const result = await checkoutTrip(tripId, passengerNames, await auth());
-      const parts = [
-        result.accommodation_count
-          ? `${result.accommodation_count} penginapan`
-          : null,
-        result.flight_count ? `${result.flight_count} penerbangan` : null,
-      ].filter(Boolean);
-
-      setNotice(
-        `Checkout selesai — kode ${result.booking_code}` +
-          (parts.length ? ` (${parts.join(" & ")})` : "") +
-          `. Pesanan masih pending sampai dibayar; lanjutkan di halaman Pesanan.`,
-      );
-      if (roomId) await openRoom(roomId);
-    } catch (err) {
-      report(err, "Checkout gagal. Coba lagi sebentar lagi.");
-    } finally {
-      setBusy(false);
-    }
+async function checkout(passengerNames: string[]) {
+  if (!tripId) return;
+  setBusy(true);
+  setNotice(null);
+  try {
+    const result = await checkoutTrip(tripId, passengerNames, await auth());
+    const payment = await payTripBooking(result.id, await auth());
+    window.location.href = payment.invoice_url; // sesuai PaymentIntent, bukan payment_url
+  } catch (err) {
+    report(err, "Checkout gagal. Coba lagi sebentar lagi.");
+  } finally {
+    setBusy(false);
   }
-
+}
   return (
     <div className="flex h-full min-h-0 bg-background">
       <aside className="hidden w-60 shrink-0 flex-col border-r border-border md:flex">

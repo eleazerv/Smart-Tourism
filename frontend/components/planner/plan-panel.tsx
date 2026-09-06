@@ -26,7 +26,10 @@ import {
   Plane,
   Trash2,
   X,
+  CreditCard,
+  Ticket,
 } from "lucide-react";
+import { ConfirmDialog } from "../ui/confirm-dialog";
 import { Button } from "@/components/ui/button";
 import { FlightPicker } from "@/components/planner/flight-picker";
 import { formatIDR } from "@/lib/seeded-random";
@@ -173,7 +176,7 @@ export function PlanPanel({
   // dipesan: backend menolak checkout berisi penerbangan tanpa nama, dan
   // meminta nama untuk pemesanan yang cuma berisi hotel jadi mubazir.
   const [passengers, setPassengers] = useState("");
-
+  const [confirming, setConfirming] = useState(false);
   if (!canvas?.trip) {
     return (
       <p className="p-5 text-sm text-muted-foreground">
@@ -256,11 +259,11 @@ export function PlanPanel({
           </label>
         )}
 
-        <Button
-          className="w-full rounded-full"
-          disabled={!ready || busy}
-          onClick={() => onCheckout(passengerNames)}
-        >
+          <Button
+            className="w-full rounded-full"
+            disabled={!ready || busy}
+            onClick={() => setConfirming(true)}   // ← bukan langsung onCheckout
+          >
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {!hasSomethingToBook
             ? plan.alreadyBooked
@@ -274,6 +277,24 @@ export function PlanPanel({
           Semua pesanan lahir berstatus pending sampai dibayar.
         </p>
       </div>
+        <ConfirmDialog
+          open={confirming}
+          icon={<Ticket className="h-5 w-5" />}
+          title="Konfirmasi pesanan"
+          description="Periksa sekali lagi sebelum penginapan dan penerbangan ini ditahan atas namamu."
+          confirmLabel={busy ? "Memproses..." : "Lanjut ke pembayaran"}
+          confirmIcon={<CreditCard className="h-4 w-4" />}
+          cancelLabel="Kembali"
+          pending={busy}
+          footnote="Pembayaran diproses oleh Xendit di halaman terpisah."
+          onConfirm={() => {
+            onCheckout(passengerNames);
+            setConfirming(false);
+          }}
+          onCancel={() => setConfirming(false)}
+        >
+          <BookingSummary plan={plan} />
+        </ConfirmDialog>
     </div>
   );
 }

@@ -43,7 +43,7 @@
 
 ### Latar Belakang
 
-Tanya siapa pun baik turis mancanegara maupun orang Indonesia sendiri, destinasi wisata Indonesia apa aja yang mereka tau. Jawabannya hampir selalu berhenti di satu nama: **Bali**.
+Siapa pun baik turis mancanegara maupun orang Indonesia sendiri, destinasi wisata Indonesia apa aja yang mereka tau. Jawabannya hampir selalu berhenti di satu nama: **Bali**.
 
 Padahal Indonesia punya lebih dari 17.000 pulau dan 38 provinsi. Di **Kalimantan** ada hutan hujan tropis tertua di dunia, sungai-sungai besar, dan habitat orangutan. Di **Papua** ada Raja Ampat yang diakui sebagai salah satu titik biodiversitas laut terkaya di planet ini, plus Lembah Baliem dengan budaya yang masih terjaga. Di **Sumatera** ada Danau Toba (danau vulkanik terbesar di dunia), Bukit Lawang, dan situs-situs budaya Minangkabau.
 
@@ -67,7 +67,7 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
 
 ### Tujuan Proyek
 
-- 🎯 **Tujuan Utama**: Meratakan eksposur destinasi wisata Indonesia dengan menurunkan hambatan riset dan perencanaan perjalanan ke luar Bali.
+- 🎯 **Tujuan Utama**: Meratakan eksposur destinasi wisata Indonesia dengan menurunkan hambatan riset dan perencanaan perjalanan ke seluruh daerah Indonesia.
 - 📊 **Target Pengguna**: Wisatawan domestik dan mancanegara yang ingin eksplorasi destinasi Indonesia di luar rute wisata konvensional, terutama traveler mandiri yang merencanakan sendiri perjalanannya.
 - 💡 **Value Proposition**: Satu platform untuk menemukan destinasi, menyusun itinerary multi-kota, mengestimasi total biaya, dan memesan akomodasi serta penerbangan — dengan kurasi yang berpihak pada daerah yang selama ini kurang terekspos.
 
@@ -106,7 +106,7 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
 
 
 ### Screenshot Aplikasi
-<!-- 
+
 <div align="center">
   <img src="assets/HomePage.png" alt="Homepage" width="800"/>
   <p><em>Homepage — Eksplorasi destinasi unggulan di Indonesia</em></p>
@@ -122,13 +122,9 @@ Sistem rekomendasi Jelantara secara sengaja mengangkat destinasi di Kalimantan, 
   <p><em>CheckoutSuccess - tiket pesawatmu berhasil</em></p>
     <img src="assets/PaymentSuccess.png" alt="Homepage" width="800"/>
   <p><em>Payment Success - pembayaran selesai , nikmati liburanmu  </em></p>
-</div> -->
+</div>
 
-### Video Demo ( opsional )
 
-📹 **[Tonton Video Demo](https://youtube.com/watch?v=demo)**
-
----
 
 ## 🛠️ Teknologi
 
@@ -286,7 +282,7 @@ Skema database Jelantara terdiri dari 33 tabel yang mencakup master data wisata 
 **Ringkasan struktur:**
 
 - **Master data lokasi** — `provinces` → `cities` → `airports`, dengan pencarian fuzzy via `pg_trgm` (`idx_cities_name_trgm`, dst).
-- **Katalog wisata** — `destinations`, `accommodations`, `flight_options`, `events`, `climate_patterns`, dan `pricing_baseline` untuk estimasi biaya per destinasi/tier.
+- **Katalog wisata** — `destinations`, `accommodations`, `flight_options`, `events`, `climate_patterns`.
 - **Tag ternormalisasi** — Relasi many-to-many antara destinasi/climate pattern dan tag lewat tabel junction (`destination_tags`, `climate_pattern_tags`, `user_preference_tags`), sehingga satu entitas bisa punya banyak kategori minat tanpa duplikasi data.
 - **Hirarki trip** — Model perjalanan memakai struktur `trips` → `trip_stops` → `trip_items` / `trip_flights`. Setiap stop mewakili satu kota dengan akomodasi dan tanggalnya sendiri, sehingga perjalanan lintas provinsi bisa dimodelkan secara akurat.
 - **Booking & pembayaran** — Booking dipecah per domain (`flight_bookings` + `flight_booking_items` + `flight_tickets` + `flight_seats`, `accommodation_bookings` + `accommodation_booking_rooms`), lalu bisa disatukan lewat `trip_bookings` untuk checkout satu invoice. Semua status pembayaran mengikuti alur `pending → paid/failed` yang diatur lewat function `settle_booking`.
@@ -500,20 +496,6 @@ create table flight_options (
   origin_airport_code text,
   destination_airport_code text
 );
-create table flight_options_backup_20260906 (
-  id uuid,
-  origin_city_id integer,
-  destination_city_id integer,
-  airline text,
-  flight_number text,
-  departure_time timestamp without time zone,
-  arrival_time timestamp without time zone,
-  price numeric,
-  available_seats integer,
-  currency text,
-  origin_airport_code text,
-  destination_airport_code text
-);
 create table flight_seats (
   id uuid not null default gen_random_uuid(),
   flight_id uuid not null,
@@ -530,18 +512,7 @@ create table flight_tickets (
   booking_item_id uuid not null,
   flight_type text not null
 );
-create table pricing_baseline (
-  id uuid not null default gen_random_uuid(),
-  destination_id uuid not null,
-  origin_city_id integer not null,
-  tier text not null,
-  flight_price_estimate numeric not null,
-  accommodation_price_per_night numeric not null,
-  food_price_per_day numeric not null,
-  notes text,
-  source text,
-  price_checked_at date
-);
+
 create table provinces (
   id integer not null default nextval('provinces_id_seq'::regclass),
   code text not null,
@@ -783,11 +754,6 @@ alter table flight_tickets add constraint flight_tickets_booking_id_fkey FOREIGN
 alter table flight_tickets add constraint flight_tickets_booking_item_id_fkey FOREIGN KEY (booking_item_id) REFERENCES flight_booking_items(id) ON DELETE CASCADE;
 alter table flight_tickets add constraint flight_tickets_pkey PRIMARY KEY (id);
 alter table flight_tickets add constraint flight_tickets_ticket_code_key UNIQUE (ticket_code);
-alter table pricing_baseline add constraint pricing_baseline_destination_id_fkey FOREIGN KEY (destination_id) REFERENCES destinations(id);
-alter table pricing_baseline add constraint pricing_baseline_destination_id_origin_city_id_tier_key UNIQUE (destination_id, origin_city_id, tier);
-alter table pricing_baseline add constraint pricing_baseline_origin_city_id_fkey FOREIGN KEY (origin_city_id) REFERENCES cities(id);
-alter table pricing_baseline add constraint pricing_baseline_pkey PRIMARY KEY (id);
-alter table pricing_baseline add constraint pricing_baseline_tier_check CHECK ((tier = ANY (ARRAY['budget'::text, 'mid'::text, 'luxury'::text])));
 alter table provinces add constraint provinces_code_key UNIQUE (code);
 alter table provinces add constraint provinces_pkey PRIMARY KEY (id);
 alter table review_likes add constraint review_likes_pkey PRIMARY KEY (id);
@@ -891,7 +857,6 @@ CREATE INDEX idx_flight_bookings_user_id ON public.flight_bookings USING btree (
 CREATE INDEX idx_flight_options_destination_city_id ON public.flight_options USING btree (destination_city_id);
 CREATE INDEX idx_flight_options_origin_city_id ON public.flight_options USING btree (origin_city_id);
 CREATE INDEX idx_flight_seats_flight_id ON public.flight_seats USING btree (flight_id);
-CREATE INDEX idx_pricing_baseline_destination_id ON public.pricing_baseline USING btree (destination_id);
 CREATE INDEX idx_provinces_name_trgm ON public.provinces USING gin (name gin_trgm_ops);
 CREATE INDEX idx_review_likes_review_id ON public.review_likes USING btree (review_id);
 CREATE INDEX idx_reviews_created_at ON public.reviews USING btree (created_at DESC);
@@ -987,8 +952,6 @@ create policy flight_tickets_own on public.flight_tickets as permissive for all 
   WHERE ((fb.id = flight_tickets.booking_id) AND (fb.user_id = auth.uid()))))) with check ((EXISTS ( SELECT 1
    FROM flight_bookings fb
   WHERE ((fb.id = flight_tickets.booking_id) AND (fb.user_id = auth.uid())))));
--- tabel: pricing_baseline
-create policy "read pricing" on public.pricing_baseline as permissive for select to public using (true);
 -- tabel: provinces
 create policy "read provinces" on public.provinces as permissive for select to public using (true);
 -- tabel: review_likes
@@ -1074,7 +1037,6 @@ create policy "read visitor_stats" on public.visitor_stats as permissive for sel
 -- flight_options_backup_20260906: rls_aktif=true, jumlah_policy=0
 -- flight_seats: rls_aktif=true, jumlah_policy=1
 -- flight_tickets: rls_aktif=true, jumlah_policy=1
--- pricing_baseline: rls_aktif=true, jumlah_policy=1
 -- provinces: rls_aktif=true, jumlah_policy=1
 -- review_likes: rls_aktif=true, jumlah_policy=4
 -- reviews: rls_aktif=true, jumlah_policy=4
@@ -3317,7 +3279,6 @@ OPENROUTESERVICE_API_KEY=
 
 #### 3️⃣ Setup Database
 
-> ⚠️ Belum ada script `db:migrate` / `db:seed` di project ini — bagian ini masih manual.
 
 1. Buka **SQL Editor** di dashboard Supabase project kamu.
 2. Jalankan seluruh SQL di bagian [Database Schema](#️-arsitektur-sistem) (tabel, constraint, index, RLS policy, function, trigger) buat bikin skemanya dari nol.
@@ -3341,7 +3302,7 @@ Verifikasi instalasi dengan membuka:
 Agar callback pembayaran bisa menjangkau server lokal, ekspos port lokal ke internet menggunakan tunneling, lalu daftarkan URL-nya di dashboard Xendit dengan endpoint:
 
 ```
-https://your-tunnel-url/api/webhooks
+https://your-tunnel-url/api/webhooks/xendit
 ```
 
 ### Frontend Setup
@@ -3390,9 +3351,6 @@ npm run dev
 
 # Production mode
 npm start
-
-# Menjalankan test
-npm test
 ```
 
 ### User Guide
@@ -3654,7 +3612,7 @@ XENDIT_CALLBACK_TOKEN=...            # opsional, untuk tes webhook dengan token 
 node test-all-endpoints.js
 ```
 
-> ⏱️ `moderateLimiter` dibatasi 10 request/menit dan `strictLimiter` 5/menit — script menunggu otomatis kalau kena 429, jadi satu run penuh bisa makan beberapa menit.
+> ⏱️ `moderateLimiter` dibatasi 10 request/menit , `strictLimiter`  dan`chatLimiter` 5/menit — script menunggu otomatis kalau kena 429, jadi satu run penuh bisa makan beberapa menit.
 
 ### Cakupan Pengujian
 
