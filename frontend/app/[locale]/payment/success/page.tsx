@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CheckCheck } from "lucide-react";
 import { PaymentResult } from "@/components/payment/payment-result";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 /**
  * Pendaratan setelah Xendit memulangkan pembayar lewat jalur sukses
@@ -18,30 +19,39 @@ import { PaymentResult } from "@/components/payment/payment-result";
  * ini memang tidak tahu invoice mana yang barusan dibayar. Karena itu ia
  * mengantar ke halaman Pesanan, tempat statusnya dibaca dari database.
  */
-export const metadata: Metadata = {
-  title: "Pembayaran Diterima",
-  description: "Pembayaran Anda sudah diteruskan. Cek statusnya di halaman Pesanan.",
-  // Halaman pendaratan transaksi tidak punya urusan di hasil pencarian.
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "payment" });
+  return {
+    title: t("successMetaTitle"),
+    description: t("successMetaDescription"),
+    // Halaman pendaratan transaksi tidak punya urusan di hasil pencarian.
+    robots: { index: false, follow: false },
+  };
+}
 
-export default function PaymentSuccessPage() {
+export default async function PaymentSuccessPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("payment");
   return (
     <PaymentResult
       tone="positive"
       icon={<CheckCheck className="h-6 w-6" />}
-      title="Pembayaran diterima"
-      primaryLabel="Lihat pesanan saya"
+      title={t("successTitle")}
+      primaryLabel={t("successCta")}
     >
       <p>
-        Terima kasih — pembayaranmu sudah diteruskan ke penyedia pembayaran.
+        {t("successBody")}
       </p>
-      <p>
-        Status pesanan diperbarui begitu konfirmasi resminya masuk, biasanya
-        dalam hitungan detik. Buka halaman Pesanan untuk melihat keadaan
-        terakhirnya; kalau di sana masih tertulis menunggu, muat ulang sebentar
-        lagi.
-      </p>
+      <p>{t("successBody2")}</p>
     </PaymentResult>
   );
 }

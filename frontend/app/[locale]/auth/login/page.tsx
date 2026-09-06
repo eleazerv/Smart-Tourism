@@ -1,13 +1,21 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { LoginForm } from "@/components/login-form";
 import { AuthLink, AuthShell } from "@/components/auth/auth-shell";
 
-export const metadata: Metadata = { title: "Masuk" };
-
 type PageProps = {
+  params: Promise<{ locale: string }>;
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 };
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.login" });
+  return { title: t("metaTitle") };
+}
 
 /**
  * `?next=` sends the reader back where they were interrupted — the booking
@@ -21,14 +29,19 @@ function safeNext(value: string | string[] | undefined): string | undefined {
   return raw;
 }
 
-export default function Page({ searchParams }: PageProps) {
+export default async function Page({ params, searchParams }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("auth.login");
+
   return (
     <AuthShell
-      title="Masuk"
-      description="Masuk untuk menyimpan minat perjalanan dan mendapatkan rekomendasi yang dipersonalisasi."
+      title={t("title")}
+      description={t("description")}
       footer={
         <>
-          Belum punya akun? <AuthLink href="/auth/sign-up">Daftar</AuthLink>
+          {t("noAccount")}{" "}
+          <AuthLink href="/auth/sign-up">{t("register")}</AuthLink>
         </>
       }
     >
@@ -41,7 +54,11 @@ export default function Page({ searchParams }: PageProps) {
   );
 }
 
-async function Form({ searchParams }: PageProps) {
+async function Form({
+  searchParams,
+}: {
+  searchParams: PageProps["searchParams"];
+}) {
   return <LoginForm redirectTo={safeNext((await searchParams).next)} />;
 }
 

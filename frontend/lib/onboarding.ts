@@ -44,14 +44,9 @@ export const MIN_INTERESTS = 3;
  * sebagai deretan chip di bawah dua isian teks, jadi langkah pertama tetap
  * satu layar.
  */
-export const TRAVEL_PARTIES = [
-  { value: "solo", label: "Sendiri" },
-  { value: "couple", label: "Berdua" },
-  { value: "family", label: "Keluarga" },
-  { value: "friends", label: "Rombongan teman" },
-] as const;
+export const TRAVEL_PARTIES = ["solo", "couple", "family", "friends"] as const;
 
-export type TravelParty = (typeof TRAVEL_PARTIES)[number]["value"];
+export type TravelParty = (typeof TRAVEL_PARTIES)[number];
 
 /** Disimpan di `user_metadata.travel`; backend tidak punya kolom untuk ini. */
 export type TravelProfile = {
@@ -73,7 +68,7 @@ export type OnboardingInput = {
 };
 
 function pickParty(raw: string): TravelParty | null {
-  return TRAVEL_PARTIES.some((option) => option.value === raw)
+  return (TRAVEL_PARTIES as readonly string[]).includes(raw)
     ? (raw as TravelParty)
     : null;
 }

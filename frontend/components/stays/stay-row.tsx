@@ -1,10 +1,10 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, MapPin, Users } from "lucide-react";
 import type { Accommodation } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";
 import { formatIDR } from "@/lib/seeded-random";
-import { tierLabel } from "@/lib/stays-search";
+import { useTranslations } from "next-intl";
 import { Rating } from "@/components/home/rating";
 
 /**
@@ -27,6 +27,8 @@ export function StayRow({
   href: string;
   priority?: boolean;
 }) {
+  const t = useTranslations("stays");
+
   const total =
     nights === null ? null : stay.price_per_night * nights * (rooms ?? 1);
   const place = [stay.cities?.name, stay.cities?.provinces?.name]
@@ -49,7 +51,7 @@ export function StayRow({
           className="object-cover"
         />
         <span className="absolute bottom-2 left-2 rounded-full bg-background/90 px-2.5 py-1 text-[11px] font-bold uppercase tracking-wide text-brand-900 backdrop-blur">
-          {tierLabel(stay.tier)}
+          {t(`tier.${stay.tier}`)}
         </span>
       </div>
 
@@ -74,13 +76,13 @@ export function StayRow({
           {stay.max_guests !== null && (
             <p className="mt-1 flex items-center gap-1.5 text-xs text-muted-foreground">
               <Users className="h-3.5 w-3.5 shrink-0" />
-              Maks. {stay.max_guests} tamu per kamar
+              {t("maxGuests", { count: stay.max_guests })}
             </p>
           )}
 
           <div className="mt-2.5">
             {rating === null ? (
-              <p className="text-xs text-muted-foreground">Belum ada ulasan</p>
+              <p className="text-xs text-muted-foreground">{t("noReviews")}</p>
             ) : (
               <Rating value={rating} reviews={stay.review_count} />
             )}
@@ -99,16 +101,19 @@ export function StayRow({
               {formatIDR(stay.price_per_night)}
               <span className="text-xs font-medium text-muted-foreground">
                 {" "}
-                /malam
+                {t("perNight")}
               </span>
             </p>
             <p className="text-xs text-muted-foreground">
               {total === null ? (
-                "Pilih tanggal untuk melihat total"
+                t("pickDatesForTotal")
               ) : (
                 <>
-                  {formatIDR(total)} untuk {nights} malam
-                  {rooms !== null && rooms > 1 && `, ${rooms} kamar`}
+                  {t("totalForNights", {
+                    total: formatIDR(total),
+                    nights: nights!,
+                  })}
+                  {rooms !== null && rooms > 1 && t("andRooms", { count: rooms })}
                 </>
               )}
             </p>
@@ -116,7 +121,7 @@ export function StayRow({
               aria-hidden="true"
               className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-brand-700"
             >
-              Lihat detail
+              {t("viewDetail")}
               <ArrowRight className="h-4 w-4 transition-transform group-hover:translate-x-0.5" />
             </span>
           </div>

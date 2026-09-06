@@ -1,6 +1,7 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import {
   ApiError,
   createAccommodationReview,
@@ -10,22 +11,27 @@ import { getAccessToken } from "@/lib/api/session";
 
 export type ReviewResult = { ok: boolean; message?: string };
 
-const SIGNED_OUT: ReviewResult = {
-  ok: false,
-  message: "Sesi Anda sudah berakhir. Silakan masuk lagi.",
-};
+
 
 /** The API rejects anything larger before it reaches Storage. */
 const MAX_PHOTO_BYTES = 5 * 1024 * 1024;
 
-function explain(error: unknown, fallback: string): ReviewResult {
+type Copy = Awaited<ReturnType<typeof getTranslations<"reviewActions">>>;
+
+function explain(
+  error: unknown,
+  fallback: string,
+  t: Copy,
+): ReviewResult {
   if (!(error instanceof ApiError)) return { ok: false, message: fallback };
 
   // The few statuses worth translating; everything else keeps the API's text.
   if (error.status === 409) {
-    return { ok: false, message: "Anda sudah pernah mengulas penginapan ini." };
+    return { ok: false, message: t("alreadyReviewedStay") };
   }
-  if (error.status === 401 || error.status === 403) return SIGNED_OUT;
+  if (error.status === 401 || error.status === 403) {
+    return { ok: false, message: t("sessionExpired") };
+  }
   return { ok: false, message: error.message };
 }
 
@@ -33,8 +39,9 @@ export async function submitStayReview(
   accommodationId: string,
   formData: FormData,
 ): Promise<ReviewResult> {
+  const t = await getTranslations("reviewActions");
   const token = await getAccessToken();
-  if (!token) return SIGNED_OUT;
+  if (!token) return { ok: false, message: t("sessionExpired") };
 
   const rating = Number(formData.get("rating"));
   if (!Number.isInteger(rating) || rating < 1 || rating > 5) {
@@ -59,7 +66,7 @@ export async function submitStayReview(
       { token },
     );
   } catch (error) {
-    return explain(error, "Gagal mengirim ulasan. Coba lagi.");
+    return explain(error, t("submitFailed"), t);
   }
 
   revalidatePath(`/hotels/${accommodationId}`);
@@ -70,13 +77,14 @@ export async function removeStayReview(
   accommodationId: string,
   reviewId: string,
 ): Promise<ReviewResult> {
+  const t = await getTranslations("reviewActions");
   const token = await getAccessToken();
-  if (!token) return SIGNED_OUT;
+  if (!token) return { ok: false, message: t("sessionExpired") };
 
   try {
     await deleteAccommodationReview(reviewId, { token });
   } catch (error) {
-    return explain(error, "Gagal menghapus ulasan. Coba lagi.");
+    return explain(error, t("deleteFailed"), t);
   }
 
   revalidatePath(`/hotels/${accommodationId}`);

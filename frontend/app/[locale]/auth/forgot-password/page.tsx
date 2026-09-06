@@ -1,18 +1,25 @@
 import type { Metadata } from "next";
 import { ForgotPasswordForm } from "@/components/forgot-password-form";
 import { AuthLink, AuthShell } from "@/components/auth/auth-shell";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 export const metadata: Metadata = { title: "Lupa Kata Sandi" };
 
-export default function Page() {
+export default async function Page({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("password");
   return (
     <AuthShell
-      title="Atur ulang kata sandi"
-      description="Masukkan email Anda, kami kirimkan tautan untuk membuat kata sandi baru."
+      title={t("resetTitle")}
+      description={t("resetDescription")}
       footer={
         <>
-          Ingat kata sandi Anda?{" "}
-          <AuthLink href="/auth/login">Kembali ke halaman masuk</AuthLink>
+          {t("rememberQuestion")}{" "}
+          <AuthLink href="/auth/login">{t("backToLogin")}</AuthLink>
         </>
       }
     >

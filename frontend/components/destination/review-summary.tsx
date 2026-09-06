@@ -1,3 +1,4 @@
+import { useLocale, useTranslations } from "next-intl";
 import { Rating } from "@/components/home/rating";
 import { formatCount } from "@/lib/destination-data";
 
@@ -17,6 +18,9 @@ export function ReviewSummary({
   reviews: { rating: number }[];
   average: number | null;
 }) {
+  const t = useTranslations("destination");
+  const locale = useLocale();
+
   const counts = [5, 4, 3, 2, 1].map((star) => ({
     star,
     count: reviews.filter((review) => review.rating === star).length,
@@ -39,7 +43,7 @@ export function ReviewSummary({
           </>
         )}
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {formatCount(reviews.length)} ulasan
+          {t("reviewCount", { count: formatCount(reviews.length, locale) })}
         </p>
       </div>
 

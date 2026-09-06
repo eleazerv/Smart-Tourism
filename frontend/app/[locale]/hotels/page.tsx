@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
 import { Compass } from "lucide-react";
 import { getAllAccommodations, type Accommodation } from "@/lib/api";
@@ -32,19 +32,31 @@ import {
   type RawSearchParams,
   type StaySearchState,
 } from "@/lib/stays-search";
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 
-type PageProps = { searchParams: Promise<RawSearchParams> };
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<RawSearchParams>;
+};
 
-export const metadata: Metadata = {
-  title: "Hotel & Penginapan",
-  description:
-    "Cari penginapan di kota-kota wisata Indonesia. Bandingkan harga per malam, kelas akomodasi, dan kapasitas kamar sebelum memilih.",
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "stays" });
+  return {
+  title: t("metaTitle"),
+  description: t("metaDescription"),
   openGraph: {
-    title: "Hotel & Penginapan",
-    description: "Cari penginapan di kota-kota wisata Indonesia.",
+    title: t("metaTitle"),
+    description: t("ogDescription"),
     type: "website",
   },
-};
+  };
+}
 
 /**
  * The whole accommodation table, flattened out of its 20-row pages.
@@ -61,7 +73,8 @@ async function loadStays(): Promise<Accommodation[]> {
   return getAllAccommodations();
 }
 
-export default function HotelsPage({ searchParams }: PageProps) {
+export default async function HotelsPage({ params, searchParams }: PageProps) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -77,7 +90,10 @@ export default function HotelsPage({ searchParams }: PageProps) {
   );
 }
 
-async function Results({ searchParams }: PageProps) {
+async function Results({ searchParams }: Pick<PageProps, "searchParams">) {
+  const t = await getTranslations("stays");
+  const common = await getTranslations("catalogue");
+  const locale = await getLocale();
   const state = parseStaySearch(await searchParams);
 
   let stays: Accommodation[];
@@ -113,8 +129,8 @@ async function Results({ searchParams }: PageProps) {
   // Everything that describes the stay rather than the property is only said
   // once the reader has actually said it.
   const stayLabel = [
-    nights !== null ? `${nights} malam` : null,
-    state.guests !== null ? `${state.guests} tamu` : null,
+    nights !== null ? t("nights", { count: nights }) : null,
+    state.guests !== null ? t("guests", { count: state.guests }) : null,
   ]
     .filter(Boolean)
     .join(", ");
@@ -131,23 +147,28 @@ async function Results({ searchParams }: PageProps) {
     <>
       <SearchHero
         title={
-          city ? `Hotel di ${city.name}` : "Hotel & penginapan di Indonesia"
+          city ? t("heroCity", { city: city.name }) : t("heroAll")
         }
         subtitle={
           city
-            ? `Pilihan menginap di ${city.name}${city.province ? `, ${city.province}` : ""}${
-                state.checkIn && state.checkOut
-                  ? ` untuk ${formatDateLabel(state.checkIn)} – ${formatDateLabel(state.checkOut)} (${nights} malam).`
-                  : ". Pilih tanggal menginap untuk melihat ketersediaan dan total biaya."
-              }`
-            : "Dari homestay sampai resor. Bandingkan harga per malam, kelas akomodasi, dan kapasitas kamar di kota-kota wisata Indonesia."
+            ? t("heroCityBlurb", {
+                place: city.province ? `${city.name}, ${city.province}` : city.name,
+              }) +
+              (state.checkIn && state.checkOut
+                ? t("heroDated", {
+                    from: formatDateLabel(state.checkIn, locale),
+                    to: formatDateLabel(state.checkOut, locale),
+                    nights: nights!,
+                  })
+                : t("heroUndated"))
+            : t("heroBlurb")
         }
         seed={city ? `hotel-${city.name}` : "hotel-lobby-nusantara"}
         crumbs={[
-          { label: "Beranda", href: "/" },
+          { label: common("home"), href: "/" },
           ...(city
-            ? [{ label: "Hotel", href: "/hotels" }, { label: city.name }]
-            : [{ label: "Hotel" }]),
+            ? [{ label: t("crumb"), href: "/hotels" }, { label: city.name }]
+            : [{ label: t("crumb") }]),
         ]}
       >
         <StaySearchPanel state={state} cities={cities} />
@@ -162,13 +183,15 @@ async function Results({ searchParams }: PageProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <p className="text-sm text-muted-foreground" aria-live="polite">
               {matched.length === 0 ? (
-                "Tidak ada penginapan yang cocok"
+                t("noMatch")
               ) : (
                 <>
                   <span className="font-semibold text-foreground tabular-nums">
                     {matched.length}
                   </span>{" "}
-                  penginapan{city ? ` di ${city.name}` : ""}
+                  {city
+                    ? t("countInCity", { city: city.name })
+                    : t("countAll")}
                   {stayLabel && ` · ${stayLabel}`}
                 </>
               )}
@@ -183,7 +206,7 @@ async function Results({ searchParams }: PageProps) {
                 value={state.sort}
                 options={SORTS.map((sort) => ({
                   value: sort.key,
-                  label: sort.label,
+                  label: t(`sort.${sort.key}`),
                   href: withFilter(state, { sort: sort.key }),
                 }))}
               />
@@ -214,9 +237,7 @@ async function Results({ searchParams }: PageProps) {
           />
 
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Tarif dan kapasitas berasal dari katalog akomodasi mitra. Total di
-            daftar ini hanya perkalian tarif dengan lama menginap — sisa kamar
-            untuk tanggal Anda dicek di halaman detail masing-masing.
+            {t("priceNote")}
           </p>
         </div>
       </div>
@@ -231,6 +252,8 @@ function EmptyStays({
   state: StaySearchState;
   resetHref: string;
 }) {
+  const t = useTranslations("stays");
+
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
@@ -240,12 +263,12 @@ function EmptyStays({
         <Compass className="h-6 w-6" />
       </span>
       <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-        Belum ada penginapan yang cocok
+        {t("emptyTitle")}
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        Coba longgarkan batas harga atau kelas akomodasi
-        {state.guests !== null && ", kurangi jumlah tamu"}, atau cari di
-        seluruh kota.
+        {t("emptyBody")}
+        {state.guests !== null && t("emptyBodyGuests")}
+        {t("emptyBodyTail")}
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {activeFilterCount(state) > 0 && (
@@ -253,7 +276,7 @@ function EmptyStays({
             href={resetHref}
             className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
           >
-            Hapus semua filter
+            {t("clearFilters")}
           </Link>
         )}
         {state.cityId !== null && (
@@ -261,14 +284,14 @@ function EmptyStays({
             href={withFilter(state, { cityId: null })}
             className="inline-block rounded-full border border-border px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
           >
-            Cari di seluruh kota
+            {t("searchAllCities")}
           </Link>
         )}
         <Link
           href={toHref({ ...state, cityId: null, page: 1 })}
           className="inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Lihat semua penginapan
+          {t("seeAllStays")}
         </Link>
       </div>
     </div>

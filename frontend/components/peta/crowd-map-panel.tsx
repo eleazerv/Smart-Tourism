@@ -20,7 +20,7 @@
  */
 import { useEffect, useMemo, useRef, useState } from "react";
 import dynamic from "next/dynamic";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   ArrowRight,
   ChevronDown,
@@ -33,13 +33,12 @@ import {
   X,
 } from "lucide-react";
 import {
-  DENSITY_LEVELS,
+  DENSITY_COLORS,
   NATIONAL_BOUNDS,
   REGIONS,
   formatShare,
   formatVisitors,
   regionBounds,
-  regionLabel,
   type Bounds,
   type DensityPoint,
   type RegionKey,
@@ -48,6 +47,7 @@ import { formatKm, routeDistanceKm, type CityStop } from "@/lib/trip-data";
 import { Rating } from "@/components/home/rating";
 import { cn } from "@/lib/utils";
 import type { Camera } from "@/components/peta/crowd-map-view";
+import { useLocale, useTranslations } from "next-intl";
 
 const CrowdMapView = dynamic(() => import("@/components/peta/crowd-map-view"), {
   ssr: false,
@@ -80,6 +80,8 @@ export function CrowdMapPanel({
   points: DensityPoint[];
   stops: CityStop[];
 }) {
+  const t = useTranslations("map");
+
   const [region, setRegion] = useState<Filter>("semua");
   const [selectedCode, setSelectedCode] = useState<string | null>(null);
   /** City ids, in visiting order. */
@@ -248,14 +250,14 @@ export function CrowdMapPanel({
                     : "border-border bg-background hover:bg-brand-tint/10",
                 )}
               >
-                {entry.label}
+                {t(`region.${entry.key}`)}
               </button>
             ))}
           </div>
 
           {routeStops.length > 0 && (
             <p className="pointer-events-auto whitespace-nowrap rounded-full border border-border bg-background px-3 py-1.5 text-xs font-semibold text-muted-foreground">
-              {routeStops.length} perhentian ·{" "}
+              {t("stopCount", { count: routeStops.length })} ·{" "}
               {formatKm(routeDistanceKm(routeStops))}
             </p>
           )}
@@ -269,21 +271,21 @@ export function CrowdMapPanel({
         <div className="pointer-events-none absolute inset-x-0 bottom-0 z-[1100] p-3 pr-24">
           <div className="pointer-events-auto inline-flex max-w-full flex-col gap-1 rounded-2xl border border-border bg-background px-3 py-2">
             <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-              {DENSITY_LEVELS.map((level) => (
+              {DENSITY_COLORS.map((color, index) => (
                 <span
-                  key={level.label}
+                  key={color}
                   className="flex items-center gap-1.5 text-xs text-muted-foreground"
                 >
                   <span
                     aria-hidden="true"
                     className="h-2.5 w-2.5 rounded-full"
-                    style={{ backgroundColor: level.color }}
+                    style={{ backgroundColor: color }}
                   />
-                  {level.label}
+                  {t(`density.${index}`)}
                 </span>
               ))}
               <span className="text-xs text-muted-foreground">
-                Warna wilayah = jumlah pengunjung provinsi
+                {t("legendNote")}
               </span>
             </div>
 
@@ -292,7 +294,7 @@ export function CrowdMapPanel({
                 aria-hidden="true"
                 className="h-2.5 w-2.5 shrink-0 rounded-full border-2 border-background bg-brand-700"
               />
-              Titik kota — klik untuk menambahkannya ke rute
+              {t("cityDot")}
             </p>
           </div>
         </div>
@@ -306,7 +308,7 @@ export function CrowdMapPanel({
           <ProvinceCard point={selected} total={points.length} />
         ) : (
           <SummaryCard
-            label={regionLabel(region)}
+            label={t(`region.${region}`)}
             provinces={visible.length}
             total={regionTotal}
             busiest={busiest}
@@ -359,14 +361,14 @@ function TripCard({
   /** Pointing at a row lights the matching pin up on the map. */
   onHover: (id: number | null) => void;
 }) {
+  const t = useTranslations("map");
+
   if (stops.length === 0) {
     return (
       <div className="rounded-2xl border border-dashed border-border p-4">
-        <h3 className="text-sm font-semibold">Rencana perjalanan</h3>
+        <h3 className="text-sm font-semibold">{t("tripHeading")}</h3>
         <p className="mt-1 text-xs leading-relaxed text-muted-foreground">
-          Belum ada perhentian. Klik kota di peta sesuai urutan yang kamu mau —
-          misalnya Jakarta, lalu Magelang, lalu Yogyakarta — dan rutenya
-          tergambar sendiri.
+          {t("tripEmpty")}
         </p>
       </div>
     );
@@ -375,9 +377,9 @@ function TripCard({
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold">Rencana perjalanan</h3>
+        <h3 className="text-sm font-semibold">{t("tripHeading")}</h3>
         <span className="text-xs text-muted-foreground">
-          {stops.length} perhentian
+          {t("stopCount", { count: stops.length })}
         </span>
       </div>
 
@@ -407,7 +409,7 @@ function TripCard({
                 type="button"
                 onClick={() => onMove(index, -1)}
                 disabled={index === 0}
-                aria-label={`Pindahkan ${stop.name} ke atas`}
+                aria-label={t("moveUp", { name: stop.name })}
                 className="rounded-md p-1 text-muted-foreground transition hover:bg-brand-tint/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
               >
                 <ChevronUp className="h-4 w-4" />
@@ -416,7 +418,7 @@ function TripCard({
                 type="button"
                 onClick={() => onMove(index, 1)}
                 disabled={index === stops.length - 1}
-                aria-label={`Pindahkan ${stop.name} ke bawah`}
+                aria-label={t("moveDown", { name: stop.name })}
                 className="rounded-md p-1 text-muted-foreground transition hover:bg-brand-tint/10 hover:text-foreground disabled:pointer-events-none disabled:opacity-30"
               >
                 <ChevronDown className="h-4 w-4" />
@@ -424,7 +426,7 @@ function TripCard({
               <button
                 type="button"
                 onClick={() => onRemove(stop.id)}
-                aria-label={`Hapus ${stop.name} dari rute`}
+                aria-label={t("removeStop", { name: stop.name })}
                 className="rounded-md p-1 text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
               >
                 <X className="h-4 w-4" />
@@ -451,7 +453,7 @@ function TripCard({
           className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold transition hover:bg-brand-tint/10"
         >
           <MapPin className="h-3.5 w-3.5" />
-          Lihat seluruh rute
+          {t("fitRoute")}
         </button>
         <button
           type="button"
@@ -459,7 +461,7 @@ function TripCard({
           className="inline-flex items-center gap-1.5 rounded-full border border-border px-3 py-1.5 text-xs font-semibold text-muted-foreground transition hover:bg-destructive/10 hover:text-destructive"
         >
           <Trash2 className="h-3.5 w-3.5" />
-          Kosongkan
+          {t("clearRoute")}
         </button>
       </div>
     </div>
@@ -473,6 +475,8 @@ function StopRecommendations({
   stop: CityStop;
   order: number;
 }) {
+  const t = useTranslations("map");
+
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-center gap-2">
@@ -482,7 +486,7 @@ function StopRecommendations({
         <div className="min-w-0">
           <p className="truncate text-sm font-semibold">{stop.name}</p>
           <p className="truncate text-xs text-muted-foreground">
-            {stop.provinceName} · {stop.total} destinasi
+            {stop.provinceName} · {t("destinationCount", { count: stop.total })}
           </p>
         </div>
       </div>
@@ -504,7 +508,7 @@ function StopRecommendations({
                 <Rating value={highlight.rating} className="mt-0.5" />
               ) : (
                 <span className="mt-0.5 block text-xs text-muted-foreground">
-                  {highlight.category ?? "Belum ada ulasan"}
+                  {highlight.category ?? t("noReviews")}
                 </span>
               )}
             </Link>
@@ -519,7 +523,7 @@ function StopRecommendations({
           href={`/destinations?q=${encodeURIComponent(stop.name)}`}
           className="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
-          Lihat semua {stop.total} destinasi
+          {t("seeAllIn", { count: stop.total })}
           <ArrowRight className="h-3.5 w-3.5" />
         </Link>
       )}
@@ -550,6 +554,8 @@ function StopPicker({
   onToggle: (id: number) => void;
   onHover: (id: number | null) => void;
 }) {
+  const t = useTranslations("map");
+
   const needle = query.trim().toLowerCase();
   const matches = stops.filter((stop) => {
     if (region !== "semua" && stop.region !== region) return false;
@@ -563,29 +569,29 @@ function StopPicker({
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <div className="flex items-baseline justify-between gap-3">
-        <h3 className="text-sm font-semibold">Tambah perhentian</h3>
+        <h3 className="text-sm font-semibold">{t("addStop")}</h3>
         <span className="text-xs text-muted-foreground">
-          {matches.length} kota
+          {t("cityCount", { count: matches.length })}
         </span>
       </div>
 
       <div className="mt-2 flex items-center gap-2 rounded-full border border-border px-3 py-1.5 focus-within:border-brand-700 focus-within:ring-2 focus-within:ring-brand-700/20">
         <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
         <label htmlFor="trip-city-search" className="sr-only">
-          Cari kota atau provinsi
+          {t("searchCityLabel")}
         </label>
         <input
           id="trip-city-search"
           value={query}
           onChange={(event) => onQuery(event.target.value)}
-          placeholder="Cari kota…"
+          placeholder={t("searchCityPlaceholder")}
           className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
         />
         {query && (
           <button
             type="button"
             onClick={() => onQuery("")}
-            aria-label="Kosongkan pencarian"
+            aria-label={t("clearSearch")}
             className="grid h-5 w-5 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted"
           >
             <X className="h-3.5 w-3.5" />
@@ -595,8 +601,7 @@ function StopPicker({
 
       {matches.length === 0 ? (
         <p className="mt-3 text-xs text-muted-foreground">
-          Tidak ada kota yang cocok. Coba kata kunci lain, atau pilih
-          &ldquo;Semua daerah&rdquo; di atas.
+          {t("noCityMatch")}
         </p>
       ) : (
         <ul className="no-scrollbar mt-2 max-h-64 space-y-0.5 overflow-y-auto">
@@ -621,7 +626,8 @@ function StopPicker({
                       {stop.name}
                     </span>
                     <span className="block truncate text-xs text-muted-foreground">
-                      {stop.provinceName} · {stop.total} destinasi
+                      {stop.provinceName} ·{" "}
+                      {t("destinationCount", { count: stop.total })}
                     </span>
                   </span>
                   {chosen ? (
@@ -658,16 +664,19 @@ function SummaryCard({
   busiest: DensityPoint | null;
   quietest: DensityPoint | null;
 }) {
+  const t = useTranslations("map");
+  const locale = useLocale();
+
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <p className="text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         {label}
       </p>
       <p className="mt-1 font-display text-2xl font-bold tabular-nums">
-        {formatVisitors(total)}
+        {formatVisitors(total, locale)}
       </p>
       <p className="text-xs text-muted-foreground">
-        kunjungan dari {provinces} provinsi
+        {t("visitsFrom", { count: provinces })}
       </p>
 
       <dl className="mt-3 space-y-1.5 border-t border-border pt-3 text-sm">
@@ -687,20 +696,22 @@ function SummaryCard({
 
       <p className="mt-3 flex items-start gap-1.5 text-xs text-muted-foreground">
         <MousePointerClick className="mt-0.5 h-3.5 w-3.5 shrink-0" />
-        Klik titik di peta untuk melihat rincian satu provinsi.
+        {t("clickHint")}
       </p>
     </div>
   );
 }
 
 function ProvinceCard({ point, total }: { point: DensityPoint; total: number }) {
-  const level = DENSITY_LEVELS[point.level];
+  const t = useTranslations("map");
+  const locale = useLocale();
+  const color = DENSITY_COLORS[point.level];
 
   return (
     <div className="rounded-2xl border border-border bg-card p-4">
       <p className="flex items-center gap-1.5 text-xs font-semibold uppercase tracking-wide text-muted-foreground">
         <MapPin className="h-3.5 w-3.5" />
-        {regionLabel(point.region)}
+        {t(`region.${point.region}`)}
       </p>
       <h3 className="mt-1 font-display text-lg font-bold leading-tight">
         {point.name}
@@ -708,33 +719,37 @@ function ProvinceCard({ point, total }: { point: DensityPoint; total: number }) 
 
       <span
         className="mt-2 inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-xs font-semibold"
-        style={{ backgroundColor: `${level.color}26`, color: level.color }}
+        style={{ backgroundColor: `${color}26`, color }}
       >
         <span
           aria-hidden="true"
           className="h-2 w-2 rounded-full"
-          style={{ backgroundColor: level.color }}
+          style={{ backgroundColor: color }}
         />
-        {level.label}
+        {t(`density.${point.level}`)}
       </span>
-      <p className="mt-1 text-xs text-muted-foreground">{level.blurb}</p>
+      <p className="mt-1 text-xs text-muted-foreground">
+        {t(`densityBlurb.${point.level}`)}
+      </p>
 
       <dl className="mt-3 space-y-1.5 border-t border-border pt-3 text-sm">
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">Pengunjung</dt>
+          <dt className="text-muted-foreground">{t("visitors")}</dt>
           <dd className="font-medium tabular-nums">
-            {formatVisitors(point.visitorCount)}
+            {formatVisitors(point.visitorCount, locale)}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">Peringkat</dt>
+          <dt className="text-muted-foreground">{t("rank")}</dt>
           <dd className="font-medium tabular-nums">
-            #{point.rank} dari {total}
+            {t("rankOf", { rank: point.rank, total })}
           </dd>
         </div>
         <div className="flex items-baseline justify-between gap-3">
-          <dt className="text-muted-foreground">Porsi nasional</dt>
-          <dd className="font-medium tabular-nums">{formatShare(point.share)}</dd>
+          <dt className="text-muted-foreground">{t("nationalShare")}</dt>
+          <dd className="font-medium tabular-nums">
+            {formatShare(point.share, locale)}
+          </dd>
         </div>
       </dl>
 
@@ -743,7 +758,7 @@ function ProvinceCard({ point, total }: { point: DensityPoint; total: number }) 
           href={`/destinations?province_id=${point.place.id}`}
           className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
-          Lihat destinasi di sini
+          {t("seeDestinationsHere")}
           <ArrowRight className="h-4 w-4" />
         </Link>
       )}

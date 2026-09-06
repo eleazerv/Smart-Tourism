@@ -1,5 +1,5 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Award } from "lucide-react";
 import type { RecommendedDestination } from "@/lib/api";
 import { coverImage } from "@/lib/home-data";

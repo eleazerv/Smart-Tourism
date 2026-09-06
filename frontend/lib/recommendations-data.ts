@@ -12,15 +12,9 @@
 import type { HeatmapEntry, SeasonInfo } from "@/lib/api";
 import { crowdLevel, type CrowdLevel } from "@/lib/destination-data";
 import type { RawSearchParams } from "@/lib/destinations-search";
+import { joinList } from "@/lib/intl";
 
-export const MONTHS = [
-  "Januari", "Februari", "Maret", "April", "Mei", "Juni",
-  "Juli", "Agustus", "September", "Oktober", "November", "Desember",
-] as const;
 
-export function monthName(month: number): string {
-  return MONTHS[month - 1] ?? "bulan ini";
-}
 
 /* ----------------------------------------------------------- url state --- */
 
@@ -66,9 +60,7 @@ export function timingHref(
 /* -------------------------------------------------------------- seasons --- */
 
 /** "kemarau" → "Kemarau". The API stores these lowercase. */
-export function seasonLabel(season: string): string {
-  return season.charAt(0).toUpperCase() + season.slice(1);
-}
+
 
 /** Dry season is the travel-friendly one; wet is the caveat. */
 export function isDrySeason(season: string): boolean {
@@ -186,8 +178,15 @@ export function nextMonthIn(months: number[], from: number): number | null {
 }
 
 /** Activity slugs read better as a sentence than as chips repeated per card. */
-export function formatActivities(activities: string[]): string {
+/**
+ * Kegiatan yang disarankan API, dirangkai jadi satu frasa. Isi daftarnya
+ * tetap bahasa Indonesia — itu datang dari basis data — tapi kata sambungnya
+ * mengikuti bahasa pembaca.
+ */
+export function formatActivities(
+  activities: string[],
+  locale: string,
+): string {
   if (activities.length === 0) return "";
-  if (activities.length === 1) return activities[0];
-  return `${activities.slice(0, -1).join(", ")} dan ${activities.at(-1)}`;
+  return joinList(activities, locale);
 }

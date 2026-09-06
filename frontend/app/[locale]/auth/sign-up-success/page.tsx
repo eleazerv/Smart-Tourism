@@ -1,26 +1,36 @@
 import type { Metadata } from "next";
 import { MailCheck } from "lucide-react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AuthLink, AuthShell } from "@/components/auth/auth-shell";
 
-export const metadata: Metadata = { title: "Cek Email Anda" };
+type PageProps = { params: Promise<{ locale: string }> };
 
-export default function Page() {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.signUpSuccess" });
+  return { title: t("metaTitle") };
+}
+
+export default async function Page({ params }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("auth.signUpSuccess");
+
   return (
     <AuthShell
-      title="Cek email Anda"
-      description="Akun Anda sudah dibuat."
+      title={t("title")}
+      description={t("description")}
       footer={
         <>
-          Sudah dikonfirmasi? <AuthLink href="/auth/login">Masuk</AuthLink>
+          {t("confirmed")} <AuthLink href="/auth/login">{t("login")}</AuthLink>
         </>
       }
     >
       <div className="flex gap-3">
         <MailCheck className="h-5 w-5 shrink-0 text-brand-700" />
-        <p className="text-sm text-muted-foreground">
-          Kami mengirim tautan konfirmasi ke email Anda. Buka tautan tersebut
-          untuk mengaktifkan akun sebelum masuk.
-        </p>
+        <p className="text-sm text-muted-foreground">{t("body")}</p>
       </div>
     </AuthShell>
   );

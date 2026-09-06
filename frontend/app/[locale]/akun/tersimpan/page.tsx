@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { Bookmark, Compass } from "lucide-react";
 import {
   listAlbums,
@@ -14,13 +14,23 @@ import { AlbumCard } from "@/components/account/album-card";
 import { NewAlbumCard } from "@/components/account/new-album-card";
 import { LOOSE_SLUG } from "@/components/account/album-routes";
 import { LoadError } from "@/components/home/load-error";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Destinasi Tersimpan" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "albums" });
+  return { title: t("savedMetaTitle") };
+}
 
 /** Covers shown on an album card before it opens. */
 const PREVIEW = 4;
 
 async function SavedSection() {
+  const t = await getTranslations("albums");
   const token = await requireAccessToken();
 
   let saved: SavedDestination[];
@@ -31,7 +41,7 @@ async function SavedSection() {
       listAlbums({ token }),
     ]);
   } catch {
-    return <LoadError what="Destinasi tersimpan" />;
+    return <LoadError what={t("savedLoadErrorWhat")} />;
   }
 
   // One destination can sit in several albums, so this is a lookup for the
@@ -55,15 +65,14 @@ async function SavedSection() {
     return (
       <div className="rounded-2xl border border-dashed border-border px-4 py-12 text-center">
         <p className="text-sm text-muted-foreground">
-          Belum ada destinasi tersimpan. Tekan ikon penanda di kartu mana pun
-          untuk menyimpannya ke sini, lalu kelompokkan ke album.
+          {t("savedEmpty")}
         </p>
         <Link
           href="/destinations"
           className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Compass className="h-4 w-4" />
-          Jelajahi destinasi
+          {t("browseDestinations")}
         </Link>
       </div>
     );
@@ -95,9 +104,9 @@ async function SavedSection() {
               />
             </div>
             <div className="p-3">
-              <p className="truncate text-sm font-bold">Tanpa album</p>
+              <p className="truncate text-sm font-bold">{t("looseAlbum")}</p>
               <p className="mt-0.5 text-xs text-muted-foreground">
-                {loose.length} destinasi belum dikelompokkan
+                {t("looseCount", { count: loose.length })}
               </p>
             </div>
           </Link>
@@ -109,11 +118,18 @@ async function SavedSection() {
   );
 }
 
-export default function SavedDestinationsPage() {
+export default async function SavedDestinationsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("albums");
+
   return (
     <AccountSection
-      title="Destinasi tersimpan"
-      description="Kumpulan album Anda. Buka salah satunya untuk melihat isinya."
+      title={t("savedTitle")}
+      description={t("savedDescription")}
     >
       <Suspense fallback={<GridSkeleton />}>
         <SavedSection />

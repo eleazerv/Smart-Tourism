@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, BedDouble, ExternalLink, Plane, Search } from "lucide-react";
+import { AlertTriangle, BedDouble, ExternalLink, Plane, Search } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
+import { BackLink } from "@/components/account/back-link";
 import { TripBookingActions } from "@/components/account/trip-booking-actions";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import { dateOf } from "@/lib/airports";
@@ -15,21 +16,23 @@ import {
 import { requireAccessToken } from "@/lib/api/session";
 import { formatDateTime } from "@/lib/format-date";
 import { formatIDR } from "@/lib/seeded-random";
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Detail Paket Trip" };
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "orderDetail" });
+  return { title: t("metaTitleTrip") };
+}
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string; locale: string }> };
 
 export default function TripBookingDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
-      <Link
-        href="/akun/pesanan"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Semua pesanan
-      </Link>
+      <BackLink href="/akun/pesanan" labelKey="allBookings" />
 
       <Suspense fallback={<DetailSkeleton />}>
         <TripBookingDetailContent params={params} />
@@ -40,6 +43,8 @@ export default function TripBookingDetailPage({ params }: PageProps) {
 
 async function TripBookingDetailContent({ params }: PageProps) {
   const { id } = await params;
+  const t = await getTranslations("orderDetail");
+  const locale = await getLocale();
   const token = await requireAccessToken();
 
   let booking: TripBookingDetail | null;
@@ -48,7 +53,7 @@ async function TripBookingDetailContent({ params }: PageProps) {
   } catch {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Detail pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -67,7 +72,9 @@ async function TripBookingDetailContent({ params }: PageProps) {
   return (
     <AccountSection
       title={booking.booking_code}
-      description={`Dipesan ${formatDateTime(booking.created_at)}.`}
+      description={t("bookedAt", {
+        date: formatDateTime(booking.created_at, locale),
+      })}
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -86,15 +93,18 @@ async function TripBookingDetailContent({ params }: PageProps) {
 
           <dl className="mt-4 space-y-1.5 text-sm">
             {booking.paid_at && (
-              <Row label="Dibayar" value={formatDateTime(booking.paid_at)} />
+              <Row
+                label={t("paidAt")}
+                value={formatDateTime(booking.paid_at, locale)}
+              />
             )}
             {booking.payment_method && (
-              <Row label="Metode" value={booking.payment_method} />
+              <Row label={t("method")} value={booking.payment_method} />
             )}
             {booking.invoice_expires_at && booking.payment_status !== "paid" && (
               <Row
-                label={closed ? "Batas pembayaran berakhir" : "Batas pembayaran"}
-                value={formatDateTime(booking.invoice_expires_at)}
+                label={closed ? t("deadlinePassed") : t("deadline")}
+                value={formatDateTime(booking.invoice_expires_at, locale)}
               />
             )}
           </dl>
@@ -111,7 +121,7 @@ async function TripBookingDetailContent({ params }: PageProps) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2"
                 >
-                  Buka tagihan yang sudah dibuat
+                  {t("openInvoice")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
@@ -121,7 +131,7 @@ async function TripBookingDetailContent({ params }: PageProps) {
 
         {flights.length === 0 && stays.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Rincian pesanan untuk paket ini tidak tersedia.
+            {t("noTripItems")}
           </p>
         ) : (
           <>
@@ -138,22 +148,25 @@ async function TripBookingDetailContent({ params }: PageProps) {
   );
 }
 
-const CLOSED_COPY: Partial<Record<PaymentStatus, { title: string; body: string }>> = {
+const CLOSED_COPY: Partial<
+  Record<PaymentStatus, { titleKey: string; bodyKey: string }>
+> = {
   failed: {
-    title: "Pembayaran tidak selesai",
-    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kursi/kamar yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "failedTitle",
+    bodyKey: "failedBodyTrip",
   },
   expired: {
-    title: "Tagihan sudah kedaluwarsa",
-    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kursi/kamarnya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "expiredTitle",
+    bodyKey: "expiredBodyTrip",
   },
   cancelled: {
-    title: "Pesanan dibatalkan",
-    body: "Pesanan ini dibatalkan dan kursi/kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "cancelledTitle",
+    bodyKey: "cancelledBodyTrip",
   },
 };
 
 function ClosedNotice({ status }: { status: PaymentStatus }) {
+  const t = useTranslations("orderDetail");
   const copy = CLOSED_COPY[status];
   if (!copy) return null;
 
@@ -177,8 +190,8 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
       />
 
       <div className="min-w-0">
-        <p className="text-sm font-semibold">{copy.title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
+        <p className="text-sm font-semibold">{t(copy.titleKey)}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(copy.bodyKey)}</p>
 
         <Link
           href="/"

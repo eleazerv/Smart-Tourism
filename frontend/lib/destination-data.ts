@@ -5,49 +5,30 @@
  * prices, opening hours, or itineraries. Where the guide needs an image the
  * database has no column for, it falls back to the same deterministic
  * placeholder the home page uses.
+ *
+ * Setiap fungsi yang menghasilkan teks menerima `locale`. Yang tidak bisa
+ * disusun `Intl` — label kepadatan, stempel waktu relatif — mengembalikan
+ * kunci, bukan kalimat, dan komponen pemanggilnya yang menerjemahkan.
  */
 import type { Destination, HeatmapEntry } from "@/lib/api";
 import { coverImage, photo } from "@/lib/home-data";
-
-export const MONTHS = [
-  "Januari",
-  "Februari",
-  "Maret",
-  "April",
-  "Mei",
-  "Juni",
-  "Juli",
-  "Agustus",
-  "September",
-  "Oktober",
-  "November",
-  "Desember",
-] as const;
-
-export const MONTHS_SHORT = [
-  "Jan",
-  "Feb",
-  "Mar",
-  "Apr",
-  "Mei",
-  "Jun",
-  "Jul",
-  "Agu",
-  "Sep",
-  "Okt",
-  "Nov",
-  "Des",
-] as const;
+import { formatNumber, intlLocale, joinList, monthName } from "@/lib/intl";
 
 /**
  * "April–Oktober" out of a set of month numbers (1–12), joining runs that wrap
  * past December — Indonesia's wet season is November–Maret, which reads as two
  * broken stretches if the year boundary is treated as a wall.
+ *
+ * `null` berarti dua belas bulan sekaligus; pemanggilnya yang memilih kata
+ * "sepanjang tahun" dalam bahasanya.
  */
-export function monthRangeLabel(months: number[]): string {
+export function monthRangeLabel(
+  months: number[],
+  locale: string,
+): string | null {
   const sorted = [...new Set(months)].sort((a, b) => a - b);
   if (sorted.length === 0) return "";
-  if (sorted.length === 12) return "Sepanjang tahun";
+  if (sorted.length === 12) return null;
 
   const runs: number[][] = [];
   for (const month of sorted) {
@@ -67,13 +48,11 @@ export function monthRangeLabel(months: number[]): string {
 
   const labels = runs.map((run) =>
     run.length === 1
-      ? MONTHS[run[0] - 1]
-      : `${MONTHS[run[0] - 1]}–${MONTHS[run[run.length - 1] - 1]}`,
+      ? monthName(run[0], locale)
+      : `${monthName(run[0], locale)}–${monthName(run[run.length - 1], locale)}`,
   );
 
-  // "Januari dan Maret dan Mei" -> "Januari, Maret, dan Mei".
-  if (labels.length <= 2) return labels.join(" dan ");
-  return `${labels.slice(0, -1).join(", ")}, dan ${labels.at(-1)}`;
+  return joinList(labels, locale);
 }
 
 /** Number of frames in the hero gallery, cover included. */
@@ -94,25 +73,19 @@ export function gallery(destination: Destination): string[] {
   ];
 }
 
-export function formatCount(value: number | null | undefined) {
-  return (value ?? 0).toLocaleString("id-ID");
+export function formatCount(value: number | null | undefined, locale: string) {
+  return formatNumber(value, locale);
 }
 
-/** Human label for a rating, in the register booking sites use. frontend-lele */ 
-// export function ratingLabel(value: number) {
-//   if (value >= 4.5) return "Istimewa";
-//   if (value >= 4) return "Sangat baik";
-//   if (value >= 3.5) return "Baik";
-//   if (value >= 3) return "Cukup";
-//   return "Biasa";
-// }
+export type CrowdTone = "quiet" | "moderate" | "busy";
 
 export type CrowdLevel = {
-  label: string;
-  description: string;
+  /** Kunci di namespace `crowd`, bukan label jadi. */
+  tone: CrowdTone;
+  /** Nama provinsi, untuk disisipkan ke kalimat penjelasnya. */
+  provinceName: string;
   /** 0–100, this province's share of the busiest province on record. */
   share: number;
-  tone: "quiet" | "moderate" | "busy";
 };
 
 /**
@@ -133,29 +106,9 @@ export function crowdLevel(
   if (busiest <= 0) return null;
 
   const share = Math.round((entry.visitor_count / busiest) * 100);
+  const tone: CrowdTone = share >= 60 ? "busy" : share >= 25 ? "moderate" : "quiet";
 
-  if (share >= 60) {
-    return {
-      label: "Ramai",
-      description: `${entry.province_name} termasuk provinsi terpadat pada periode terakhir.`,
-      share,
-      tone: "busy",
-    };
-  }
-  if (share >= 25) {
-    return {
-      label: "Sedang",
-      description: `Kunjungan ke ${entry.province_name} berada di tengah dibanding provinsi lain.`,
-      share,
-      tone: "moderate",
-    };
-  }
-  return {
-    label: "Sepi",
-    description: `${entry.province_name} relatif lengang dibanding provinsi terpadat.`,
-    share,
-    tone: "quiet",
-  };
+  return { tone, provinceName: entry.province_name, share };
 }
 
 /** Google Maps deep link — the app has no map tiles of its own yet. */
@@ -171,32 +124,47 @@ export function mapsUrl(destination: {
   return `https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(query)}`;
 }
 
-export function formatCoordinates(lat: number, lng: number) {
-  const ns = lat >= 0 ? "LU" : "LS";
-  const ew = lng >= 0 ? "BT" : "BB";
+/**
+ * Arah mata angin ikut bahasanya: LU/LS/BT/BB dalam bahasa Indonesia,
+ * N/S/E/W dalam bahasa Inggris.
+ */
+export function formatCoordinates(lat: number, lng: number, locale: string) {
+  const en = locale === "en";
+  const ns = lat >= 0 ? (en ? "N" : "LU") : en ? "S" : "LS";
+  const ew = lng >= 0 ? (en ? "E" : "BT") : en ? "W" : "BB";
   return `${Math.abs(lat).toFixed(4)}° ${ns}, ${Math.abs(lng).toFixed(4)}° ${ew}`;
 }
 
-export function formatDate(value: string | null) {
+export function formatDate(value: string | null, locale: string) {
   if (!value) return null;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return null;
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString(intlLocale(locale), {
     day: "numeric",
     month: "long",
     year: "numeric",
   });
 }
 
-/** "3 hari lalu" style stamp for review cards. */
-export function relativeDate(value: string) {
+export type RelativeStamp =
+  | { unit: "today" | "yesterday" }
+  | { unit: "day" | "month" | "year"; value: number };
+
+/**
+ * Umur sebuah ulasan, dalam bentuk yang belum jadi kalimat.
+ *
+ * Bentuk jamak berbeda antar bahasa ("1 hari" vs "1 day", "2 hari" vs
+ * "2 days"), jadi angkanya diserahkan ke ICU di sisi kamus alih-alih
+ * dirangkai di sini.
+ */
+export function relativeStamp(value: string): RelativeStamp | null {
   const then = new Date(value).getTime();
-  if (Number.isNaN(then)) return "";
+  if (Number.isNaN(then)) return null;
 
   const days = Math.floor((Date.now() - then) / 86_400_000);
-  if (days <= 0) return "Hari ini";
-  if (days === 1) return "Kemarin";
-  if (days < 30) return `${days} hari lalu`;
-  if (days < 365) return `${Math.floor(days / 30)} bulan lalu`;
-  return `${Math.floor(days / 365)} tahun lalu`;
+  if (days <= 0) return { unit: "today" };
+  if (days === 1) return { unit: "yesterday" };
+  if (days < 30) return { unit: "day", value: days };
+  if (days < 365) return { unit: "month", value: Math.floor(days / 30) };
+  return { unit: "year", value: Math.floor(days / 365) };
 }

@@ -2,8 +2,8 @@
 
 import { useState } from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { Link } from "@/i18n/navigation";
+import { useRouter } from "@/i18n/navigation";
 import {
   Images,
   Loader2,
@@ -30,6 +30,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * One album as a card: a cover mosaic, its name, and the ⋮ menu.
@@ -47,6 +48,7 @@ export function AlbumCard({
   preview: SavedDestination[];
 }) {
   const [renaming, setRenaming] = useState(false);
+  const t = useTranslations("albums");
   const [name, setName] = useState(album.name);
   const [confirming, setConfirming] = useState(false);
   const [sharing, setSharing] = useState(false);
@@ -75,8 +77,8 @@ export function AlbumCard({
     } catch (err) {
       setError(
         err instanceof ApiError && err.code === "album_exists"
-          ? "Nama itu sudah dipakai."
-          : "Gagal mengganti nama.",
+          ? t("nameTaken")
+          : t("renameFailed"),
       );
     } finally {
       setBusy(false);
@@ -93,7 +95,7 @@ export function AlbumCard({
       setConfirming(false);
       router.refresh();
     } catch {
-      setError("Gagal menghapus album.");
+      setError(t("deleteFailed"));
     } finally {
       setBusy(false);
     }
@@ -105,7 +107,10 @@ export function AlbumCard({
         <Link
           href={`/akun/tersimpan/${album.id}`}
           className="block focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
-          aria-label={`Buka album ${album.name}, ${album.item_count} destinasi`}
+          aria-label={t("openAlbum", {
+            name: album.name,
+            count: album.item_count,
+          })}
         >
           <CoverMosaic preview={preview} name={album.name} />
         </Link>
@@ -139,8 +144,8 @@ export function AlbumCard({
             )}
 
             <p className="mt-0.5 text-xs text-muted-foreground">
-              {album.item_count} destinasi
-              {album.share_token && " · dibagikan"}
+              {t("itemCount", { count: album.item_count })}
+              {album.share_token && t("shared")}
             </p>
 
             {error && (
@@ -154,7 +159,7 @@ export function AlbumCard({
               menggeser seluruh isi halaman. Lihat catatan di account-menu.tsx. */}
           <DropdownMenu modal={false}>
             <DropdownMenuTrigger
-              aria-label={`Kelola album ${album.name}`}
+              aria-label={t("manage", { name: album.name })}
               className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-muted-foreground transition hover:bg-muted hover:text-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 data-[state=open]:bg-muted"
             >
               {busy ? (
@@ -176,14 +181,14 @@ export function AlbumCard({
               </DropdownMenuItem>
               <DropdownMenuItem onSelect={() => setSharing(true)}>
                 <Share2 className="h-4 w-4" />
-                Bagikan
+                {t("share")}
               </DropdownMenuItem>
               <DropdownMenuItem
                 onSelect={() => setConfirming(true)}
                 className="text-destructive focus:text-destructive"
               >
                 <Trash2 className="h-4 w-4" />
-                Hapus
+                {t("delete")}
               </DropdownMenuItem>
             </DropdownMenuContent>
           </DropdownMenu>
@@ -193,10 +198,10 @@ export function AlbumCard({
       <ConfirmDialog
         open={confirming}
         icon={<Trash2 className="h-5 w-5" />}
-        title={`Hapus album ${album.name}?`}
-        description="Albumnya saja yang hilang. Destinasi di dalamnya tetap tersimpan dan pindah ke Tanpa album."
-        confirmLabel={busy ? "Menghapus..." : "Hapus album"}
-        cancelLabel="Batal"
+        title={t("deleteTitle", { name: album.name })}
+        description={t("deleteBody")}
+        confirmLabel={busy ? t("deleting") : t("deleteConfirm")}
+        cancelLabel={t("cancelLabel")}
         destructive
         pending={busy}
         onConfirm={() => void remove()}

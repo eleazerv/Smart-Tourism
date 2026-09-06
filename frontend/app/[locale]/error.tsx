@@ -16,7 +16,8 @@
  */
 
 import { useEffect } from "react";
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { RotateCcw, TriangleAlert } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -28,6 +29,8 @@ export default function AppError({
   error: Error & { digest?: string };
   reset: () => void;
 }) {
+  const t = useTranslations("error");
+
   useEffect(() => {
     console.error(error);
   }, [error]);
@@ -42,11 +45,10 @@ export default function AppError({
             <TriangleAlert className="h-6 w-6" />
           </span>
           <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
-            Ada yang tidak beres di halaman ini
+            {t("title")}
           </h1>
           <p className="mt-2 max-w-md text-sm text-muted-foreground">
-            Bagian ini gagal dimuat. Biasanya cukup dicoba lagi; kalau tetap
-            sama, kembali ke beranda dan buka lagi dari sana.
+            {t("body")}
           </p>
 
           <div className="mt-6 flex flex-wrap justify-center gap-2">
@@ -56,13 +58,13 @@ export default function AppError({
               className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
             >
               <RotateCcw className="h-4 w-4" />
-              Coba lagi
+              {t("retry")}
             </button>
             <Link
               href="/"
               className="rounded-full border border-border px-5 py-2.5 text-sm font-semibold transition hover:bg-brand-tint/10"
             >
-              Kembali ke beranda
+              {t("home")}
             </Link>
           </div>
 
@@ -71,7 +73,7 @@ export default function AppError({
               pegangan untuk mencocokkan laporan pengguna dengan log. */}
           {error.digest ? (
             <p className="mt-6 font-mono text-xs text-muted-foreground">
-              Kode kejadian: {error.digest}
+              {t("digest", { digest: error.digest })}
             </p>
           ) : null}
 

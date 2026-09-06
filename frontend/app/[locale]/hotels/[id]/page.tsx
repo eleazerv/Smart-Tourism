@@ -18,7 +18,7 @@ import {
 import { getAccessToken } from "@/lib/api/session";
 import { createClient } from "@/lib/supabase/server";
 import { coverImage } from "@/lib/home-data";
-import { parseStaySearch, tierLabel } from "@/lib/stays-search";
+import { parseStaySearch } from "@/lib/stays-search";
 import type { RawSearchParams } from "@/lib/stays-search";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -31,26 +31,33 @@ import { LocationCard } from "@/components/peta/location-card";
 import { AvailabilityCard } from "@/components/stays/availability-card";
 import { NearbyDestinations } from "@/components/stays/nearby-destinations";
 import { StayReviewList } from "@/components/stays/stay-review-list";
-import { removeStayReview, submitStayReview } from "@/app/hotels/[id]/actions";
+import { removeStayReview, submitStayReview } from "@/app/[locale]/hotels/[id]/actions";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 type PageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<RawSearchParams>;
 };
 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
+  const { id, locale } = await params;
   let stay: Accommodation | null;
   try {
-    stay = await getAccommodation((await params).id);
+    stay = await getAccommodation(id);
   } catch {
     stay = null;
   }
-  if (!stay) return { title: "Penginapan tidak ditemukan" };
+  const t = await getTranslations({ locale, namespace: "stays" });
+  if (!stay) return { title: t("notFound") };
 
   const place = placeOf(stay);
-  const description = `${tierLabel(stay.tier)} di ${place || "Indonesia"}. Lihat tarif per malam, kapasitas kamar, dan ketersediaan untuk tanggal menginap Anda.`;
+  const description = t("detailDescription", {
+    tier: t(`tier.${stay.tier}`),
+    place: place || "Indonesia",
+  });
 
   return {
     title: stay.name,
@@ -87,6 +94,8 @@ export default function StayPage({ params, searchParams }: PageProps) {
 }
 
 async function StayDetail({ params, searchParams }: PageProps) {
+  const t = await getTranslations("stays");
+  const catalogue = await getTranslations("catalogue");
   const { id } = await params;
   // The dates, guests, and rooms ride along from the listing, so the
   // availability check answers for the stay the reader was actually planning.
@@ -112,8 +121,8 @@ async function StayDetail({ params, searchParams }: PageProps) {
     <div className="container-page pt-5">
       <Breadcrumb
         items={[
-          { label: "Beranda", href: "/" },
-          { label: "Hotel", href: "/hotels" },
+          { label: catalogue("home"), href: "/" },
+          { label: t("crumb"), href: "/hotels" },
           ...(stay.cities
             ? [
                 {
@@ -132,13 +141,13 @@ async function StayDetail({ params, searchParams }: PageProps) {
         </h1>
         <div className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-muted-foreground">
           {rating === null ? (
-            <span>Belum ada ulasan</span>
+            <span>{t("noReviews")}</span>
           ) : (
             <Rating value={rating} reviews={stay.review_count} className="text-sm" />
           )}
           {place && <span>{place}</span>}
           <span className="rounded-full bg-brand-tint/10 px-2.5 py-0.5 text-xs font-semibold text-brand-900">
-            {tierLabel(stay.tier)}
+            {t(`tier.${stay.tier}`)}
           </span>
         </div>
       </div>
@@ -171,8 +180,7 @@ async function StayDetail({ params, searchParams }: PageProps) {
         <aside className="lg:sticky lg:top-24">
           <AvailabilityCard stay={stay} state={state} />
           <p className="mt-3 px-1 text-[11px] leading-snug text-muted-foreground">
-            Ketersediaan dihitung dari pemesanan yang sudah tercatat pada
-            rentang tanggal ini, bukan dari sistem mitra.
+            {t("availabilityNote")}
           </p>
         </aside>
       </div>
@@ -186,15 +194,21 @@ async function StayDetail({ params, searchParams }: PageProps) {
 
 /** Quick-facts strip under the cover, the way a listing opens a property. */
 function Facts({ stay }: { stay: Accommodation }) {
+  const t = useTranslations("stays");
+
   const facts = [
-    { icon: Building2, label: "Kelas", value: tierLabel(stay.tier) },
+    {
+      icon: Building2,
+      label: t("tierFact"),
+      value: t(`tier.${stay.tier}`),
+    },
     {
       icon: BedDouble,
-      label: "Kapasitas",
+      label: t("capacityFact"),
       value:
         stay.max_guests !== null
-          ? `${stay.max_guests} tamu per kamar`
-          : "Tidak dicatat",
+          ? t("capacityValue", { count: stay.max_guests })
+          : t("notRecorded"),
     },
     {
       icon: MapPinned,
@@ -241,6 +255,8 @@ async function StayReviewsSection({
   /** Already normalised: 0 arrives as null, so the summary shows "—". */
   average: number | null;
 }) {
+  const t = await getTranslations("stays");
+
   const token = await getAccessToken();
 
   const supabase = await createClient();
@@ -258,12 +274,12 @@ async function StayReviewsSection({
     <section id="ulasan" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
         <MessagesSquare className="h-5 w-5 text-brand-700" />
-        Ulasan tamu
+        {t("guestReviews")}
       </h2>
 
       {reviews === null ? (
         <div className="mt-3">
-          <LoadError what="Ulasan" />
+          <LoadError what={t("reviewsLoadErrorWhat")} />
         </div>
       ) : (
         <div className="mt-3 space-y-4">

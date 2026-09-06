@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import { Check, MapPin, Search } from "lucide-react";
+import { useTranslations } from "next-intl";
 import {
   AnchoredPanel,
   useAnchoredPanel,
@@ -34,6 +35,8 @@ export function StayCityPicker({
   cities: CityFacet[];
 }) {
   const [open, setOpen] = useState(false);
+  const t = useTranslations("stays");
+
   const [query, setQuery] = useState("");
   const [active, setActive] = useState(0);
 
@@ -119,7 +122,7 @@ export function StayCityPicker({
             Kota atau area
           </span>
           <span className="block truncate text-sm font-semibold">
-            {selected ? selected.name : "Semua kota"}
+            {selected ? selected.name : t("allCities")}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
             {selected
@@ -133,7 +136,7 @@ export function StayCityPicker({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label="Pilih kota"
+          label={t("pickCity")}
           className="p-2"
         >
           <div className="flex items-center gap-2 rounded-xl border border-border px-3 py-2">
@@ -147,7 +150,7 @@ export function StayCityPicker({
               aria-expanded="true"
               aria-controls={listId}
               aria-autocomplete="list"
-              placeholder="Cari kota atau provinsi"
+              placeholder={t("searchCity")}
               className="w-full min-w-0 bg-transparent text-sm outline-none placeholder:text-muted-foreground"
             />
           </div>
@@ -161,7 +164,7 @@ export function StayCityPicker({
             <Option
               active={options[active] === ALL}
               selected={value === null}
-              title="Semua kota"
+              title={t("allCities")}
               subtitle={`${cities.length} kota tersedia`}
               onSelect={() => choose(ALL)}
               onHover={() => setActive(0)}
@@ -182,7 +185,7 @@ export function StayCityPicker({
 
             {matches.length === 0 && (
               <li className="px-3 py-6 text-center text-sm text-muted-foreground">
-                Tidak ada kota yang cocok.
+                {t("noCityMatch")}
               </li>
             )}
           </ul>

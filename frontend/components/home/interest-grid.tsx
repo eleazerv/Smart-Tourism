@@ -1,6 +1,7 @@
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
+import { getTranslations } from "next-intl/server";
 import { getTags } from "@/lib/api";
 import { photo } from "@/lib/home-data";
 import { LoadError } from "@/components/home/load-error";
@@ -16,22 +17,25 @@ async function loadTags() {
 }
 
 export async function InterestGrid() {
+  const t = await getTranslations("home.interests");
+  const common = await getTranslations("common");
+
   let tags;
   try {
     tags = (await loadTags()).slice(0, SHOWN);
   } catch {
     return (
-      <Section title="Jelajahi berdasarkan jenis destinasi">
-        <LoadError what="Daftar kategori" />
+      <Section title={t("title")}>
+        <LoadError what={t("loadErrorWhat")} />
       </Section>
     );
   }
 
   return (
     <Section
-      title="Jelajahi berdasarkan jenis destinasi"
-      subtitle="Setiap destinasi dilengkapi kuota harian dan prediksi kepadatannya"
-      action={{ label: "Lihat semua", href: "/destinations" }}
+      title={t("title")}
+      subtitle={t("subtitle")}
+      action={{ label: common("seeAll"), href: "/destinations" }}
     >
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         {tags.map((tag) => (

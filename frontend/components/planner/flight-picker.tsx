@@ -32,11 +32,7 @@ import {
   type TripFlightRole,
   type TripStop,
 } from "@/lib/api";
-
-const ROLE_LABEL: Record<TripFlightRole, string> = {
-  arrival: "Masuk",
-  departure: "Keluar",
-};
+import { useTranslations } from "next-intl";
 
 export function FlightPicker({
   canvas,
@@ -52,6 +48,7 @@ export function FlightPicker({
   const [open, setOpen] = useState(false);
   const [cities, setCities] = useState<City[] | null>(null);
 
+  const t = useTranslations("planner");
   const [origin, setOrigin] = useState<string>("");
   const [destination, setDestination] = useState<string>("");
   const [date, setDate] = useState<string>("");
@@ -110,7 +107,7 @@ export function FlightPicker({
       setCities(await listCities());
     } catch {
       setCities([]);
-      setError("Daftar kota belum bisa dimuat.");
+      setError(t("citiesLoadFailed"));
     }
   }
 
@@ -119,11 +116,11 @@ export function FlightPicker({
     setResults(null);
 
     if (!origin || !destination || !date) {
-      setError("Kota asal, kota tujuan, dan tanggal wajib diisi.");
+      setError(t("routeRequired"));
       return;
     }
     if (origin === destination) {
-      setError("Kota asal dan tujuan tidak boleh sama.");
+      setError(t("sameCity"));
       return;
     }
 
@@ -158,7 +155,7 @@ export function FlightPicker({
         aria-expanded={open}
       >
         <Plane className="h-3.5 w-3.5" />
-        Cari penerbangan
+        {t("searchFlights")}
         <ChevronDown
           className={cn("h-3.5 w-3.5 transition", open && "rotate-180")}
         />
@@ -168,14 +165,14 @@ export function FlightPicker({
         <div className="mt-1.5 space-y-2 rounded-xl border border-border p-2.5">
           <div className="grid grid-cols-2 gap-1.5">
             <CitySelect
-              label="Dari"
+              label={t("fromCityLabel")}
               value={origin}
               cities={cities}
               disabled={disabled}
               onChange={setOrigin}
             />
             <CitySelect
-              label="Ke"
+              label={t("toCityLabel")}
               value={destination}
               cities={cities}
               disabled={disabled}
@@ -185,10 +182,10 @@ export function FlightPicker({
 
           <div className="grid grid-cols-2 gap-1.5">
             <label className="block">
-              <span className="sr-only">Tanggal berangkat</span>
+              <span className="sr-only">{t("departDate")}</span>
               <input
                 type="date"
-                title="Tanggal berangkat"
+                title={t("departDate")}
                 value={date}
                 disabled={disabled}
                 onChange={(e) => setDate(e.target.value)}
@@ -196,16 +193,16 @@ export function FlightPicker({
               />
             </label>
             <label className="block">
-              <span className="sr-only">Peran penerbangan</span>
+              <span className="sr-only">{t("flightRole")}</span>
               <select
-                title="Peran penerbangan"
+                title={t("flightRole")}
                 value={role}
                 disabled={disabled}
                 onChange={(e) => setRole(e.target.value as TripFlightRole)}
                 className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
               >
-                <option value="arrival">Masuk ke kota ini</option>
-                <option value="departure">Keluar dari kota ini</option>
+                <option value="arrival">{t("roleArrivalOption")}</option>
+                <option value="departure">{t("roleDepartureOption")}</option>
               </select>
             </label>
           </div>
@@ -221,22 +218,22 @@ export function FlightPicker({
             ) : (
               <Search className="h-3.5 w-3.5" />
             )}
-            Cari
+            {t("search")}
           </Button>
 
           {occupied && !occupied.booked_at && (
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Leg {ROLE_LABEL[role].toLowerCase()} sedang diisi{" "}
-              {occupied.flight_options?.airline}{" "}
-              {occupied.flight_options?.flight_number}. Memilih di sini akan
-              menggantinya.
+              {t("legOccupied", {
+                role: t(`role.${role}`).toLowerCase(),
+                airline: occupied.flight_options?.airline ?? "",
+                number: occupied.flight_options?.flight_number ?? "",
+              })}
             </p>
           )}
 
           {occupied?.booked_at && (
             <p className="text-[11px] leading-relaxed text-muted-foreground">
-              Leg {ROLE_LABEL[role].toLowerCase()} sudah dipesan dan tidak bisa
-              ditimpa. Batalkan pesanannya dulu di halaman Pesanan.
+              {t("legBooked", { role: t(`role.${role}`).toLowerCase() })}
             </p>
           )}
 

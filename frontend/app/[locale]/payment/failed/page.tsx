@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { CircleAlert } from "lucide-react";
 import { PaymentResult } from "@/components/payment/payment-result";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 /**
  * Pendaratan setelah Xendit memulangkan pembayar lewat jalur gagal
@@ -13,28 +14,39 @@ import { PaymentResult } from "@/components/payment/payment-result";
  * Sama seperti halaman suksesnya, tidak ada detail pesanan di sini: Xendit
  * tidak menempelkan parameter apa pun ke URL ini.
  */
-export const metadata: Metadata = {
-  title: "Pembayaran Belum Selesai",
-  description: "Pembayaran tidak jadi diproses. Pesanan Anda masih tersimpan.",
-  robots: { index: false, follow: false },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "payment" });
+  return {
+    title: t("failedMetaTitle"),
+    description: t("failedMetaDescription"),
+    robots: { index: false, follow: false },
+  };
+}
 
-export default function PaymentFailedPage() {
+export default async function PaymentFailedPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("payment");
   return (
     <PaymentResult
       tone="negative"
       icon={<CircleAlert className="h-6 w-6" />}
-      title="Pembayaran belum selesai"
-      primaryLabel="Buka pesanan saya"
+      title={t("failedTitle")}
+      primaryLabel={t("failedCta")}
     >
       <p>
-        Pembayarannya tidak jadi diproses — mungkin dibatalkan, kedaluwarsa,
-        atau ditolak penyedia pembayaran. Tidak ada dana yang terpotong.
+        {t("failedBody")}
       </p>
       <p>
-        Pesananmu tidak hilang. Ia masih tersimpan dengan status menunggu
-        pembayaran, dan bisa dibayar ulang dari halaman Pesanan selama belum
-        kedaluwarsa.
+        {t("failedBody2")}
       </p>
     </PaymentResult>
   );

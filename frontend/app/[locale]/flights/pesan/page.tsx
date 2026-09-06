@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, LogIn, Plane } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -16,18 +16,31 @@ import {
 import { getFlight, getProfile, getTakenSeats, type FlightDetail } from "@/lib/api";
 import { getAccessToken } from "@/lib/api/session";
 import { formatDateLabel, type RawSearchParams } from "@/lib/flights-search";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 
-type PageProps = { searchParams: Promise<RawSearchParams> };
-
-export const metadata: Metadata = {
-  title: "Detail Pemesanan",
-  description:
-    "Periksa jadwal dan harga penerbangan sebelum melanjutkan ke pembayaran.",
-  // A half-finished booking is not something search engines should surface.
-  robots: { index: false, follow: false },
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<RawSearchParams>;
 };
 
-export default function BookingPage({ searchParams }: PageProps) {
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "checkout" });
+  return {
+  title: t("metaTitle"),
+  description: t("flightMetaDescription"),
+  // A half-finished booking is not something search engines should surface.
+  robots: { index: false, follow: false },
+  };
+}
+
+export default async function BookingPage({ params, searchParams }: PageProps) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -41,7 +54,7 @@ export default function BookingPage({ searchParams }: PageProps) {
   );
 }
 
-async function Booking({ searchParams }: PageProps) {
+async function Booking({ searchParams }: Pick<PageProps, "searchParams">) {
   const params = await searchParams;
   const flightId = (
     Array.isArray(params.flight) ? params.flight[0] : (params.flight ?? "")
@@ -77,6 +90,11 @@ async function Booking({ searchParams }: PageProps) {
   const toLabel = to?.code ?? flight.destination?.name ?? "Tujuan";
 
   const date = dateOf(flight.departure_time);
+  const t = await getTranslations("checkout");
+  const flights = await getTranslations("flights");
+  const catalogue = await getTranslations("catalogue");
+  const locale = await getLocale();
+
   const backHref =
     from?.code && to?.code
       ? `/flights?from=${from.code}&to=${to.code}&date=${date}`
@@ -87,22 +105,24 @@ async function Booking({ searchParams }: PageProps) {
     <div className="container-page py-6">
       <Breadcrumb
         items={[
-          { label: "Beranda", href: "/" },
-          { label: "Tiket Pesawat", href: "/flights" },
+          { label: catalogue("home"), href: "/" },
+          { label: flights("crumb"), href: "/flights" },
           { label: `${fromLabel} – ${toLabel}`, href: backHref },
-          { label: "Pemesanan" },
+          { label: t("crumb") },
         ]}
       />
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div>
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Lengkapi pemesanan
+            {t("heading")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
-            {flight.origin?.name ?? fromLabel} ke{" "}
-            {flight.destination?.name ?? toLabel} &middot;{" "}
-            {formatDateLabel(date)}
+            {t("routeLine", {
+              from: flight.origin?.name ?? fromLabel,
+              to: flight.destination?.name ?? toLabel,
+            })}{" "}
+            &middot; {formatDateLabel(date, locale)}
           </p>
         </div>
         <Link
@@ -110,7 +130,7 @@ async function Booking({ searchParams }: PageProps) {
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
         >
           <ArrowLeft className="h-4 w-4" />
-          Ganti penerbangan
+          {t("changeFlight")}
         </Link>
       </div>
 
@@ -133,7 +153,7 @@ async function Booking({ searchParams }: PageProps) {
                 durationMin: flight.duration_minutes ?? 0,
                 fromLabel,
                 toLabel,
-                dateLabel: formatDateLabel(date),
+                dateLabel: formatDateLabel(date, locale),
                 price: flight.price,
                 seatsLeft: flight.available_seats,
               }}
@@ -143,10 +163,10 @@ async function Booking({ searchParams }: PageProps) {
           ) : (
             <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
               <h2 className="font-display text-base font-bold tracking-tight">
-                Penumpang
+                {flights("passengers")}
               </h2>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Masuk dulu untuk mengisi nama penumpang dan memilih kursi.
+                {t("signInFirstFlight")}
               </p>
               <div className="mt-4">
                 <SignInFirst nextHref={bookHref} />
@@ -158,16 +178,13 @@ async function Booking({ searchParams }: PageProps) {
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <h2 className="font-display text-base font-bold tracking-tight">
-              Ketentuan
+              {t("terms")}
             </h2>
             <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>Sisa kursi saat ini: {flight.available_seats}.</li>
-              <li>Satu tiket diterbitkan untuk setiap nama penumpang.</li>
-              <li>Pembayaran diproses oleh Xendit di halaman terpisah.</li>
-              <li>
-                Pesanan yang belum dibayar dapat dibatalkan dari halaman
-                pesanan.
-              </li>
+              <li>{t("seatsNow", { count: flight.available_seats })}</li>
+              <li>{t("oneTicketPerName")}</li>
+              <li>{t("xenditNote")}</li>
+              <li>{t("cancellable")}</li>
             </ul>
             <Link
               href="/akun/pesanan"
@@ -193,16 +210,18 @@ function ItineraryCard({
 }) {
   const from = flight.origin ? airportByCityId(flight.origin.id) : null;
   const to = flight.destination ? airportByCityId(flight.destination.id) : null;
+  const t = useTranslations("checkout");
+  const locale = useLocale();
   const dayOffset = arrivalDayOffset(flight);
 
   return (
     <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
       <div className="flex flex-wrap items-center justify-between gap-2">
         <h2 className="font-display text-base font-bold tracking-tight">
-          Penerbangan berangkat
+          {t("departingFlight")}
         </h2>
         <span className="text-xs text-muted-foreground">
-          {formatDateLabel(dateOf(flight.departure_time))}
+          {formatDateLabel(dateOf(flight.departure_time), locale)}
         </span>
       </div>
 
@@ -256,7 +275,7 @@ function ItineraryCard({
         {placeLabel(to?.name, flight.destination?.name ?? toLabel, flight.destination?.provinces?.name)}
       </p>
       <p className="mt-1.5 text-xs text-muted-foreground">
-        Jam yang tertera mengikuti jadwal yang diterbitkan maskapai.
+        {t("timesNote")}
       </p>
     </section>
   );
@@ -272,6 +291,7 @@ function placeLabel(
 }
 
 function SignInFirst({ nextHref }: { nextHref: string }) {
+  const t = useTranslations("checkout");
   return (
     <div className="space-y-3">
       <Link
@@ -279,11 +299,10 @@ function SignInFirst({ nextHref }: { nextHref: string }) {
         className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         <LogIn className="h-4 w-4" />
-        Masuk untuk memesan
+        {t("signInToBook")}
       </Link>
       <p className="text-xs leading-snug text-muted-foreground">
-        Pemesanan tercatat pada akun Anda, jadi tiket dan status pembayarannya
-        bisa dibuka kembali kapan saja.
+        {t("accountRecordNoteFlight")}
       </p>
     </div>
   );
@@ -294,20 +313,20 @@ function SignInFirst({ nextHref }: { nextHref: string }) {
  * a bookmark whose schedule has since been removed.
  */
 function Missing() {
+  const t = useTranslations("checkout");
   return (
     <div className="container-page py-20 text-center">
       <h1 className="font-display text-2xl font-bold tracking-tight">
-        Penerbangan tidak ditemukan
+        {t("flightNotFound")}
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Jadwal untuk tautan ini sudah tidak tersedia. Silakan cari ulang
-        penerbangan Anda.
+        {t("flightMissingBody")}
       </p>
       <Link
         href="/flights"
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Cari penerbangan
+        {t("findFlight")}
       </Link>
     </div>
   );

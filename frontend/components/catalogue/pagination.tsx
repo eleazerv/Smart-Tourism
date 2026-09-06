@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronLeft, ChevronRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
@@ -37,19 +38,21 @@ export function Pagination({
   /** Turns a page number into a URL; each listing owns its own query shape. */
   hrefFor: (page: number) => string;
 }) {
+  const t = useTranslations("ui");
+
   if (totalPages <= 1) return null;
 
   const page = Math.min(Math.max(current, 1), totalPages);
 
   return (
     <nav
-      aria-label="Navigasi halaman hasil"
+      aria-label={t("pageNav")}
       className="mt-8 flex flex-wrap items-center justify-center gap-1.5"
     >
       <Step
         href={hrefFor(page - 1)}
         disabled={page <= 1}
-        label="Halaman sebelumnya"
+        label={t("prevPage")}
         side="prev"
       />
 
@@ -66,7 +69,7 @@ export function Pagination({
           <Link
             key={entry}
             href={hrefFor(entry)}
-            aria-label={`Halaman ${entry}`}
+            aria-label={t("page", { n: entry })}
             aria-current={entry === page ? "page" : undefined}
             className={cn(
               "grid h-9 min-w-9 place-items-center rounded-full px-3 text-sm font-medium tabular-nums transition",
@@ -83,7 +86,7 @@ export function Pagination({
       <Step
         href={hrefFor(page + 1)}
         disabled={page >= totalPages}
-        label="Halaman berikutnya"
+        label={t("nextPage")}
         side="next"
       />
     </nav>

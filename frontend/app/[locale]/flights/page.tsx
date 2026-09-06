@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeftRight, PlaneTakeoff, ServerCrash } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -34,22 +34,34 @@ import {
   type FlightSearchState,
   type RawSearchParams,
 } from "@/lib/flights-search";
+import { useTranslations } from "next-intl";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
 
-type PageProps = { searchParams: Promise<RawSearchParams> };
-
-export const metadata: Metadata = {
-  title: "Tiket Pesawat",
-  description:
-    "Bandingkan jadwal dan harga penerbangan domestik antarkota di Indonesia — waktu berangkat, durasi, maskapai, dan sisa kursi dalam satu daftar.",
-  openGraph: {
-    title: "Tiket Pesawat",
-    description:
-      "Bandingkan jadwal dan harga penerbangan domestik antarkota di Indonesia.",
-    type: "website",
-  },
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<RawSearchParams>;
 };
 
-export default function FlightsPage({ searchParams }: PageProps) {
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "flights" });
+  return {
+  title: t("metaTitle"),
+  description: t("metaDescription"),
+  openGraph: {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    type: "website",
+  },
+  };
+}
+
+export default async function FlightsPage({ params, searchParams }: PageProps) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -65,7 +77,10 @@ export default function FlightsPage({ searchParams }: PageProps) {
   );
 }
 
-async function Board({ searchParams }: PageProps) {
+async function Board({ searchParams }: Pick<PageProps, "searchParams">) {
+  const t = await getTranslations("flights");
+  const catalogue = await getTranslations("catalogue");
+  const locale = await getLocale();
   const state = parseFlightSearch(await searchParams);
 
   const from = airport(state.from);
@@ -127,12 +142,14 @@ async function Board({ searchParams }: PageProps) {
   return (
     <>
       <SearchHero
-        title={`Tiket pesawat ${from.city} ke ${to.city}`}
-        subtitle={`${formatDateLabel(state.date)}. Bandingkan jam berangkat, durasi, dan sisa kursi sebelum memilih.`}
+        title={t("heroTitle", { from: from.city, to: to.city })}
+        subtitle={t("heroSubtitle", {
+          date: formatDateLabel(state.date, locale),
+        })}
         seed={`flight-${from.code}-${to.code}`}
         crumbs={[
-          { label: "Beranda", href: "/" },
-          { label: "Tiket Pesawat", href: "/flights" },
+          { label: catalogue("home"), href: "/" },
+          { label: t("crumb"), href: "/flights" },
           { label: `${from.code} – ${to.code}` },
         ]}
       >
@@ -152,17 +169,17 @@ async function Board({ searchParams }: PageProps) {
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div className="text-sm text-muted-foreground" aria-live="polite">
               {matched.length === 0 ? (
-                "Tidak ada penerbangan yang cocok"
+                t("noMatch")
               ) : (
                 <>
                   <span className="font-semibold text-foreground tabular-nums">
                     {matched.length}
                   </span>{" "}
-                  penerbangan
+                  {t("countLabel")}
                   {cheapest !== null && (
                     <>
                       {" "}
-                      &middot; mulai{" "}
+                      &middot; {t("from")}{" "}
                       <span className="font-semibold text-foreground">
                         {formatIDR(cheapest)}
                       </span>
@@ -188,7 +205,7 @@ async function Board({ searchParams }: PageProps) {
                 value={state.sort}
                 options={SORTS.map((sort) => ({
                   value: sort.key,
-                  label: sort.label,
+                  label: t(`sort.${sort.key}`),
                   href: withFilter(state, { sort: sort.key }),
                 }))}
               />
@@ -218,8 +235,10 @@ async function Board({ searchParams }: PageProps) {
           />
 
           <p className="text-center text-xs leading-relaxed text-muted-foreground">
-            Jadwal, harga, dan sisa kursi berasal langsung dari data
-            penerbangan {from.name} ({from.code}) ke {to.name} ({to.code}).
+            {t("dataNote", {
+              from: `${from.name} (${from.code})`,
+              to: `${to.name} (${to.code})`,
+            })}
           </p>
         </div>
       </div>
@@ -234,6 +253,8 @@ function NoFlights({
   state: FlightSearchState;
   filtered: boolean;
 }) {
+  const t = useTranslations("flights");
+
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
       <span
@@ -243,14 +264,10 @@ function NoFlights({
         <PlaneTakeoff className="h-6 w-6" />
       </span>
       <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-        {filtered
-          ? "Tidak ada penerbangan yang cocok"
-          : "Belum ada jadwal untuk tanggal ini"}
+        {filtered ? t("noMatch") : t("noSchedule")}
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        {filtered
-          ? "Coba longgarkan filter waktu berangkat atau maskapai."
-          : "Coba tanggal lain pada rute yang sama — strip harga di atas menunjukkan hari yang ada penerbangannya."}
+        {filtered ? t("loosenFilters") : t("tryAnotherDate")}
       </p>
       {filtered && (
         <Link
@@ -261,7 +278,7 @@ function NoFlights({
           })}
           className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Hapus semua filter
+          {t("clearFilters")}
         </Link>
       )}
     </div>
@@ -269,20 +286,21 @@ function NoFlights({
 }
 
 function UnknownRoute({ state }: { state: FlightSearchState }) {
+  const t = useTranslations("flights");
+
   return (
     <div className="container-page py-20 text-center">
       <h1 className="font-display text-2xl font-bold tracking-tight">
-        Rute tidak dikenal
+        {t("unknownRoute")}
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Bandara {state.from} atau {state.to} belum terhubung ke kota mana pun di
-        data penerbangan, jadi rutenya tidak bisa dicari.
+        {t("unknownRouteBody", { from: state.from, to: state.to })}
       </p>
       <Link
         href="/flights"
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Mulai pencarian baru
+        {t("newSearch")}
       </Link>
     </div>
   );
@@ -290,6 +308,8 @@ function UnknownRoute({ state }: { state: FlightSearchState }) {
 
 /** The board has no local fallback: without the API there is nothing to show. */
 function ApiDown({ state }: { state: FlightSearchState }) {
+  const t = useTranslations("flights");
+
   return (
     <div className="container-page py-20 text-center">
       <span
@@ -299,17 +319,16 @@ function ApiDown({ state }: { state: FlightSearchState }) {
         <ServerCrash className="h-6 w-6" />
       </span>
       <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
-        Jadwal penerbangan tidak dapat dimuat
+        {t("apiDown")}
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Layanan penerbangan sedang tidak dapat dihubungi. Coba muat ulang
-        beberapa saat lagi.
+        {t("apiDownBody")}
       </p>
       <Link
         href={withFilter(state, {})}
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Coba lagi
+        {t("retry")}
       </Link>
     </div>
   );

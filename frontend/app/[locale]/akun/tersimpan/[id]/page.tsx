@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Compass, Share2 } from "lucide-react";
 import {
@@ -13,10 +13,18 @@ import { requireAccessToken } from "@/lib/api/session";
 import { LOOSE_SLUG } from "@/components/account/album-routes";
 import { SavedGrid } from "@/components/account/saved-grid";
 import { LoadError } from "@/components/home/load-error";
+import { useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Album" };
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "albums" });
+  return { title: t("albumMetaTitle") };
+}
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string; locale: string }> };
 
 /**
  * `AlbumDestination` and `SavedDestination` differ only in the timestamp each
@@ -32,6 +40,7 @@ function asSaved(rows: AlbumDestination[]): SavedDestination[] {
 }
 
 async function AlbumDetail({ params }: PageProps) {
+  const t = await getTranslations("albums");
   const { id } = await params;
   const token = await requireAccessToken();
 
@@ -41,16 +50,15 @@ async function AlbumDetail({ params }: PageProps) {
     try {
       saved = await listSavedDestinations({ token });
     } catch {
-      return <LoadError what="Destinasi tersimpan" />;
+      return <LoadError what={t("savedLoadErrorWhat")} />;
     }
 
     const loose = saved.filter((row) => row.albums.length === 0);
 
     return (
-      <Shell name="Tanpa album" count={loose.length}>
+      <Shell name={t("looseAlbum")} count={loose.length}>
         <p className="text-sm text-muted-foreground">
-          Tersimpan tapi belum masuk rencana mana pun. Buka salah satunya dan
-          tekan ikon penanda untuk memilih albumnya.
+          {t("looseBlurb")}
         </p>
         <div className="mt-4">
           {loose.length === 0 ? <Empty /> : <SavedGrid saved={loose} />}
@@ -63,7 +71,7 @@ async function AlbumDetail({ params }: PageProps) {
   try {
     album = await getAlbum(id, { token });
   } catch {
-    return <LoadError what="Album" />;
+    return <LoadError what={t("albumLoadErrorWhat")} />;
   }
   if (!album) notFound();
 
@@ -72,15 +80,14 @@ async function AlbumDetail({ params }: PageProps) {
       {album.destinations.length === 0 ? (
         <div className="rounded-2xl border border-dashed border-border px-4 py-12 text-center">
           <p className="text-sm text-muted-foreground">
-            Album ini masih kosong. Simpan sebuah destinasi, lalu centang album
-            ini di panel yang muncul.
+            {t("albumEmpty")}
           </p>
           <Link
             href="/destinations"
             className="mt-4 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
           >
             <Compass className="h-4 w-4" />
-            Cari destinasi
+            {t("findDestinations")}
           </Link>
         </div>
       ) : (
@@ -101,6 +108,8 @@ function Shell({
   shared?: boolean;
   children: React.ReactNode;
 }) {
+  const t = useTranslations("albums");
+
   return (
     <div className="space-y-4">
       <Link
@@ -108,7 +117,7 @@ function Shell({
         className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
       >
         <ArrowLeft className="h-4 w-4" />
-        Semua album
+        {t("allAlbums")}
       </Link>
 
       <div className="flex flex-wrap items-baseline gap-x-3 gap-y-1">
@@ -116,7 +125,7 @@ function Shell({
           {name}
         </h1>
         <p className="text-sm text-muted-foreground">
-          {count} destinasi
+          {t("itemCount", { count })}
         </p>
         {shared && (
           <span className="inline-flex items-center gap-1 rounded-full bg-brand-tint/10 px-2 py-0.5 text-xs font-semibold text-brand-700">
@@ -132,10 +141,12 @@ function Shell({
 }
 
 function Empty() {
+  const t = useTranslations("albums");
+
   return (
     <div className="rounded-2xl border border-dashed border-border px-4 py-12 text-center">
       <p className="text-sm text-muted-foreground">
-        Tidak ada destinasi di sini.
+        {t("nothingHere")}
       </p>
     </div>
   );

@@ -1,7 +1,7 @@
 "use client";
 
 import { useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { Loader2 } from "lucide-react";
 import { StayDatePicker } from "@/components/stays/stay-date-picker";
 import { StayPartyPicker } from "@/components/stays/stay-party-picker";

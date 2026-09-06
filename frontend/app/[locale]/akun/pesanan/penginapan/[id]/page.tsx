@@ -1,10 +1,9 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import {
   AlertTriangle,
-  ArrowLeft,
   BedDouble,
   CalendarDays,
   ExternalLink,
@@ -13,6 +12,7 @@ import {
   Users,
 } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
+import { BackLink } from "@/components/account/back-link";
 import { BookingActions } from "@/components/account/booking-actions";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import {
@@ -24,22 +24,24 @@ import {
 import { requireAccessToken } from "@/lib/api/session";
 import { deadlinePassed, formatDateTime } from "@/lib/format-date";
 import { formatIDR } from "@/lib/seeded-random";
-import { formatDateLabel, tierLabel } from "@/lib/stays-search";
+import { formatDateLabel } from "@/lib/stays-search";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Detail Pesanan Penginapan" };
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "orderDetail" });
+  return { title: t("metaTitleStay") };
+}
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string; locale: string }> };
 
 export default function StayBookingDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
-      <Link
-        href="/akun/pesanan"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Semua pesanan
-      </Link>
+      <BackLink href="/akun/pesanan" labelKey="allBookings" />
 
       <Suspense fallback={<DetailSkeleton />}>
         <StayBookingDetail params={params} />
@@ -50,6 +52,9 @@ export default function StayBookingDetailPage({ params }: PageProps) {
 
 async function StayBookingDetail({ params }: PageProps) {
   const { id } = await params;
+  const t = await getTranslations("orderDetail");
+  const stays = await getTranslations("stays");
+  const locale = await getLocale();
   const token = await requireAccessToken();
 
   let booking: AccommodationBooking | null;
@@ -58,7 +63,7 @@ async function StayBookingDetail({ params }: PageProps) {
   } catch {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Detail pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -81,7 +86,9 @@ async function StayBookingDetail({ params }: PageProps) {
   return (
     <AccountSection
       title={booking.booking_code}
-      description={`Dipesan ${formatDateTime(booking.created_at)}.`}
+      description={t("bookedAt", {
+        date: formatDateTime(booking.created_at, locale),
+      })}
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -100,15 +107,18 @@ async function StayBookingDetail({ params }: PageProps) {
 
           <dl className="mt-4 space-y-1.5 text-sm">
             {booking.paid_at && (
-              <Row label="Dibayar" value={formatDateTime(booking.paid_at)} />
+              <Row
+                label={t("paidAt")}
+                value={formatDateTime(booking.paid_at, locale)}
+              />
             )}
             {booking.payment_method && (
-              <Row label="Metode" value={booking.payment_method} />
+              <Row label={t("method")} value={booking.payment_method} />
             )}
             {booking.invoice_expires_at && booking.payment_status !== "paid" && (
               <Row
-                label={closed ? "Batas pembayaran berakhir" : "Batas pembayaran"}
-                value={formatDateTime(booking.invoice_expires_at)}
+                label={closed ? t("deadlinePassed") : t("deadline")}
+                value={formatDateTime(booking.invoice_expires_at, locale)}
               />
             )}
           </dl>
@@ -125,7 +135,7 @@ async function StayBookingDetail({ params }: PageProps) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2"
                 >
-                  Buka tagihan yang sudah dibuat
+                  {t("openInvoice")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
@@ -136,7 +146,7 @@ async function StayBookingDetail({ params }: PageProps) {
         {property && (
           <section className="rounded-2xl border border-border bg-card p-5">
             <p className="text-xs font-medium text-brand-700">
-              {tierLabel(property.tier)}
+              {stays(`tier.${property.tier}`)}
             </p>
             <h2 className="mt-0.5 font-display text-lg font-bold tracking-tight">
               {property.name}
@@ -168,7 +178,7 @@ async function StayBookingDetail({ params }: PageProps) {
 
         {rooms.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Rincian kamar untuk pesanan ini tidak tersedia.
+            {t("noRoomItems")}
           </p>
         ) : (
           rooms.map((room) => (
@@ -187,6 +197,9 @@ function RoomCard({
   room: AccommodationBookingRoom;
   closed: boolean;
 }) {
+  const t = useTranslations("orderDetail");
+  const locale = useLocale();
+
   return (
     <section className="rounded-2xl border border-border bg-card p-5">
       <div className="flex flex-wrap items-start justify-between gap-3">
@@ -209,12 +222,14 @@ function RoomCard({
         <div className="flex items-start gap-2.5">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">Menginap</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t("stayingLabel")}
+            </dt>
             <dd className="font-medium">
-              {formatDateLabel(room.check_in)} –{" "}
-              {formatDateLabel(room.check_out)}{" "}
+              {formatDateLabel(room.check_in, locale)} –{" "}
+              {formatDateLabel(room.check_out, locale)}{" "}
               <span className="text-muted-foreground">
-                ({room.nights} malam)
+                {t("nightsParen", { count: room.nights })}
               </span>
             </dd>
           </div>
@@ -223,37 +238,46 @@ function RoomCard({
         <div className="flex items-start gap-2.5">
           <Users className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">Tamu</dt>
-            <dd className="font-medium">{room.guests} orang</dd>
+            <dt className="text-xs text-muted-foreground">
+              {t("guestsLabel")}
+            </dt>
+            <dd className="font-medium">
+              {t("guestsValue", { count: room.guests })}
+            </dd>
           </div>
         </div>
       </dl>
 
       <p className="mt-3 border-t border-border pt-3 text-xs text-muted-foreground">
-        {formatIDR(room.price_per_night)} × {room.nights} malam. Tarif ini
-        terkunci saat pesanan dibuat.
+        {t("rateNote", {
+          price: formatIDR(room.price_per_night),
+          nights: room.nights,
+        })}
       </p>
     </section>
   );
 }
 
 /** Why a closed booking ended, and the one thing left to do about it. */
-const CLOSED_COPY: Partial<Record<PaymentStatus, { title: string; body: string }>> = {
+const CLOSED_COPY: Partial<
+  Record<PaymentStatus, { titleKey: string; bodyKey: string }>
+> = {
   failed: {
-    title: "Pembayaran tidak selesai",
-    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kamar yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "failedTitle",
+    bodyKey: "failedBodyStay",
   },
   expired: {
-    title: "Tagihan sudah kedaluwarsa",
-    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kamarnya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "expiredTitle",
+    bodyKey: "expiredBodyStay",
   },
   cancelled: {
-    title: "Pesanan dibatalkan",
-    body: "Pesanan ini dibatalkan dan kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "cancelledTitle",
+    bodyKey: "cancelledBodyStay",
   },
 };
 
 function ClosedNotice({ status }: { status: PaymentStatus }) {
+  const t = useTranslations("orderDetail");
   const copy = CLOSED_COPY[status];
   if (!copy) return null;
 
@@ -279,8 +303,8 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
       />
 
       <div className="min-w-0">
-        <p className="text-sm font-semibold">{copy.title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
+        <p className="text-sm font-semibold">{t(copy.titleKey)}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(copy.bodyKey)}</p>
 
         <Link
           href="/hotels"

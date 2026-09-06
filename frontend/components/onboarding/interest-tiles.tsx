@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import { Check } from "lucide-react";
+import { useTranslations } from "next-intl";
 import type { Tag } from "@/lib/api";
 import { tagImage } from "@/lib/tag-image";
 import { cn } from "@/lib/utils";
@@ -25,6 +26,7 @@ export function InterestTiles({
   chosen: Set<string>;
   onToggle: (id: string) => void;
 }) {
+  const t = useTranslations("onboarding");
   const scroller = useRef<HTMLDivElement>(null);
   const [atEnd, setAtEnd] = useState(true);
 
@@ -45,8 +47,7 @@ export function InterestTiles({
   if (allTags.length === 0) {
     return (
       <p className="rounded-xl bg-muted/60 px-4 py-3 text-sm text-muted-foreground">
-        Daftar tema sedang tidak bisa dimuat. Lanjutkan saja — minat bisa
-        dipilih kapan pun lewat Akun → Minat perjalanan.
+        {t("tagsUnavailable")}
       </p>
     );
   }

@@ -1,25 +1,27 @@
+import { useTranslations } from "next-intl";
 import { Compass, Landmark, MapPinned } from "lucide-react";
 import type { DestinationDetail } from "@/lib/api";
 
 /** Quick-facts strip under the title, the way a guide opens a place entry. */
 export function Facts({ destination }: { destination: DestinationDetail }) {
+  const t = useTranslations("destination");
+
   const facts = [
     {
       icon: Compass,
-      label: "Kategori",
-      value: destination.category ?? "Belum dikategorikan",
+      label: t("category"),
+      value: destination.category ?? t("uncategorised"),
     },
     {
       icon: MapPinned,
-      label: "Kota",
+      label: t("city"),
       value: destination.cities?.name ?? "—",
     },
     {
       icon: Landmark,
-      label: "Provinsi",
+      label: t("province"),
       value: destination.provinces?.name ?? "—",
     },
-
   ];
 
   return (

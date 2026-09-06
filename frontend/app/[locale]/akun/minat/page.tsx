@@ -6,8 +6,17 @@ import { requireAccessToken } from "@/lib/api/session";
 import { AccountSection } from "@/components/account/account-section";
 import { PreferenceEditor } from "@/components/account/preference-editor";
 import { LoadError } from "@/components/home/load-error";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Minat Perjalanan" };
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "interests" });
+  return { title: t("metaTitle") };
+}
 
 /** The master tag list is the same for everyone, so it can be cached. */
 async function loadAllTags() {
@@ -17,6 +26,7 @@ async function loadAllTags() {
 }
 
 async function PreferenceSection() {
+  const t = await getTranslations("interests");
   const token = await requireAccessToken();
 
   let allTags;
@@ -27,17 +37,23 @@ async function PreferenceSection() {
       getPreferences({ token }),
     ]);
   } catch {
-    return <LoadError what="Daftar minat" />;
+    return <LoadError what={t("loadErrorWhat")} />;
   }
 
   return <PreferenceEditor allTags={allTags} selected={selected} />;
 }
 
-export default function AccountInterestsPage() {
+export default async function AccountInterestsPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("interests");
   return (
     <AccountSection
-      title="Minat perjalanan"
-      description="Pilih jenis destinasi yang Anda sukai. Rekomendasi di halaman Profil dan beranda mengikuti pilihan ini."
+      title={t("heading")}
+      description={t("description")}
     >
       <Suspense fallback={<ChipsSkeleton />}>
         <PreferenceSection />

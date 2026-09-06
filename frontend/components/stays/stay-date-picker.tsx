@@ -14,6 +14,7 @@ import {
   todayISO,
   weekdayName,
 } from "@/lib/calendar";
+import { useTranslations } from "next-intl";
 
 /**
  * Check-in and check-out as month calendars, the same control the flight
@@ -41,6 +42,8 @@ export function StayDatePicker({
   onChange: (date: string) => void;
   counterpart: string | null;
 }) {
+  const t = useTranslations("stays");
+
   const [open, setOpen] = useState(false);
   // With nothing chosen the calendar opens on the month the reader is most
   // likely to book in — this one — rather than on an invented default date.
@@ -82,7 +85,7 @@ export function StayDatePicker({
         <CalendarDays className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            {kind === "in" ? "Check-in" : "Check-out"}
+            {kind === "in" ? t("checkIn") : t("checkOut")}
           </span>
           <span
             className={
@@ -91,10 +94,10 @@ export function StayDatePicker({
                 : "block truncate text-sm font-semibold text-muted-foreground"
             }
           >
-            {value ? shortDate(value) : "Pilih tanggal"}
+            {value ? shortDate(value) : t("pickDate")}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {value ? weekdayName(value) : "Belum diisi"}
+            {value ? weekdayName(value) : t("notSet")}
           </span>
         </span>
       </button>
@@ -103,7 +106,7 @@ export function StayDatePicker({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label={kind === "in" ? "Pilih tanggal check-in" : "Pilih tanggal check-out"}
+          label={kind === "in" ? t("pickCheckIn") : t("pickCheckOut")}
         >
           <MonthCalendar
             month={month}
@@ -120,11 +123,11 @@ export function StayDatePicker({
             footnote={
               nights === null
                 ? kind === "in"
-                  ? "Pilih tanggal kedatangan."
-                  : "Pilih tanggal kepulangan."
+                  ? t("pickArrival")
+                  : t("pickDeparture")
                 : kind === "in"
-                  ? `Menginap ${nights} malam, sampai ${shortDate(to!)}.`
-                  : `Menginap ${nights} malam, sejak ${shortDate(from!)}.`
+                  ? t("stayNightsUntil", { nights, date: shortDate(to!) })
+                  : t("stayNightsSince", { nights, date: shortDate(from!) })
             }
           />
         </AnchoredPanel>

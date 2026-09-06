@@ -1,8 +1,10 @@
 import Image from "next/image";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ChevronRight, MapPinned, ShieldCheck, Sparkles } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import { photo } from "@/lib/home-data";
+import { formatNumber } from "@/lib/intl";
 import {
   withFilter,
   withTagToggled,
@@ -31,6 +33,9 @@ export function CatalogueHero({
   total: number;
   provinceCount: number;
 }) {
+  const t = useTranslations("catalogue");
+  const locale = useLocale();
+
   return (
     <section className="relative isolate overflow-hidden bg-brand-900">
       <Image
@@ -49,7 +54,7 @@ export function CatalogueHero({
       />
 
       <div className="container-page relative py-8 sm:py-12">
-        <nav aria-label="Remah roti">
+        <nav aria-label={t("breadcrumb")}>
           <ol className="flex flex-wrap items-center gap-1 text-xs text-brand-100/80">
             {copy.crumbs.map((crumb, i) => (
               <li key={crumb.label} className="flex items-center gap-1">
@@ -79,9 +84,11 @@ export function CatalogueHero({
         </p>
 
         <ul className="mt-4 flex flex-wrap items-center gap-x-5 gap-y-2 text-xs font-medium text-brand-100">
-          {total.toLocaleString("id-ID")} destinasi terkurasi
-          <Stat icon={MapPinned}>{provinceCount} provinsi</Stat>
-          <Stat icon={ShieldCheck}>Kepadatan dari data kunjungan BPS</Stat>
+          {t("curated", { count: formatNumber(total, locale) })}
+          <Stat icon={MapPinned}>
+            {t("provinces", { count: provinceCount })}
+          </Stat>
+          <Stat icon={ShieldCheck}>{t("crowdSource")}</Stat>
         </ul>
 
         <div className="mt-6 max-w-2xl">
@@ -119,12 +126,14 @@ export function TagChips({
   state: SearchState;
   tags: Tag[];
 }) {
+  const t = useTranslations("catalogue");
+
   return (
     <div className="sticky top-16 z-40 border-b border-border bg-background/90 backdrop-blur supports-[backdrop-filter]:bg-background/75">
       <div className="container-page">
         <ul
           className="no-scrollbar -mx-1 flex gap-2 overflow-x-auto px-1 py-3"
-          aria-label="Jenis destinasi populer"
+          aria-label={t("popularTypes")}
         >
           <li>
             {/* Clears every tag but keeps the search, province and rating —
@@ -138,7 +147,7 @@ export function TagChips({
                   : "border-border bg-card hover:border-brand-700 hover:bg-brand-tint/10",
               )}
             >
-              Semua
+              {t("all")}
             </Link>
           </li>
           {tags.map((tag) => {

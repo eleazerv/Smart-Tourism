@@ -8,10 +8,7 @@ import { LoadError } from "@/components/home/load-error";
 import { SiteHeader } from "@/components/home/site-header";
 import { CrowdMapPanel } from "@/components/peta/crowd-map-panel";
 import { MapSkeleton } from "@/components/peta/map-skeleton";
-
-const TITLE = "Peta Wisata";
-const DESCRIPTION =
-  "Kepadatan kunjungan tiap provinsi dan penyusun rute liburan antarkota dalam satu peta, lengkap dengan rekomendasi tempat di tiap perhentian.";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
 /** The catalogue is 13 pages of 15; the cap only guards against it growing. */
 const CATALOGUE_PAGES = 20;
@@ -32,18 +29,35 @@ async function loadMap() {
   };
 }
 
-export const metadata: Metadata = {
-  title: TITLE,
-  description: DESCRIPTION,
-  openGraph: { title: TITLE, description: DESCRIPTION, type: "website" },
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "map" });
+  const title = t("metaTitle");
+  const description = t("metaDescription");
+  return {
+    title,
+    description,
+    openGraph: { title, description, type: "website" },
+  };
+}
 
 /**
  * A map application, not a page with a map on it: no title block, no footer,
  * and on a wide screen no page scroll at all — the map fills whatever the
  * header leaves behind and the docked panel scrolls on its own.
  */
-export default function HeatmapPage() {
+export default async function HeatmapPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
+  const t = await getTranslations("map");
+
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       <SiteHeader />
@@ -51,7 +65,7 @@ export default function HeatmapPage() {
         {/* The heading the layout has no room for; screen readers and search
             engines still need it. */}
         <h1 className="sr-only">
-          {TITLE} — {DESCRIPTION}
+          {t("metaTitle")} — {t("metaDescription")}
         </h1>
         <Suspense fallback={<MapSkeleton />}>
           <CrowdMapScreen />
@@ -62,6 +76,8 @@ export default function HeatmapPage() {
 }
 
 async function CrowdMapScreen() {
+  const t = await getTranslations("map");
+
   let points: DensityPoint[];
   let stops: CityStop[];
   try {
@@ -69,7 +85,7 @@ async function CrowdMapScreen() {
   } catch {
     return (
       <div className="container-page py-16">
-        <LoadError what="Peta wisata" />
+        <LoadError what={t("loadErrorWhat")} />
       </div>
     );
   }
@@ -78,7 +94,7 @@ async function CrowdMapScreen() {
     return (
       <div className="container-page py-16">
         <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-          Belum ada data kunjungan untuk periode ini.
+          {t("noData")}
         </p>
       </div>
     );

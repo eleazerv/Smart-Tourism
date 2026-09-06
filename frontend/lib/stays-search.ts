@@ -1,3 +1,4 @@
+import { intlLocale } from "@/lib/intl";
 /**
  * URL state for `/hotels`, mirroring the pattern `destinations-search.ts`
  * established: every filter is a link, so the results stay server-rendered and
@@ -14,23 +15,17 @@ import { nightsBetween } from "@/lib/calendar";
 
 export const PAGE_SIZE = 10;
 
-export const TIERS: { value: AccommodationTier; label: string }[] = [
-  { value: "budget", label: "Ekonomis" },
-  { value: "mid", label: "Menengah" },
-  { value: "luxury", label: "Mewah" },
+export const TIERS: { value: AccommodationTier }[] = [
+  { value: "budget" },
+  { value: "mid" },
+  { value: "luxury" },
 ];
 
-const TIER_LABELS = new Map(TIERS.map((tier) => [tier.value, tier.label]));
-
-export function tierLabel(tier: AccommodationTier): string {
-  return TIER_LABELS.get(tier) ?? tier;
-}
-
 export const SORTS = [
-  { key: "rekomendasi", label: "Paling sesuai" },
-  { key: "termurah", label: "Harga terendah" },
-  { key: "termahal", label: "Harga tertinggi" },
-  { key: "kapasitas", label: "Kapasitas terbesar" },
+  { key: "rekomendasi" },
+  { key: "termurah" },
+  { key: "termahal" },
+  { key: "kapasitas" },
 ] as const;
 
 export type SortKey = (typeof SORTS)[number]["key"];
@@ -340,10 +335,10 @@ export function tierFacets(
 }
 
 /** "Sab, 30 Agu" — the compact form booking forms use next to a date field. */
-export function formatDateLabel(iso: string): string {
+export function formatDateLabel(iso: string, locale: string): string {
   const date = new Date(`${iso}T00:00:00`);
   if (Number.isNaN(date.getTime())) return iso;
-  return date.toLocaleDateString("id-ID", {
+  return date.toLocaleDateString(intlLocale(locale), {
     weekday: "short",
     day: "numeric",
     month: "short",

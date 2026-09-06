@@ -19,6 +19,8 @@ import type {
   TripCanvas,
   TripFlightRole,
 } from "@/lib/api";
+import { useLocale, useTranslations } from "next-intl";
+import { joinList } from "@/lib/intl";
 
 type Props = {
   messages: ChatMessage[];
@@ -53,6 +55,7 @@ export function ChatColumn({
   onPickAccommodation,
   onPickFlight,
 }: Props) {
+  const t = useTranslations("planner");
   const [text, setText] = useState("");
   const logRef = useRef<HTMLDivElement>(null);
 
@@ -129,7 +132,7 @@ export function ChatColumn({
             rows={1}
             value={text}
             disabled={sending}
-            placeholder="Ceritakan rencana liburanmu..."
+            placeholder={t("chatPlaceholder")}
             onChange={(e) => setText(e.target.value)}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
@@ -142,7 +145,7 @@ export function ChatColumn({
           <Button
             size="icon"
             className="shrink-0 rounded-full"
-            aria-label="Kirim pesan"
+            aria-label={t("send")}
             disabled={sending || !text.trim()}
             onClick={submit}
           >
@@ -150,7 +153,7 @@ export function ChatColumn({
           </Button>
         </div>
         <p className="mt-1.5 text-center text-[11px] text-muted-foreground">
-          Enter untuk kirim · Shift+Enter untuk baris baru
+          {t("enterHint")}
         </p>
       </div>
     </div>
@@ -158,15 +161,15 @@ export function ChatColumn({
 }
 
 function EmptyState() {
+  const t = useTranslations("planner");
+
   return (
     <div className="py-10 text-center">
       <h2 className="font-display text-xl font-bold tracking-tight">
-        Ceritakan liburan yang kamu bayangkan
+        {t("emptyTitle")}
       </h2>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Sebutkan suasana yang kamu cari, berapa lama, dan dari kota mana kamu
-        berangkat. Aku carikan tempatnya dan susun di panel sebelah — kamu tetap
-        yang memutuskan apa yang jadi dipilih.
+        {t("emptyBody")}
       </p>
     </div>
   );
@@ -200,29 +203,39 @@ function Thinking() {
  * tiap tool diterjemahkan ke sumber datanya, dan yang tidak punya terjemahan
  * (tool internal seperti hitung rute) sengaja tidak ditampilkan.
  */
-const SOURCE_LABEL: Record<string, string> = {
-  search_destinations: "katalog destinasi",
-  get_destination_detail: "katalog destinasi",
-  search_accommodations: "katalog penginapan",
-  get_accommodation_detail: "katalog penginapan",
-  search_flights_by_date: "jadwal penerbangan",
-  get_flight_calendar: "jadwal penerbangan",
-  get_seasonal_recommendations: "rekomendasi musiman",
-  get_my_recommendations: "preferensimu",
-  get_events: "kalender acara",
-  estimate_budget: "hitungan biaya",
-  list_cities: "daftar kota",
+/** Nama tool backend ke kunci terjemahan di `planner.source`. */
+const SOURCE_KEY: Record<string, string> = {
+  search_destinations: "destinations",
+  get_destination_detail: "destinations",
+  search_accommodations: "accommodations",
+  get_accommodation_detail: "accommodations",
+  search_flights_by_date: "flights",
+  get_flight_calendar: "flights",
+  get_seasonal_recommendations: "seasonal",
+  get_my_recommendations: "preferences",
+  get_events: "events",
+  estimate_budget: "budget",
+  list_cities: "cities",
 };
 
+
 function SourceNote({ toolsUsed }: { toolsUsed?: string[] }) {
+  const t = useTranslations("planner");
+  const locale = useLocale();
+
   if (!toolsUsed?.length) return null;
 
-  const sources = [...new Set(toolsUsed.map((t) => SOURCE_LABEL[t]).filter(Boolean))];
-  if (sources.length === 0) return null;
+  const keys = [...new Set(toolsUsed.map((tool) => SOURCE_KEY[tool]).filter(Boolean))];
+  if (keys.length === 0) return null;
 
   return (
     <p className="mt-2 text-[11px] text-muted-foreground">
-      Diambil dari {sources.join(", ")}.
+      {t("sourceNote", {
+        sources: joinList(
+          keys.map((key) => t(`source.${key}`)),
+          locale,
+        ),
+      })}
     </p>
   );
 }
@@ -239,6 +252,8 @@ function ProvenanceNote({
   toolsUsed?: string[];
   content: string;
 }) {
+  const t = useTranslations("planner");
+
   if (!Array.isArray(toolsUsed) || toolsUsed.length > 0) return null;
 
   const mentionsData =
@@ -250,8 +265,7 @@ function ProvenanceNote({
   return (
     <p className="mt-2 flex max-w-lg items-start gap-1.5 rounded-xl bg-amber-50 px-3 py-2 text-[11px] leading-relaxed text-amber-800">
       <AlertTriangle className="mt-px h-3.5 w-3.5 shrink-0" />
-      Jawaban ini tidak mengambil data dari katalog. Cek ulang nama tempat dan
-      harganya sebelum dipakai.
+      {t("noSourceNote")}
     </p>
   );
 }

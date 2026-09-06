@@ -1,17 +1,30 @@
 import type { Metadata } from "next";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { SignUpForm } from "@/components/sign-up-form";
 import { AuthLink, AuthShell } from "@/components/auth/auth-shell";
 
-export const metadata: Metadata = { title: "Daftar" };
+type PageProps = { params: Promise<{ locale: string }> };
 
-export default function Page() {
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "auth.signUp" });
+  return { title: t("metaTitle") };
+}
+
+export default async function Page({ params }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+  const t = await getTranslations("auth.signUp");
+
   return (
     <AuthShell
-      title="Buat akun"
-      description="Gratis. Cukup email untuk mulai menyusun rencana perjalanan Anda."
+      title={t("title")}
+      description={t("description")}
       footer={
         <>
-          Sudah punya akun? <AuthLink href="/auth/login">Masuk</AuthLink>
+          {t("haveAccount")} <AuthLink href="/auth/login">{t("login")}</AuthLink>
         </>
       }
     >

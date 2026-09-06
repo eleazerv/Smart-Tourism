@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
 import { Map } from "lucide-react";
+import { joinList } from "@/lib/intl";
 import {
   getReviewCounts,
   getTags,
@@ -36,8 +38,12 @@ import {
   type RawSearchParams,
   type SearchState,
 } from "@/lib/destinations-search";
+import { setRequestLocale } from "next-intl/server";
 
-type PageProps = { searchParams: Promise<RawSearchParams> };
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<RawSearchParams>;
+};
 
 /**
  * Ceiling on the page walk below. The seeded catalogue is 13 pages of 15, so
@@ -96,8 +102,10 @@ async function loadPool(filters: {
   return [first, ...rest].flatMap((page) => page.data);
 }
 
+type Copy = Awaited<ReturnType<typeof getTranslations<"catalogue">>>;
+
 /** Headline, blurb and backdrop for whatever the reader filtered down to. */
-function heroCopy(state: SearchState, tags: Tag[]): HeroCopy {
+function heroCopy(state: SearchState, tags: Tag[], t: Copy): HeroCopy {
   const names = state.tags.map(
     (slug) => tags.find((tag) => tag.slug === slug)?.name ?? slug,
   );
@@ -105,14 +113,13 @@ function heroCopy(state: SearchState, tags: Tag[]): HeroCopy {
 
   if (state.q) {
     return {
-      title: `Hasil untuk "${state.q}"`,
-      subtitle:
-        "Destinasi yang cocok dengan pencarian Anda, lengkap dengan rating pengunjung dan tingkat kepadatan provinsinya.",
+      title: t("searchTitle", { q: state.q }),
+      subtitle: t("searchSubtitle"),
       seed: `search-${state.q}`,
       crumbs: [
-        { label: "Beranda", href: "/" },
-        { label: "Destinasi", href: "/destinations" },
-        { label: `Pencarian: ${state.q}` },
+        { label: t("home"), href: "/" },
+        { label: t("catalogueCrumb"), href: "/destinations" },
+        { label: t("chipSearch", { q: state.q }) },
       ],
     };
   }
@@ -120,34 +127,38 @@ function heroCopy(state: SearchState, tags: Tag[]): HeroCopy {
   if (named) {
     // `search_destinations` unions its tag slugs, so several tags widen the
     // list rather than narrowing it — the blurb says "atau" to match.
-    const kinds = names
-      .map((name) => name.toLowerCase())
-      .join(names.length > 2 ? ", " : " atau ");
+    const kinds = joinList(
+      names.map((name) => name.toLowerCase()),
+      t("locale"),
+      "disjunction",
+    );
 
     return {
-      title: `Wisata ${named}`,
-      subtitle: `Semua destinasi yang masuk kategori ${kinds} di Indonesia — bandingkan rating, lihat seberapa ramai provinsinya, lalu pilih waktu kunjungan yang paling nyaman.`,
+      title: t("tagTitle", { tags: named }),
+      subtitle: t("tagSubtitle", { kinds }),
       seed: state.tags.join("-"),
       crumbs: [
-        { label: "Beranda", href: "/" },
-        { label: "Destinasi", href: "/destinations" },
+        { label: t("home"), href: "/" },
+        { label: t("catalogueCrumb"), href: "/destinations" },
         { label: named },
       ],
     };
   }
 
   return {
-    title: "Jelajahi destinasi Indonesia",
-    subtitle:
-      "Dari pantai sampai pusat kota tua. Saring berdasarkan jenis, provinsi, dan rating pengunjung, lalu buka halamannya untuk melihat waktu terbaik berkunjung.",
+    title: t("browseTitle"),
+    subtitle: t("browseSubtitle"),
     seed: "nusantara-archipelago",
-    crumbs: [{ label: "Beranda", href: "/" }, { label: "Destinasi" }],
+    crumbs: [{ label: t("home"), href: "/" }, { label: t("catalogueCrumb") }],
   };
 }
 
 export async function generateMetadata({
+  params,
   searchParams,
 }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "catalogue" });
   const state = parseSearch(await searchParams);
 
   let tags: Tag[] = [];
@@ -157,7 +168,7 @@ export async function generateMetadata({
     tags = [];
   }
 
-  const { title, subtitle } = heroCopy(state, tags);
+  const { title, subtitle } = heroCopy(state, tags, t);
 
   return {
     title,
@@ -169,7 +180,8 @@ export async function generateMetadata({
   };
 }
 
-export default function DestinationsPage({ searchParams }: PageProps) {
+export default async function DestinationsPage({ params, searchParams }: PageProps) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -186,7 +198,8 @@ export default function DestinationsPage({ searchParams }: PageProps) {
   );
 }
 
-async function Catalogue({ searchParams }: PageProps) {
+async function Catalogue({ searchParams }: Pick<PageProps, "searchParams">) {
+  const t = await getTranslations("catalogue");
   const state = parseSearch(await searchParams);
 
   let tags: Tag[];
@@ -199,12 +212,12 @@ async function Catalogue({ searchParams }: PageProps) {
   } catch {
     return (
       <div className="container-page py-16">
-        <LoadError what="Katalog destinasi" />
+        <LoadError what={t("loadErrorWhat")} />
       </div>
     );
   }
 
-  const copy = heroCopy(state, tags);
+  const copy = heroCopy(state, tags, t);
 
   // Province is filtered here rather than through the API so the facet counts
   // below stay computed over everything the other filters matched — a sidebar
@@ -294,7 +307,9 @@ async function Catalogue({ searchParams }: PageProps) {
 }
 
 /** Cross-link to the tool that answers the question this list raises next. */
-function MapPromo() {
+async function MapPromo() {
+  const t = await getTranslations("catalogue");
+
   return (
     <Link
       href="/peta"
@@ -302,10 +317,10 @@ function MapPromo() {
     >
       <Map className="h-5 w-5 text-brand-100" />
       <p className="mt-2 font-display text-sm font-bold leading-snug">
-        Lihat peta kepadatan dan rute antarkota
+        {t("mapPromoTitle")}
       </p>
       <p className="mt-1 text-xs leading-relaxed text-brand-100/85">
-        Bandingkan jumlah kunjungan antarprovinsi sebelum menentukan tujuan.
+        {t("mapPromoBody")}
       </p>
     </Link>
   );

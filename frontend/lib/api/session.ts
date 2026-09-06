@@ -1,6 +1,8 @@
 import { cache } from "react";
 import { redirect } from "next/navigation";
+import { getLocale } from "next-intl/server";
 import { createClient } from "@/lib/supabase/server";
+import { localisedPath } from "@/i18n/routing";
 
 /**
  * Access token for the current Supabase session, to forward to the Express API.
@@ -26,6 +28,10 @@ export const getAccessToken = cache(async (): Promise<string | null> => {
  */
 export async function requireAccessToken(): Promise<string> {
   const token = await getAccessToken();
-  if (!token) redirect("/auth/login");
+  // Prefiksnya dipasang sendiri, bukan lewat `redirect` versi i18n: yang ini
+  // bertipe `never`, sehingga TypeScript tahu `token` pasti terisi di bawah.
+  // Tanpa bahasa yang benar, pembaca berbahasa Inggris mendarat di halaman
+  // masuk berbahasa Indonesia.
+  if (!token) redirect(localisedPath("/auth/login", await getLocale()));
   return token;
 }

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { LayoutGrid, Rows3, X } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import {
@@ -14,6 +15,7 @@ import {
 import { FilterDrawer } from "@/components/catalogue/filter-drawer";
 import { SortSelect } from "@/components/catalogue/sort-select";
 import { FilterGroups } from "@/components/destinations/filter-groups";
+import { formatNumber } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 export function CatalogueToolbar({
@@ -31,6 +33,9 @@ export function CatalogueToolbar({
   /** How many of them this page renders. */
   shown: number;
 }) {
+  const t = useTranslations("catalogue");
+  const locale = useLocale();
+
   const activeCount =
     state.tags.length +
     (state.provinceId !== null ? 1 : 0) +
@@ -41,21 +46,19 @@ export function CatalogueToolbar({
     <div className="space-y-3">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <p className="text-sm text-muted-foreground" aria-live="polite">
-          {total === 0 ? (
-            "Tidak ada destinasi yang cocok"
-          ) : (
-            <>
-              Menampilkan{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {shown}
-              </span>{" "}
-              dari{" "}
-              <span className="font-semibold text-foreground tabular-nums">
-                {total.toLocaleString("id-ID")}
-              </span>{" "}
-              destinasi
-            </>
-          )}
+          {total === 0
+            ? t("noMatch")
+            : t.rich("showing", {
+                shown,
+                total: formatNumber(total, locale),
+                // Angkanya ditebalkan lewat `rich` supaya urutan kata bebas
+                // berbeda antar bahasa tanpa memecah kalimatnya jadi potongan.
+                b: (chunks) => (
+                  <span className="font-semibold text-foreground tabular-nums">
+                    {chunks}
+                  </span>
+                ),
+              })}
         </p>
 
         <div className="flex flex-wrap items-center gap-2">
@@ -67,7 +70,7 @@ export function CatalogueToolbar({
             value={state.sort}
             options={SORTS.map((sort) => ({
               value: sort.key,
-              label: sort.label,
+              label: t(`sort.${sort.key}`),
               href: withFilter(state, { sort: sort.key }),
             }))}
           />
@@ -80,15 +83,17 @@ export function CatalogueToolbar({
 }
 
 function ViewToggle({ state }: { state: SearchState }) {
+  const t = useTranslations("catalogue");
+
   const options: { mode: ViewMode; label: string; Icon: typeof Rows3 }[] = [
-    { mode: "list", label: "Tampilan daftar", Icon: Rows3 },
-    { mode: "grid", label: "Tampilan kisi", Icon: LayoutGrid },
+    { mode: "list", label: t("listView"), Icon: Rows3 },
+    { mode: "grid", label: t("gridView"), Icon: LayoutGrid },
   ];
 
   return (
     <div
       role="group"
-      aria-label="Tampilan hasil"
+      aria-label={t("resultView")}
       className="hidden items-center gap-0.5 rounded-full border border-border bg-card p-0.5 shadow-sm sm:inline-flex"
     >
       {options.map(({ mode, label, Icon }) => (
@@ -125,6 +130,8 @@ function ActiveChips({
   tags: Tag[];
   provinces: ProvinceFacet[];
 }) {
+  const t = useTranslations("catalogue");
+
   if (!hasFilters(state)) return null;
 
   const chips: { key: string; label: string; href: string }[] = [];
@@ -132,7 +139,7 @@ function ActiveChips({
   if (state.q) {
     chips.push({
       key: "q",
-      label: `Pencarian: ${state.q}`,
+      label: t("chipSearch", { q: state.q }),
       href: withFilter(state, { q: "" }),
     });
   }
@@ -150,7 +157,7 @@ function ActiveChips({
     const province = provinces.find((entry) => entry.id === state.provinceId);
     chips.push({
       key: "province",
-      label: province?.name ?? `Provinsi ${state.provinceId}`,
+      label: province?.name ?? t("chipProvince", { id: state.provinceId }),
       href: withFilter(state, { provinceId: null }),
     });
   }
@@ -158,7 +165,7 @@ function ActiveChips({
   if (state.minRating > 0) {
     chips.push({
       key: "rating",
-      label: `Rating ${formatRating(state.minRating)}+`,
+      label: t("chipRating", { rating: formatRating(state.minRating) }),
       href: withFilter(state, { minRating: 0 }),
     });
   }
@@ -173,7 +180,7 @@ function ActiveChips({
           >
             <span className="truncate">{chip.label}</span>
             <X className="h-3.5 w-3.5 shrink-0" aria-hidden="true" />
-            <span className="sr-only">Hapus filter</span>
+            <span className="sr-only">{t("removeFilter")}</span>
           </Link>
         </li>
       ))}
@@ -182,7 +189,7 @@ function ActiveChips({
           href="/destinations"
           className="rounded-full px-2 py-1.5 text-xs font-semibold text-muted-foreground underline-offset-2 transition hover:text-brand-700 hover:underline"
         >
-          Hapus semua
+          {t("clearAll")}
         </Link>
       </li>
     </ul>

@@ -26,10 +26,11 @@ import { SaveButton } from "@/components/destination/save-button";
 import { ShareButton } from "@/components/destination/share-button";
 import { SimilarRail } from "@/components/destination/similar-rail";
 import { TrackView } from "@/components/destination/track-view";
+import { getLocale, getTranslations } from "next-intl/server";
 import { crowdLevel, formatCount, gallery } from "@/lib/destination-data";
 import { loadSavedIds } from "@/lib/saved-destinations";
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string; locale: string }> };
 
 /**
  * One destination, read once per render and shared by the page body and its
@@ -89,7 +90,7 @@ async function loadBestMonths(destinationId: string, provinceId: number | null) 
 export async function generateMetadata({
   params,
 }: PageProps): Promise<Metadata> {
-  const { id } = await params;
+  const { id, locale } = await params;
 
   let destination: DestinationDetail | null = null;
   try {
@@ -97,7 +98,10 @@ export async function generateMetadata({
   } catch {
     destination = null;
   }
-  if (!destination) return { title: "Destinasi tidak ditemukan" };
+  if (!destination) {
+    const t = await getTranslations({ locale, namespace: "destination" });
+    return { title: t("notFoundTitle") };
+  }
 
   const place = [destination.cities?.name, destination.provinces?.name]
     .filter(Boolean)
@@ -155,6 +159,9 @@ async function Guide({ params }: PageProps) {
     loadSavedIds(),
   ]);
 
+  const t = await getTranslations("destination");
+  const locale = await getLocale();
+
   const crowd = crowdLevel(destination.provinces?.code, heatmap);
   const place = [destination.cities?.name, destination.provinces?.name]
     .filter(Boolean)
@@ -167,8 +174,8 @@ async function Guide({ params }: PageProps) {
       <div className="container-page pt-5">
         <Breadcrumb
           items={[
-            { label: "Beranda", href: "/" },
-            { label: "Destinasi", href: "/destinations" },
+            { label: t("home"), href: "/" },
+            { label: t("catalogue"), href: "/destinations" },
             ...(destination.provinces
               ? [
                   {
@@ -219,11 +226,11 @@ async function Guide({ params }: PageProps) {
 
             <section>
               <h2 className="font-display text-xl font-bold tracking-tight">
-                Tentang destinasi ini
+                {t("about")}
               </h2>
               <p className="mt-2 whitespace-pre-line leading-relaxed text-foreground/90">
                 {destination.description?.trim() ||
-                  `Deskripsi ${destination.name} belum tersedia. Kepadatan, waktu terbaik, dan ulasan pengunjung di bawah tetap bisa membantu Anda merencanakan kunjungan.`}
+                  t("noDescription", { name: destination.name })}
               </p>
 
               {destination.tags.length > 0 && (
@@ -231,7 +238,7 @@ async function Guide({ params }: PageProps) {
                 // yang terlihat, daftar ini kalau tidak diberi nama cuma
                 // terdengar sebagai deretan tautan tanpa keterangan.
                 <ul
-                  aria-label="Cocok untuk"
+                  aria-label={t("goodFor")}
                   className="mt-4 flex flex-wrap gap-2"
                 >
                   {destination.tags.map((tag) => (
@@ -276,8 +283,7 @@ async function Guide({ params }: PageProps) {
               bestMonths={bestTime.months}
             />
             <p className="mt-3 px-1 text-[11px] leading-snug text-muted-foreground">
-              Angka kepadatan berasal dari statistik kunjungan provinsi periode
-              terakhir, bukan hitungan pengunjung harian destinasi ini.
+              {t("crowdDisclaimer")}
             </p>
           </aside>
         </div>
@@ -298,7 +304,9 @@ async function Guide({ params }: PageProps) {
       />
 
       <p className="container-page pb-8 text-xs text-muted-foreground">
-        Halaman ini sudah dilihat {formatCount(destination.view_count)} kali.
+        {t("pageViews", {
+          count: formatCount(destination.view_count, locale),
+        })}
       </p>
     </>
   );

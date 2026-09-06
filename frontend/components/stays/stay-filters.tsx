@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { RotateCcw } from "lucide-react";
 import type { AccommodationTier } from "@/lib/api";
 import {
@@ -12,6 +12,7 @@ import {
 import { formatIDR } from "@/lib/seeded-random";
 import { CheckRow } from "@/components/catalogue/check-row";
 import { FilterGroup } from "@/components/catalogue/filter-group";
+import { useTranslations } from "next-intl";
 
 /** Facet column for the accommodation search. */
 export function StayFilters({
@@ -24,6 +25,8 @@ export function StayFilters({
   resetHref: string;
   tierCounts: Map<AccommodationTier, number>;
 }) {
+  const t = useTranslations("stays");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
@@ -41,7 +44,7 @@ export function StayFilters({
         )}
       </div>
 
-      <FilterGroup title="Harga per malam">
+      <FilterGroup title={t("priceGroup")}>
         {PRICE_CAPS.map((cap) => (
           <CheckRow
             key={cap}
@@ -55,13 +58,13 @@ export function StayFilters({
         ))}
       </FilterGroup>
 
-      <FilterGroup title="Kelas akomodasi">
+      <FilterGroup title={t("tierGroup")}>
         {TIERS.filter((tier) => (tierCounts.get(tier.value) ?? 0) > 0).map(
           (tier) => (
             <CheckRow
               key={tier.value}
               href={withTierToggled(state, tier.value)}
-              label={tier.label}
+              label={t(`tier.${tier.value}`)}
               hint={String(tierCounts.get(tier.value) ?? 0)}
               checked={state.tiers.includes(tier.value)}
             />
@@ -70,8 +73,7 @@ export function StayFilters({
       </FilterGroup>
 
       <p className="rounded-xl bg-muted/60 px-3 py-2.5 text-[11px] leading-snug text-muted-foreground">
-        Jumlah tamu dan kamar diatur di kotak pencarian di atas. Penginapan yang
-        kapasitas kamarnya tidak cukup untuk rombongan Anda tidak ditampilkan.
+        {t("filterNote")}
       </p>
     </div>
   );

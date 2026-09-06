@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { RotateCcw } from "lucide-react";
 import {
   TIME_WINDOWS,
@@ -11,6 +11,7 @@ import {
 } from "@/lib/flights-search";
 import { CheckRow } from "@/components/catalogue/check-row";
 import { FilterGroup } from "@/components/catalogue/filter-group";
+import { useTranslations } from "next-intl";
 
 /**
  * Facet column for the flight board. The airline list is built from the day
@@ -30,11 +31,13 @@ export function FlightFilters({
   windowCounts: Map<TimeWindowKey, number>;
   availableCount: number;
 }) {
+  const t = useTranslations("flights");
+
   return (
     <div className="space-y-6">
       <div className="flex items-center justify-between gap-3">
         <h2 className="font-display text-base font-bold tracking-tight">
-          Saring penerbangan
+          {t("filterHeading")}
         </h2>
         {activeFilterCount(state) > 0 && (
           <Link
@@ -50,7 +53,7 @@ export function FlightFilters({
       <FilterGroup title="Ketersediaan">
         <CheckRow
           href={withFilter(state, { availableOnly: !state.availableOnly })}
-          label="Masih ada kursi"
+          label={t("seatsAvailable")}
           hint={String(availableCount)}
           checked={state.availableOnly}
         />
@@ -63,7 +66,7 @@ export function FlightFilters({
             href={withWindowToggled(state, window.key)}
             label={
               <span>
-                {window.label}{" "}
+                {t(`block.${window.key}`)}{" "}
                 <span className="text-xs text-muted-foreground">
                   {window.hint}
                 </span>
@@ -76,7 +79,7 @@ export function FlightFilters({
       </FilterGroup>
 
       {airlineCounts.size > 0 && (
-        <FilterGroup title="Maskapai">
+        <FilterGroup title={t("airlineGroup")}>
           {[...airlineCounts].map(([airline, count]) => (
             <CheckRow
               key={airline}

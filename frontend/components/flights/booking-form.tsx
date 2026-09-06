@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   ArmchairIcon,
   CreditCard,
@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { SeatDialog } from "@/components/flights/seat-dialog";
 import { clockOf, formatDuration } from "@/lib/airports";
 import { formatIDR } from "@/lib/seeded-random";
+import { useTranslations } from "next-intl";
 
 /** What the confirmation shows before any seat is taken out of inventory. */
 export type BookingSummary = {
@@ -58,6 +59,7 @@ export function BookingForm({
   const [passengers, setPassengers] = useState<Passenger[]>([
     { name: defaultName, seat: null },
   ]);
+  const t = useTranslations("flights");
   const [activeIndex, setActiveIndex] = useState(0);
   const [errors, setErrors] = useState<string[]>([]);
   const [seatOpen, setSeatOpen] = useState(false);
@@ -130,8 +132,8 @@ export function BookingForm({
     if (missing.length > 0) {
       setErrors([
         missing.length === passengers.length
-          ? "Isi nama setiap penumpang dulu."
-          : `Nama penumpang ${missing.join(", ")} masih kosong.`,
+          ? t("fillNames")
+          : t("missingNames", { list: missing.join(", ") }),
       ]);
       return false;
     }
@@ -176,10 +178,10 @@ export function BookingForm({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
             <UserRound className="h-4 w-4 text-brand-700" />
-            Penumpang
+            {t("passengers")}
           </h2>
           <label className="flex items-center gap-2 text-sm">
-            <span className="text-muted-foreground">Jumlah</span>
+            <span className="text-muted-foreground">{t("count")}</span>
             <select
               value={passengers.length}
               onChange={(event) => setCount(Number(event.target.value))}
@@ -188,7 +190,7 @@ export function BookingForm({
               {Array.from({ length: maxPassengers }, (_, i) => i + 1).map(
                 (n) => (
                   <option key={n} value={n}>
-                    {n} orang
+                    {t("people", { count: n })}
                   </option>
                 ),
               )}
@@ -197,8 +199,7 @@ export function BookingForm({
         </div>
 
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Tulis nama persis seperti di KTP atau paspor. Satu tiket diterbitkan
-          untuk setiap nama.
+          {t("nameNote")}
         </p>
 
         <ul className="mt-4 space-y-3">
@@ -206,10 +207,10 @@ export function BookingForm({
             <li key={index}>
               <label className="block">
                 <span className="text-xs font-medium text-muted-foreground">
-                  Penumpang {index + 1}
+                  {t("passengerN", { n: index + 1 })}
                   {passenger.seat && (
                     <span className="ml-1.5 font-semibold text-brand-700">
-                      · kursi {passenger.seat}
+                      {t("seatSuffix", { seat: passenger.seat })}
                     </span>
                   )}
                 </span>
@@ -218,7 +219,7 @@ export function BookingForm({
                   value={passenger.name}
                   onChange={(event) => rename(index, event.target.value)}
                   onFocus={() => setActiveIndex(index)}
-                  placeholder="Nama lengkap"
+                  placeholder={t("fullName")}
                   autoComplete={index === 0 ? "name" : "off"}
                   className="mt-1 w-full rounded-xl border border-border bg-background px-3.5 py-2.5 text-sm outline-none transition focus-visible:border-brand-700 focus-visible:ring-2 focus-visible:ring-brand-700/30"
                 />
@@ -238,7 +239,7 @@ export function BookingForm({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
             <ArmchairIcon className="h-4 w-4 text-brand-700" />
-            Kursi
+            {t("seats")}
           </h2>
           <button
             type="button"
@@ -246,13 +247,12 @@ export function BookingForm({
             className="inline-flex items-center gap-1.5 rounded-full border border-border px-4 py-2 text-sm font-semibold text-brand-700 transition hover:border-brand-700 hover:bg-brand-tint/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-700 focus-visible:ring-offset-2"
           >
             <ArmchairIcon className="h-4 w-4" />
-            {seatedCount > 0 ? "Ubah kursi" : "Pilih kursi"}
+            {seatedCount > 0 ? t("changeSeats") : t("pickSeats")}
           </button>
         </div>
 
         <p className="mt-1.5 text-sm text-muted-foreground">
-          Opsional — pesanan tetap bisa dilanjutkan tanpa memilih kursi, dan
-          nomor kursi masih bisa diatur dari halaman pesanan.
+          {t("seatsOptional")}
         </p>
 
         <ul className="mt-3 space-y-1.5 text-sm">
@@ -262,7 +262,7 @@ export function BookingForm({
               className="flex items-baseline justify-between gap-3 border-b border-border pb-1.5 last:border-b-0 last:pb-0"
             >
               <span className="min-w-0 truncate text-muted-foreground">
-                {passenger.name.trim() || `Penumpang ${index + 1}`}
+                {passenger.name.trim() || t("passengerN", { n: index + 1 })}
               </span>
               <span
                 className={
@@ -271,7 +271,7 @@ export function BookingForm({
                     : "shrink-0 text-xs text-muted-foreground"
                 }
               >
-                {passenger.seat ?? "Belum dipilih"}
+                {passenger.seat ?? t("noSeatChosen")}
               </span>
             </li>
           ))}
@@ -280,18 +280,18 @@ export function BookingForm({
 
       <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
         <h2 className="font-display text-base font-bold tracking-tight">
-          Rincian harga
+          {t("priceBreakdown")}
         </h2>
 
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex justify-between gap-3">
             <dt className="text-muted-foreground">
-              Tarif × {passengers.length} penumpang
+              {t("fareTimes", { count: passengers.length })}
             </dt>
             <dd className="tabular-nums">{formatIDR(flight.price)}</dd>
           </div>
           <div className="flex items-center justify-between gap-3 border-t border-border pt-2.5 text-base font-bold">
-            <dt>Total</dt>
+            <dt>{t("total")}</dt>
             <dd className="tabular-nums">{formatIDR(total)}</dd>
           </div>
         </dl>
@@ -309,13 +309,11 @@ export function BookingForm({
           ) : (
             <CreditCard className="h-4 w-4" />
           )}
-          {pending ? "Menyiapkan pembayaran..." : "Pesan & bayar"}
+          {pending ? t("preparingPayment") : t("bookAndPay")}
         </button>
 
         <p className="mt-3 text-xs leading-snug text-muted-foreground">
-          Kursi ditahan begitu pesanan dibuat, lalu Anda diarahkan ke halaman
-          pembayaran. Pesanan yang tidak dibayar sampai batas waktu akan dilepas
-          kembali secara otomatis.
+          {t("holdNote")}
         </p>
 
         {failure && (
@@ -329,7 +327,7 @@ export function BookingForm({
                 href={`/akun/pesanan/${failure.bookingId}`}
                 className="mt-1.5 inline-block font-semibold underline underline-offset-2"
               >
-                Buka pesanan untuk mencoba bayar lagi
+                {t("reopenBooking")}
               </Link>
             )}
           </div>
@@ -347,7 +345,7 @@ export function BookingForm({
               className="mt-2 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-xs font-semibold text-white"
             >
               <CreditCard className="h-3.5 w-3.5" />
-              Lanjut ke pembayaran
+              {t("continueToPayment")}
             </button>
           </div>
         )}
@@ -366,13 +364,13 @@ export function BookingForm({
       <ConfirmDialog
         open={confirming}
         icon={<Ticket className="h-5 w-5" />}
-        title="Konfirmasi pesanan"
-        description="Periksa sekali lagi sebelum kursinya ditahan atas nama Anda."
-        confirmLabel={pending ? "Memproses..." : "Lanjut ke pembayaran"}
+        title={t("confirmTitle")}
+        description={t("confirmDescription")}
+        confirmLabel={pending ? t("processing") : t("continueToPayment")}
         confirmIcon={<CreditCard className="h-4 w-4" />}
-        cancelLabel="Kembali"
+        cancelLabel={t("back")}
         pending={pending}
-        footnote="Pembayaran diproses oleh Xendit di halaman terpisah."
+        footnote={t("confirmFootnote")}
         onConfirm={book}
         onCancel={() => setConfirming(false)}
       >
@@ -391,6 +389,8 @@ function Itinerary({
   passengers: Passenger[];
   total: number;
 }) {
+  const t = useTranslations("flights");
+
   return (
     <div className="space-y-3">
       <div className="rounded-xl border border-border p-3.5">
@@ -418,7 +418,7 @@ function Itinerary({
               />
             </div>
             <p className="text-center text-[11px] font-medium text-emerald-700">
-              Langsung
+              {t("direct")}
             </p>
           </div>
 
@@ -437,7 +437,9 @@ function Itinerary({
               {passenger.name.trim()}
             </span>
             <span className="shrink-0 text-xs text-muted-foreground">
-              {passenger.seat ? `Kursi ${passenger.seat}` : "Tanpa kursi"}
+              {passenger.seat
+                ? t("seatLabel", { seat: passenger.seat })
+                : t("noSeat")}
             </span>
           </li>
         ))}
@@ -446,23 +448,21 @@ function Itinerary({
       <div className="flex items-center justify-between gap-3 rounded-xl bg-muted/60 px-3.5 py-3">
         <div>
           <p className="text-xs text-muted-foreground">
-            Total {passengers.length} penumpang
+            {t("totalPassengers", { count: passengers.length })}
           </p>
           <p className="text-lg font-bold tabular-nums">{formatIDR(total)}</p>
         </div>
         <p className="text-right text-[11px] leading-snug text-muted-foreground">
           {flight.seatsLeft <= 5
-            ? `Tinggal ${flight.seatsLeft} kursi`
-            : `${flight.seatsLeft} kursi tersedia`}
+            ? t("seatsLeft", { count: flight.seatsLeft })
+            : t("seatsFree", { count: flight.seatsLeft })}
         </p>
       </div>
 
       <p className="flex items-start gap-2 rounded-xl border border-amber-500/30 bg-amber-50 px-3.5 py-3 text-[11px] leading-snug text-amber-900">
         <ShieldCheck className="mt-px h-4 w-4 shrink-0" />
         <span>
-          Kursi ditahan sejak pesanan dibuat, bukan setelah dibayar. Kalau
-          pembayaran tidak selesai sampai batas waktu, kursinya dilepas lagi dan
-          pesanan ini hangus.
+          {t("seatHoldWarning")}
         </span>
       </p>
     </div>

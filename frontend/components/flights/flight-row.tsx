@@ -1,4 +1,4 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ChevronDown, Plane } from "lucide-react";
 import {
   airport,
@@ -8,6 +8,7 @@ import {
 } from "@/lib/airports";
 import { type FlightView } from "@/lib/flights-search";
 import { formatIDR } from "@/lib/seeded-random";
+import { useTranslations } from "next-intl";
 
 /**
  * One itinerary. Times and the route line run across the middle, with the fare
@@ -33,6 +34,8 @@ export function FlightRow({
   toCode: string;
   bookHref: string;
 }) {
+  const t = useTranslations("flights");
+
   const { flight } = view;
   const soldOut = flight.available_seats <= 0;
 
@@ -69,7 +72,7 @@ export function FlightRow({
                 />
               </div>
               <p className="text-center text-[11px] font-medium text-emerald-700">
-                Langsung
+                {t("direct")}
               </p>
             </div>
 
@@ -83,14 +86,14 @@ export function FlightRow({
           <p className="mt-2.5 text-xs text-muted-foreground">
             {soldOut ? (
               <span className="font-medium text-destructive">
-                Kursi habis untuk penerbangan ini
+                {t("soldOut")}
               </span>
             ) : flight.available_seats <= 5 ? (
               <span className="font-medium text-amber-700">
-                Tinggal {flight.available_seats} kursi
+                {t("seatsLeft", { count: flight.available_seats })}
               </span>
             ) : (
-              `${flight.available_seats} kursi tersedia`
+              t("seatsFree", { count: flight.available_seats })
             )}
           </p>
         </div>
@@ -109,7 +112,7 @@ export function FlightRow({
               href={bookHref}
               className="mt-2 inline-flex w-full items-center justify-center rounded-full bg-brand-700 px-4 py-2.5 text-sm font-semibold text-white transition after:absolute after:inset-0 after:content-[''] hover:bg-brand-900 focus-visible:outline-none focus-visible:after:rounded-2xl focus-visible:after:outline focus-visible:after:outline-2 focus-visible:after:outline-offset-2 focus-visible:after:outline-brand-700"
             >
-              Pilih
+              {t("pick")}
             </Link>
           )}
         </div>
@@ -119,7 +122,7 @@ export function FlightRow({
           following the card's link. */}
       <details className="relative z-10 border-t border-border [&_summary_svg]:transition-transform [&[open]_summary_svg]:rotate-180">
         <summary className="flex cursor-pointer list-none items-center justify-center gap-1 px-4 py-2.5 text-xs font-semibold text-brand-700 transition hover:bg-brand-tint/10 [&::-webkit-details-marker]:hidden">
-          Detail penerbangan
+          {t("flightDetail")}
           <ChevronDown aria-hidden="true" className="h-3.5 w-3.5" />
         </summary>
 
@@ -128,7 +131,7 @@ export function FlightRow({
 
           <div>
             <h4 className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-              Harga
+              {t("price")}
             </h4>
             <dl className="mt-2.5 space-y-1.5 text-xs">
               <Row
@@ -137,13 +140,12 @@ export function FlightRow({
               />
               <Row label="Mata uang" value={flight.currency} />
               <Row
-                label="Kursi tersisa"
+                label={t("seatsRemaining")}
                 value={String(flight.available_seats)}
               />
             </dl>
             <p className="mt-2 text-[11px] leading-snug text-muted-foreground">
-              Satu pemesanan berlaku untuk satu penumpang. Kursi ditahan begitu
-              pesanan dibuat, sebelum pembayaran.
+              {t("oneBookingNote")}
             </p>
           </div>
         </div>
@@ -163,6 +165,8 @@ function Itinerary({
   to: Airport | null;
 }) {
   const { flight } = view;
+  const t = useTranslations("flights");
+
 
   return (
     <div>
@@ -173,20 +177,20 @@ function Itinerary({
         <Stop
           time={clockOf(flight.departure_time)}
           code={from?.code ?? "—"}
-          name={from ? `${from.name}, ${from.city}` : "Bandara asal"}
+          name={from ? `${from.name}, ${from.city}` : t("fromAirport")}
         />
         <Stop
           time={clockOf(flight.arrival_time)}
           code={to?.code ?? "—"}
-          name={to ? `${to.name}, ${to.city}` : "Bandara tujuan"}
+          name={to ? `${to.name}, ${to.city}` : t("toAirport")}
           dayOffset={view.dayOffset}
         />
       </ol>
 
       <dl className="mt-4 space-y-1 text-xs">
-        <Detail label="Maskapai" value={flight.airline} />
-        <Detail label="Nomor penerbangan" value={flight.flight_number} />
-        <Detail label="Durasi" value={formatDuration(view.durationMin)} />
+        <Detail label={t("airline")} value={flight.airline} />
+        <Detail label={t("flightNumber")} value={flight.flight_number} />
+        <Detail label={t("duration")} value={formatDuration(view.durationMin)} />
       </dl>
     </div>
   );
@@ -210,8 +214,7 @@ function Stop({
   name: string;
   dayOffset?: number;
 }) {
-  return (
-    <li className="flex gap-3">
+  return (    <li className="flex gap-3">
       <span className="w-12 shrink-0 text-right text-xs font-bold tabular-nums">
         {time}
         {dayOffset > 0 && (

@@ -1,4 +1,5 @@
 import { Star } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { formatCount } from "@/lib/destination-data";
 
 /**
@@ -13,23 +14,28 @@ export function MobileBar({
   rating: number | null;
   views: number | null;
 }) {
+  const t = useTranslations("destination");
+  const locale = useLocale();
+
   return (
     <div className="sticky bottom-0 z-40 border-t border-border bg-background/95 backdrop-blur lg:hidden">
       <div className="container-page flex items-center justify-between gap-3 py-3">
         <div className="min-w-0">
           <p className="flex items-center gap-1 text-sm font-bold">
             <Star className="h-4 w-4 fill-amber-400 text-amber-400" />
-            {rating !== null ? rating.toFixed(1).replace(".", ",") : "Belum dinilai"}
+            {rating !== null
+              ? rating.toFixed(1).replace(".", ",")
+              : t("notRated")}
           </p>
           <p className="truncate text-xs text-muted-foreground">
-            {formatCount(views)} kali dilihat
+            {t("viewCount", { count: formatCount(views, locale) })}
           </p>
         </div>
         <a
           href="#rencana"
           className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Rencanakan kunjungan
+          {t("planVisit")}
         </a>
       </div>
     </div>

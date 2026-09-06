@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft } from "lucide-react";
 import { Logo } from "@/components/home/logo";
 
@@ -17,6 +18,8 @@ export function AuthShell({
   children: React.ReactNode;
   footer?: React.ReactNode;
 }) {
+  const t = useTranslations("auth");
+
   return (
     <div className="flex min-h-svh flex-col bg-muted/40">
       <header className="container-page flex h-16 items-center justify-between">
@@ -26,7 +29,7 @@ export function AuthShell({
           className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700"
         >
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke beranda
+          {t("backHome")}
         </Link>
       </header>
 

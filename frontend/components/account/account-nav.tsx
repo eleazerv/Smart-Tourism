@@ -1,19 +1,20 @@
 "use client";
 
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { useState } from "react";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter } from "@/i18n/navigation";
 import { Bookmark, Heart, KeyRound, LogOut, Ticket, UserRound } from "lucide-react";
 import { createClient } from "@/lib/supabase/client";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const ITEMS = [
-  { href: "/akun", label: "Profil", icon: UserRound },
-  { href: "/akun/pesanan", label: "Pesanan saya", icon: Ticket },
-  { href: "/akun/tersimpan", label: "Destinasi tersimpan", icon: Bookmark },
-  { href: "/akun/minat", label: "Minat perjalanan", icon: Heart },
-  { href: "/akun/kata-sandi", label: "Ubah kata sandi", icon: KeyRound },
+  { href: "/akun", key: "profile", icon: UserRound },
+  { href: "/akun/pesanan", key: "orders", icon: Ticket },
+  { href: "/akun/tersimpan", key: "saved", icon: Bookmark },
+  { href: "/akun/minat", key: "interests", icon: Heart },
+  { href: "/akun/kata-sandi", key: "password", icon: KeyRound },
 ] as const;
 
 /**
@@ -21,6 +22,7 @@ const ITEMS = [
  * where a sidebar would eat the whole first screen.
  */
 export function AccountNav() {
+  const t = useTranslations("account");
   const pathname = usePathname();
   const router = useRouter();
   const [confirming, setConfirming] = useState(false);
@@ -68,7 +70,7 @@ export function AccountNav() {
                 )}
               >
                 <Icon className="h-4 w-4 shrink-0" />
-                {item.label}
+                {t(item.key)}
               </Link>
             </li>
           );
@@ -81,15 +83,15 @@ export function AccountNav() {
         className="mt-2 hidden w-full items-center gap-2.5 rounded-lg px-4 py-2.5 text-sm font-medium text-foreground/80 transition hover:bg-brand-tint/10 hover:text-brand-700 md:flex"
       >
         <LogOut className="h-4 w-4 shrink-0" />
-        Keluar
+        {t("signOut")}
       </button>
 
       <ConfirmDialog
         open={confirming}
         icon={<LogOut className="h-5 w-5" />}
-        title="Keluar dari akun?"
-        description="Anda perlu masuk lagi untuk melihat profil dan minat perjalanan Anda."
-        confirmLabel={signingOut ? "Keluar..." : "Keluar"}
+        title={t("signOutTitle")}
+        description={t("signOutDescription")}
+        confirmLabel={signingOut ? t("signingOut") : t("signOut")}
         destructive
         pending={signingOut}
         onConfirm={signOut}

@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
 import { ArrowRight, Sparkles } from "lucide-react";
 import {
@@ -16,7 +16,6 @@ import type { RawSearchParams } from "@/lib/destinations-search";
 import {
   drySeasonMonths,
   isDrySeason,
-  monthName,
   parseTiming,
   rankQuietAndDry,
   withCrowding,
@@ -31,8 +30,13 @@ import { SeasonBoard } from "@/components/recommendations/season-board";
 import { TimingCard } from "@/components/recommendations/timing-card";
 import { TimingHero } from "@/components/recommendations/timing-hero";
 import { TimingSkeleton } from "@/components/recommendations/timing-skeleton";
+import { getLocale, getTranslations, setRequestLocale } from "next-intl/server";
+import { monthName } from "@/lib/intl";
 
-type PageProps = { searchParams: Promise<RawSearchParams> };
+type PageProps = {
+  params: Promise<{ locale: string }>;
+  searchParams: Promise<RawSearchParams>;
+};
 
 /** Quiet-and-dry provinces shown before the full season board. */
 const SHORTLIST = 6;
@@ -102,13 +106,16 @@ async function loadReviewCounts(ids: string[]): Promise<Record<string, number>> 
 }
 
 export async function generateMetadata({
+  params,
   searchParams,
 }: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "timing" });
   const state = parseTiming(await searchParams);
-  const name = monthName(state.month);
+  const name = monthName(state.month, locale);
 
-  const title = `Waktu terbaik berkunjung — ${name}`;
-  const description = `Musim tiap provinsi di bulan ${name}, dipadukan dengan statistik kunjungan terakhir, untuk menemukan daerah yang cuacanya bagus tapi belum ramai.`;
+  const title = t("metaTitle", { month: name });
+  const description = t("metaDescription", { month: name });
 
   return {
     title,
@@ -120,7 +127,8 @@ export async function generateMetadata({
   };
 }
 
-export default function RecommendationsPage({ searchParams }: PageProps) {
+export default async function RecommendationsPage({ params, searchParams }: PageProps) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />
@@ -137,7 +145,9 @@ export default function RecommendationsPage({ searchParams }: PageProps) {
   );
 }
 
-async function Timing({ searchParams }: PageProps) {
+async function Timing({ searchParams }: Pick<PageProps, "searchParams">) {
+  const t = await getTranslations("timing");
+  const locale = await getLocale();
   const state = parseTiming(await searchParams);
 
   let recommendations: SeasonalRecommendations;
@@ -161,7 +171,7 @@ async function Timing({ searchParams }: PageProps) {
       : Promise.resolve(new Map<number, string>()),
   ]);
 
-  const name = monthName(state.month);
+  const name = monthName(state.month, locale);
   const timings = withCrowding(info, heatmap);
   const quiet = rankQuietAndDry(timings);
   const dryCount = info.filter((entry) => isDrySeason(entry.season)).length;
@@ -185,21 +195,23 @@ async function Timing({ searchParams }: PageProps) {
       <div className="container-page space-y-10 py-8 sm:py-10">
         {info.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
-            Belum ada pola iklim yang tercatat untuk bulan {name}
-            {province ? ` di ${province.name}` : ""}.
+            {province
+              ? t("noClimateProvince", { month: name, province: province.name })
+              : t("noClimate", { month: name })}
           </p>
         ) : (
           <>
             <section>
               <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
                 {province
-                  ? `${province.name} di bulan ${name}`
-                  : `Cuaca bagus, belum ramai — ${name}`}
+                  ? t("provinceInMonth", {
+                      province: province.name,
+                      month: name,
+                    })
+                  : t("goodWeatherQuiet", { month: name })}
               </h2>
               <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                {province
-                  ? "Musim dan tingkat kepadatan provinsi ini pada periode terakhir, beserta bulan-bulan yang cuacanya paling bersahabat."
-                  : "Provinsi yang sedang musim kemarau, diurutkan dari yang kunjungannya paling sedikit. Provinsi yang sedang musim hujan tidak masuk daftar ini."}
+                {province ? t("provinceBlurb") : t("shortlistBlurb")}
               </p>
 
               {/* Satu provinsi terpilih selalu punya kartunya sendiri, kemarau
@@ -215,7 +227,7 @@ async function Timing({ searchParams }: PageProps) {
                 </div>
               ) : quiet.length === 0 ? (
                 <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-                  {`Tidak ada provinsi yang sedang kemarau di bulan ${name}.`}
+                  {t("noDryProvinces", { month: name })}
                 </p>
               ) : (
                 <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -234,11 +246,10 @@ async function Timing({ searchParams }: PageProps) {
             {!province && (
               <section>
                 <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-                  Musim di seluruh provinsi
+                  {t("allProvincesHeading")}
                 </h2>
                 <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-                  Pilih provinsi untuk melihat kegiatan yang cocok dan
-                  destinasinya di bulan {name}.
+                  {t("allProvincesBlurb", { month: name })}
                 </p>
                 <div className="mt-4">
                   <SeasonBoard info={info} state={state} />
@@ -250,17 +261,17 @@ async function Timing({ searchParams }: PageProps) {
 
         <section>
           <h2 className="font-display text-xl font-bold tracking-tight sm:text-2xl">
-            Destinasi pilihan bulan {name}
+            {t("picksHeading", { month: name })}
           </h2>
           <p className="mt-1 max-w-2xl text-sm text-muted-foreground">
-            Dipilih dari kegiatan yang cocok dengan musim
-            {province ? ` di ${province.name}` : " bulan ini"}, diurutkan dari
-            yang paling banyak dilihat.
+            {province
+              ? t("picksBlurbProvince", { province: province.name })
+              : t("picksBlurb")}
           </p>
 
           {destinations.length === 0 ? (
             <p className="mt-4 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-              Belum ada destinasi yang cocok untuk bulan ini.
+              {t("noPicks")}
             </p>
           ) : (
             <div className="mt-4 grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -289,20 +300,17 @@ async function Timing({ searchParams }: PageProps) {
           <span>
             <span className="flex items-center gap-2 font-display text-base font-bold">
               <Sparkles className="h-4 w-4" />
-              Susun rutenya di peta
+              {t("mapCtaTitle")}
             </span>
             <span className="mt-1 block text-sm leading-relaxed text-white/75">
-              Rangkai provinsi-provinsi ini jadi satu rencana perjalanan,
-              lengkap dengan rekomendasi tiap perhentian.
+              {t("mapCtaBody")}
             </span>
           </span>
           <ArrowRight className="h-5 w-5 shrink-0 text-white/70" />
         </Link>
 
         <p className="text-center text-xs leading-relaxed text-muted-foreground">
-          Musim berasal dari pola iklim per provinsi, dan tingkat kepadatan
-          dari statistik kunjungan provinsi periode terakhir — bukan hitungan
-          pengunjung harian tiap destinasi.
+          {t("disclaimer")}
         </p>
       </div>
     </>

@@ -28,6 +28,7 @@ import type {
   TripFlightRole,
   TripStop,
 } from "@/lib/api";
+import { useTranslations } from "next-intl";
 
 type Props = {
   blocks: InteractiveBlock[];
@@ -51,11 +52,7 @@ function allItems(canvas: TripCanvas | null) {
   return (canvas?.stops ?? []).flatMap((stop) => stop.trip_items);
 }
 
-const TIER_LABEL: Record<string, string> = {
-  budget: "Hemat",
-  mid: "Menengah",
-  luxury: "Mewah",
-};
+
 
 /** Jam saja — tanggalnya sudah jadi judul kartunya. */
 function clock(iso: string) {
@@ -203,6 +200,7 @@ function DestinationCard({
   canvas: TripCanvas | null;
   onAdd: (id: string) => Promise<void>;
 }) {
+  const t = useTranslations("planner");
   const [busy, setBusy] = useState<string | null>(null);
   const [preview, setPreview] = useState<DestinationOption | null>(null);
   const inTrip = new Set(
@@ -234,7 +232,7 @@ function DestinationCard({
             </span>
           </p>
 
-          <Rail label={`Destinasi di ${region}`}>
+          <Rail label={t("destinationsIn", { region })}>
             {items.map((d) => {
               const added = inTrip.has(d.id);
               return (
@@ -251,7 +249,7 @@ function DestinationCard({
                     type="button"
                     onClick={() => setPreview(d)}
                     className="block w-full text-left focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring"
-                    aria-label={`Lihat detail ${d.name}`}
+                    aria-label={t("viewDetail", { name: d.name })}
                   >
                     <div
                       data-rail-media
@@ -291,7 +289,7 @@ function DestinationCard({
                         <Rating value={d.rating} />
                       ) : (
                         <p className="text-xs text-muted-foreground">
-                          Belum ada ulasan
+                          {t("noReviews")}
                         </p>
                       )}
 
@@ -314,9 +312,9 @@ function DestinationCard({
                       {busy === d.id ? (
                         <Loader2 className="h-3.5 w-3.5 animate-spin" />
                       ) : added ? (
-                        "Sudah ditambahkan"
+                        t("alreadyAdded")
                       ) : (
-                        "Tambahkan"
+                        t("add")
                       )}
                     </Button>
                   </div>
@@ -347,6 +345,7 @@ function AccommodationCard({
   canvas: TripCanvas | null;
   onPick: (stopId: string, accommodationId: string) => Promise<void>;
 }) {
+  const t = useTranslations("planner");
   const [busy, setBusy] = useState<string | null>(null);
 
   // Penginapan menempel ke KOTA, bukan ke destinasi: yang dicari adalah stop
@@ -360,11 +359,13 @@ function AccommodationCard({
   return (
     <CardShell
       icon={<BedDouble className="h-3.5 w-3.5" />}
-      title={`Penginapan dekat ${block.near}`}
+      title={t("staysNear", { near: block.near })}
       footnote={
         target
-          ? `Berlaku untuk seluruh destinasi di ${target.cities?.name ?? "kota ini"}.`
-          : "Tambahkan destinasinya ke rencana dulu supaya penginapan ini bisa ditempelkan."
+          ? t("appliesToCity", {
+              city: target.cities?.name ?? t("thisCity"),
+            })
+          : t("addDestinationFirst")
       }
     >
       {block.options.map((a: AccommodationOption) => {
@@ -374,15 +375,15 @@ function AccommodationCard({
             key={a.id}
             name={a.name}
             detail={[
-              TIER_LABEL[a.tier] ?? a.tier,
-              `${formatIDR(a.price_per_night)}/malam`,
+              t(`tier.${a.tier}`),
+              t("perNight", { price: formatIDR(a.price_per_night) }),
               a.distance_km != null ? `${a.distance_km} km` : null,
             ]
               .filter(Boolean)
               .join(" · ")}
             action={
               picked ? (
-                <Added label="dipilih" />
+                <Added label={t("picked")} />
               ) : (
                 <Button
                   size="sm"
@@ -402,7 +403,7 @@ function AccommodationCard({
                   {busy === a.id ? (
                     <Loader2 className="h-3.5 w-3.5 animate-spin" />
                   ) : (
-                    "Pilih"
+                    t("pick")
                   )}
                 </Button>
               )
@@ -429,6 +430,7 @@ function FlightCard({
     role: TripFlightRole,
   ) => Promise<void>;
 }) {
+  const t = useTranslations("planner");
   const [busy, setBusy] = useState<string | null>(null);
   const stops = canvas?.stops ?? [];
 
@@ -477,10 +479,11 @@ function FlightCard({
       stop,
       role: "arrival",
       label: exact
-        ? `Masuk ${stop.cities?.name ?? "kota tujuan"}`
-        : `Masuk ${stop.cities?.name ?? "kota tujuan"} (lewat ${
-            destinationCity?.name ?? "bandara terdekat"
-          })`,
+        ? t("intoLabel", { city: stop.cities?.name ?? t("destinationCity") })
+        : t("intoVia", {
+            city: stop.cities?.name ?? t("destinationCity"),
+            airport: destinationCity?.name ?? t("nearestAirport"),
+          }),
     });
   }
 
@@ -491,10 +494,11 @@ function FlightCard({
       stop,
       role: "departure",
       label: exact
-        ? `Keluar ${stop.cities?.name ?? "kota asal"}`
-        : `Keluar ${stop.cities?.name ?? "kota asal"} (lewat ${
-            originCity?.name ?? "bandara terdekat"
-          })`,
+        ? t("outLabel", { city: stop.cities?.name ?? t("originCity") })
+        : t("outVia", {
+            city: stop.cities?.name ?? t("originCity"),
+            airport: originCity?.name ?? t("nearestAirport"),
+          }),
     });
   }
 
@@ -512,11 +516,11 @@ function FlightCard({
   return (
     <CardShell
       icon={<Plane className="h-3.5 w-3.5" />}
-      title={`Penerbangan · ${block.date}`}
+      title={t("flightsOn", { date: block.date })}
       footnote={
         targets.length === 0
-          ? "Rute ini belum menyentuh satu pun kota di rencanamu. Tambahkan kotanya dulu lewat destinasi, baru penerbangannya bisa dipasang."
-          : "Pilih mau dipasang sebagai penerbangan masuk atau keluar."
+          ? t("routeNotInPlan")
+          : t("pickRole")
       }
     >
       {block.options.map((f) => {
@@ -531,8 +535,8 @@ function FlightCard({
                 <Added
                   label={
                     used.leg.flight_role === "arrival"
-                      ? `masuk ${used.stop.cities?.name ?? ""}`.trim()
-                      : `keluar ${used.stop.cities?.name ?? ""}`.trim()
+                      ? t("usedArrival", { city: used.stop.cities?.name ?? "" })
+                      : t("usedDeparture", { city: used.stop.cities?.name ?? "" })
                   }
                 />
               ) : (

@@ -1,5 +1,7 @@
 import { CalendarRange } from "lucide-react";
-import { MONTHS, monthRangeLabel } from "@/lib/destination-data";
+import { getLocale, getTranslations } from "next-intl/server";
+import { monthRangeLabel } from "@/lib/destination-data";
+import { joinList, monthName } from "@/lib/intl";
 import { MonthStrip } from "@/components/ui/month-strip";
 
 /**
@@ -11,7 +13,7 @@ import { MonthStrip } from "@/components/ui/month-strip";
  * want "April sampai Oktober" and nothing more, and making them decode twelve
  * cells to reconstruct that range is work the page can do for them.
  */
-export function BestTime({
+export async function BestTime({
   months,
   seasons,
 }: {
@@ -20,29 +22,37 @@ export function BestTime({
   /** Season names covering those months, e.g. "kemarau". */
   seasons: string[];
 }) {
+  const t = await getTranslations("destination");
+  const locale = await getLocale();
+
   const currentMonth = new Date().getMonth() + 1;
   const nowIsGood = months.includes(currentMonth);
+  const range = monthRangeLabel(months, locale);
+  const current = monthName(currentMonth, locale);
 
   return (
     <section id="waktu-terbaik" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
         <CalendarRange className="h-5 w-5 text-brand-700" />
-        Waktu terbaik berkunjung
+        {t("bestTimeHeading")}
       </h2>
 
       {months.length === 0 ? (
         <p className="mt-3 rounded-2xl border border-dashed border-border px-4 py-8 text-center text-sm text-muted-foreground">
-          Belum ada pola musim tercatat untuk daerah ini, jadi semua bulan
-          diperlakukan sama.
+          {t("bestTimeNone")}
         </p>
       ) : (
         <>
           <p className="mt-1.5 text-sm leading-relaxed">
-            <span className="font-semibold">{monthRangeLabel(months)}</span>
+            {/* `monthRangeLabel` mengembalikan null untuk dua belas bulan
+                sekaligus, karena kata "sepanjang tahun" tidak bisa disusun
+                dari nama bulan. */}
+            <span className="font-semibold">{range ?? t("allYear")}</span>
             {seasons.length > 0 && (
               <span className="text-muted-foreground">
                 {" "}
-                &middot; musim {seasons.join(" dan ")}
+                &middot;{" "}
+                {t("seasonSuffix", { seasons: joinList(seasons, locale) })}
               </span>
             )}
           </p>
@@ -51,15 +61,16 @@ export function BestTime({
             <MonthStrip
               active={months}
               currentMonth={currentMonth}
-              activeLabel="Waktu terbaik"
-              inactiveLabel="Kurang ideal"
+              activeLabel={t("monthBest")}
+              inactiveLabel={t("monthLessIdeal")}
+              locale={locale}
             />
           </div>
 
           <p className="mt-3 text-xs leading-relaxed text-muted-foreground">
             {nowIsGood
-              ? `${MONTHS[currentMonth - 1]} termasuk waktu terbaik untuk ke sini.`
-              : `${MONTHS[currentMonth - 1]} di luar rentang itu — tetap bisa dikunjungi, cuaca dan keramaiannya saja yang kurang ideal.`}
+              ? t("nowGood", { month: current })
+              : t("nowBad", { month: current })}
           </p>
         </>
       )}

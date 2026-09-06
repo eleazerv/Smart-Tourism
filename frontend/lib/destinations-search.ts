@@ -13,10 +13,10 @@ import type { Destination } from "@/lib/api";
 export const PAGE_SIZE = 12;
 
 export const SORTS = [
-  { key: "relevan", label: "Paling relevan" },
-  { key: "rating", label: "Rating tertinggi" },
-  { key: "populer", label: "Paling banyak dilihat" },
-  { key: "nama", label: "Nama A–Z" },
+  { key: "relevan" },
+  { key: "rating" },
+  { key: "populer" },
+  { key: "nama" },
 ] as const;
 
 export type SortKey = (typeof SORTS)[number]["key"];

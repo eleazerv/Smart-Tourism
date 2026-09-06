@@ -1,10 +1,10 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { CloudRain, Sun } from "lucide-react";
 import type { SeasonInfo } from "@/lib/api";
 import {
   groupBySeason,
   isDrySeason,
-  seasonLabel,
   timingHref,
   type TimingState,
 } from "@/lib/recommendations-data";
@@ -23,6 +23,7 @@ export function SeasonBoard({
   info: SeasonInfo[];
   state: TimingState;
 }) {
+  const t = useTranslations("timing");
   const groups = groupBySeason(info);
   if (groups.length === 0) return null;
 
@@ -45,9 +46,9 @@ export function SeasonBoard({
                     : "h-4 w-4 text-sky-500"
                 }
               />
-              Musim {seasonLabel(group.season)}
+              {dry ? t("seasonDry") : t("seasonWet")}
               <span className="font-normal text-muted-foreground">
-                · {group.entries.length} provinsi
+                · {t("provinceCount", { count: group.entries.length })}
               </span>
             </h3>
 

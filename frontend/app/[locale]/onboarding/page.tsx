@@ -1,18 +1,26 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { cacheLife } from "next/cache";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { getPreferences, getProfile, getTags, listCities } from "@/lib/api";
 import { requireAccessToken } from "@/lib/api/session";
 import { createClient } from "@/lib/supabase/server";
 import { EMPTY_TRAVEL_PROFILE, readTravelProfile } from "@/lib/onboarding";
 import { OnboardingWizard } from "@/components/onboarding/onboarding-wizard";
 
-export const metadata: Metadata = {
-  title: "Personalisasi",
-  description:
-    "Lengkapi profil dan minat perjalanan Anda agar rekomendasi Jelantara sesuai.",
-  robots: { index: false, follow: false },
-};
+type PageProps = { params: Promise<{ locale: string }> };
+
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "onboarding" });
+  return {
+    title: t("metaTitle"),
+    description: t("metaDescription"),
+    robots: { index: false, follow: false },
+  };
+}
 
 /** Daftar tema sama untuk semua orang, jadi aman dipakai bersama. */
 async function loadTags() {
@@ -63,7 +71,10 @@ async function Wizard() {
   );
 }
 
-export default function OnboardingPage() {
+export default async function OnboardingPage({ params }: PageProps) {
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return (
     <div className="min-h-svh bg-gradient-to-b from-brand-tint/[0.07] via-background to-background">
       <Suspense fallback={<WizardSkeleton />}>

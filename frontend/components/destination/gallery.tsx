@@ -3,6 +3,7 @@
 import Image from "next/image";
 import { useCallback, useEffect, useState } from "react";
 import { ChevronLeft, ChevronRight, Images, X } from "lucide-react";
+import { useTranslations } from "next-intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -10,6 +11,7 @@ import { cn } from "@/lib/utils";
  * a single swipeable frame on mobile. Any frame opens a full-screen viewer.
  */
 export function Gallery({ images, name }: { images: string[]; name: string }) {
+  const t = useTranslations("destination");
   const [open, setOpen] = useState<number | null>(null);
 
   return (
@@ -22,7 +24,7 @@ export function Gallery({ images, name }: { images: string[]; name: string }) {
         >
           <Image
             src={images[0]}
-            alt={`Foto utama ${name}`}
+            alt={t("mainPhoto", { name })}
             fill
             priority
             sizes="(min-width: 1024px) 50vw, 100vw"
@@ -43,14 +45,14 @@ export function Gallery({ images, name }: { images: string[]; name: string }) {
           >
             <Image
               src={src}
-              alt={`Foto ${name} ${i + 2}`}
+              alt={t("photoN", { name, n: i + 2 })}
               fill
               sizes="(min-width: 1024px) 25vw, 50vw"
               className="object-cover transition duration-500 group-hover:scale-105"
             />
             {i === 3 && (
               <span className="absolute inset-0 grid place-items-center bg-brand-900/45 text-sm font-semibold text-white opacity-0 transition group-hover:opacity-100">
-                Lihat semua
+                {t("seeAllPhotos")}
               </span>
             )}
           </button>
@@ -63,7 +65,7 @@ export function Gallery({ images, name }: { images: string[]; name: string }) {
         className="mt-2 inline-flex items-center gap-2 rounded-full border border-border bg-card px-4 py-2 text-xs font-semibold shadow-card transition hover:bg-brand-tint/10"
       >
         <Images className="h-4 w-4" />
-        {images.length} foto
+        {t("photoCount", { count: images.length })}
       </button>
 
       {open !== null && (
@@ -92,6 +94,7 @@ function Lightbox({
   onIndex: (index: number) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("destination");
   const step = useCallback(
     (dir: 1 | -1) => onIndex((index + dir + images.length) % images.length),
     [index, images.length, onIndex],
@@ -120,7 +123,7 @@ function Lightbox({
     <div
       role="dialog"
       aria-modal="true"
-      aria-label={`Galeri foto ${name}`}
+      aria-label={t("galleryOf", { name })}
       className="fixed inset-0 z-[60] flex flex-col bg-brand-900/95 backdrop-blur"
     >
       <div className="flex items-center justify-between px-4 py-3 text-brand-50">
@@ -130,7 +133,7 @@ function Lightbox({
         <button
           type="button"
           onClick={onClose}
-          aria-label="Tutup galeri"
+          aria-label={t("closeGallery")}
           className="grid h-9 w-9 place-items-center rounded-full transition hover:bg-white/10"
         >
           <X className="h-5 w-5" />
@@ -140,13 +143,21 @@ function Lightbox({
       <div className="relative flex-1">
         <Image
           src={images[index]}
-          alt={`Foto ${name} ${index + 1}`}
+          alt={t("photoN", { name, n: index + 1 })}
           fill
           sizes="100vw"
           className="object-contain"
         />
-        <ViewerArrow side="left" onClick={() => step(-1)} />
-        <ViewerArrow side="right" onClick={() => step(1)} />
+        <ViewerArrow
+          side="left"
+          label={t("prevPhoto")}
+          onClick={() => step(-1)}
+        />
+        <ViewerArrow
+          side="right"
+          label={t("nextPhoto")}
+          onClick={() => step(1)}
+        />
       </div>
     </div>
   );
@@ -154,9 +165,11 @@ function Lightbox({
 
 function ViewerArrow({
   side,
+  label,
   onClick,
 }: {
   side: "left" | "right";
+  label: string;
   onClick: () => void;
 }) {
   const Icon = side === "left" ? ChevronLeft : ChevronRight;
@@ -164,7 +177,7 @@ function ViewerArrow({
     <button
       type="button"
       onClick={onClick}
-      aria-label={side === "left" ? "Foto sebelumnya" : "Foto berikutnya"}
+      aria-label={label}
       className={cn(
         "absolute top-1/2 grid h-11 w-11 -translate-y-1/2 place-items-center rounded-full bg-white/15 text-white transition hover:bg-white/25",
         side === "left" ? "left-3" : "right-3",

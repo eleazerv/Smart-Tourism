@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
+import { useTranslations } from "next-intl";
 import { MapPin, MessageSquareText, Sparkles, Ticket } from "lucide-react";
 
 /**
@@ -14,24 +15,14 @@ import { MapPin, MessageSquareText, Sparkles, Ticket } from "lucide-react";
  */
 
 const STEPS = [
-  {
-    icon: MessageSquareText,
-    title: "Mau liburan ke mana?",
-    body: "Pantai, gunung, atau keliling kota? Tentukan durasi dan kota keberangkatanmu.",
-  },
-  {
-    icon: MapPin,
-    title: "Cari yang pas buatmu",
-    body: "Lihat destinasi, hotel, dan penerbangan lengkap dengan harga dan rating.",
-  },
-  {
-    icon: Ticket,
-    title: "Tinggal pesan, berangkat",
-    body: "Pesan tiket dan hotel sekaligus dalam satu perjalanan.",
-  },
-];
+  { icon: MessageSquareText, key: "step1" },
+  { icon: MapPin, key: "step2" },
+  { icon: Ticket, key: "step3" },
+] as const;
 
 export function PlannerPromo() {
+  const t = useTranslations("home.planner");
+
   return (
     <section className="container-page py-8 sm:py-10">
       <div className="relative isolate overflow-hidden rounded-3xl bg-brand-900 px-6 py-10 sm:px-10 sm:py-12">
@@ -40,18 +31,15 @@ export function PlannerPromo() {
         <div className="relative grid gap-10 lg:grid-cols-[1fr_minmax(0,22rem)] lg:items-center">
           <div>
             <h2 className="max-w-xl font-display text-2xl font-bold leading-tight tracking-tight text-white sm:text-4xl">
-              Susun rencana perjalanan liburan tanpa buka belasan tab.
+              {t("title")}
             </h2>
             <p className="mt-3 max-w-lg text-sm leading-relaxed text-white/80 sm:text-base">
-              Sebutkan mau ke mana, berapa hari, dan berangkat dari kota mana.
-              Rencana AI mengumpulkan destinasi wisata, penginapan, dan tiket
-              pesawat jadi satu itinerary yang bisa langsung dipesan. Setiap
-              pilihan masih bisa kamu ganti sebelum bayar.
+              {t("body")}
             </p>
 
             <ul className="mt-7 grid gap-4 sm:grid-cols-3">
-              {STEPS.map(({ icon: Icon, title, body }) => (
-                <li key={title}>
+              {STEPS.map(({ icon: Icon, key }) => (
+                <li key={key}>
                   <span
                     aria-hidden="true"
                     className="grid h-9 w-9 place-items-center rounded-full bg-white/10 text-brand-100 ring-1 ring-inset ring-white/15"
@@ -59,10 +47,10 @@ export function PlannerPromo() {
                     <Icon className="h-4 w-4" />
                   </span>
                   <p className="mt-2.5 text-sm font-semibold text-white">
-                    {title}
+                    {t(`${key}Title`)}
                   </p>
                   <p className="mt-1 text-xs leading-relaxed text-white/70">
-                    {body}
+                    {t(`${key}Body`)}
                   </p>
                 </li>
               ))}
@@ -73,7 +61,7 @@ export function PlannerPromo() {
               className="mt-8 inline-flex w-fit items-center gap-2 rounded-full bg-white px-6 py-3 text-sm font-semibold text-brand-900 transition hover:bg-brand-100"
             >
               <Sparkles className="h-4 w-4" />
-              Mulai susun rencana
+              {t("cta")}
             </Link>
           </div>
 
@@ -116,18 +104,20 @@ function Ornament() {
  * berubah.
  */
 function ChatPreview() {
+  const t = useTranslations("home.planner");
+
   return (
     <div className="rounded-2xl bg-white/10 p-3 ring-1 ring-inset ring-white/15 backdrop-blur-sm">
       <div className="flex justify-end">
         <p className="max-w-[85%] rounded-2xl rounded-br-sm bg-white px-3.5 py-2 text-xs leading-relaxed text-brand-900">
-          Mau liburan pantai 4 hari, berangkat dari Jakarta
+          {t("chatUser")}
         </p>
       </div>
 
       <div className="mt-2.5 flex justify-start">
         <p className="max-w-[90%] rounded-2xl rounded-bl-sm bg-brand-900/60 px-3.5 py-2 text-xs leading-relaxed text-white/90">
-          Belitung paling pas — tiket mulai <strong>Rp550rb</strong>. Ini tiga
-          pantai dengan rating tertinggi di sana:
+          {t("chatBotPrefix")} <strong>Rp550rb</strong>
+          {t("chatBotSuffix")}
         </p>
       </div>
 
@@ -152,7 +142,7 @@ function ChatPreview() {
       </ul>
 
       <p className="mt-2.5 text-center text-[10px] text-white/50">
-        Contoh percakapan
+        {t("chatCaption")}
       </p>
     </div>
   );

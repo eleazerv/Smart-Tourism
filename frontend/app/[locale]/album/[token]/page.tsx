@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
 import { Compass, Images } from "lucide-react";
 import {
@@ -11,15 +11,22 @@ import {
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { SavedGrid } from "@/components/account/saved-grid";
+import { getTranslations } from "next-intl/server";
 
-type PageProps = { params: Promise<{ token: string }> };
+type PageProps = { params: Promise<{ token: string; locale: string }> };
 
-export const metadata: Metadata = {
-  title: "Album dibagikan",
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "sharedAlbum" });
+  return {
+  title: t("metaTitle"),
   // A share link is meant for the people it was sent to, not for search
   // results. The token is unguessable, but indexing would undo that.
   robots: { index: false, follow: false },
-};
+  };
+}
 
 /** The public view has no bookmark state of its own to carry. */
 function asSaved(rows: AlbumDestination[]): SavedDestination[] {
@@ -40,6 +47,8 @@ async function SharedAlbum({ params }: PageProps) {
   } catch {
     album = null;
   }
+
+  const t = await getTranslations("sharedAlbum");
   // A revoked link and a made-up one look identical on purpose: neither
   // should reveal that an album was ever there.
   if (!album) notFound();
@@ -48,20 +57,20 @@ async function SharedAlbum({ params }: PageProps) {
     <div className="container-page py-8 sm:py-10">
       <div className="flex items-center gap-2 text-xs font-medium uppercase tracking-wide text-muted-foreground">
         <Images aria-hidden="true" className="h-4 w-4" />
-        Album dibagikan
+        {t("heading")}
       </div>
 
       <h1 className="mt-2 font-display text-2xl font-bold tracking-tight sm:text-3xl">
         {album.name}
       </h1>
       <p className="mt-1 text-sm text-muted-foreground">
-        {album.item_count} destinasi di Indonesia.
+        {t("count", { count: album.item_count })}
       </p>
 
       <div className="mt-6">
         {album.destinations.length === 0 ? (
           <p className="rounded-2xl border border-dashed border-border px-4 py-12 text-center text-sm text-muted-foreground">
-            Album ini masih kosong.
+            {t("empty")}
           </p>
         ) : (
           <SavedGrid saved={asSaved(album.destinations)} owned={false} />
@@ -71,11 +80,10 @@ async function SharedAlbum({ params }: PageProps) {
       <div className="mt-10 flex flex-col gap-2 rounded-2xl bg-brand-900 p-5 text-white sm:flex-row sm:items-center sm:justify-between">
         <div>
           <p className="font-display text-base font-bold">
-            Susun album liburanmu sendiri
+            {t("ctaTitle")}
           </p>
           <p className="mt-1 text-sm leading-relaxed text-white/75">
-            Simpan destinasi yang menarik, kelompokkan per rencana, lalu bagikan
-            seperti halaman ini.
+            {t("cta")}
           </p>
         </div>
         <Link

@@ -1,23 +1,41 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 import { AccountSidebar } from "@/components/account/account-sidebar";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 
-export const metadata: Metadata = {
-  // Re-declared here: a plain string title on this layout otherwise stops the
-  // root template from reaching /akun/minat and /akun/kata-sandi.
-  title: { default: "Akun Saya", template: "%s | Jelantara" },
-  description:
-    "Kelola profil, minat perjalanan, dan keamanan akun Jelantara Anda.",
-  robots: { index: false, follow: false },
+type LayoutProps = {
+  children: React.ReactNode;
+  params: Promise<{ locale: string }>;
 };
 
-export default function AccountLayout({
-  children,
+export async function generateMetadata({
+  params,
 }: {
-  children: React.ReactNode;
-}) {
+  params: LayoutProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "accountArea" });
+  return {
+    // Re-declared here: a plain string title on this layout otherwise stops the
+    // root template from reaching /akun/minat and /akun/kata-sandi.
+    title: { default: t("title"), template: "%s | Jelantara" },
+    description: t("description"),
+    robots: { index: false, follow: false },
+  };
+}
+
+export default async function AccountLayout({
+  children,
+  params,
+}: LayoutProps) {
+  // Wajib di setiap layout dan halaman di bawah `[locale]`: tanpa ini
+  // next-intl membaca bahasa dari header saat render, dan Cache Components
+  // menolaknya sebagai data runtime di dalam cangkang yang mau di-prerender.
+  const { locale } = await params;
+  setRequestLocale(locale);
+
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />

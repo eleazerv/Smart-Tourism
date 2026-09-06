@@ -3,6 +3,7 @@ import { Suspense } from "react";
 import { SiteHeader } from "@/components/home/site-header";
 import { PlannerWorkspace } from "@/components/planner/planner-workspace";
 import { requireAccessToken } from "@/lib/api/session";
+import { setRequestLocale } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Rencana Perjalanan",
@@ -15,7 +16,12 @@ export const metadata: Metadata = {
  * mengisi tinggi layar dan menggulir di dalam panelnya sendiri, jadi footer
  * ditiadakan dan halaman berhenti menggulir di layar besar.
  */
-export default function PlannerPage() {
+export default async function PlannerPage({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col lg:h-screen lg:overflow-hidden">
       <SiteHeader />

@@ -1,4 +1,5 @@
 import { ExternalLink, MapPin, Navigation } from "lucide-react";
+import { useLocale, useTranslations } from "next-intl";
 import { PlaceMapEmbed } from "@/components/peta/place-map-embed";
 import { formatCoordinates, mapsUrl } from "@/lib/destination-data";
 
@@ -28,16 +29,19 @@ export function LocationCard({
   place: MappablePlace;
   placeLabel: string;
 }) {
+  const t = useTranslations("map");
+  const locale = useLocale();
+
   const mapped = place.latitude !== null && place.longitude !== null;
   const coordinates = mapped
-    ? formatCoordinates(place.latitude!, place.longitude!)
+    ? formatCoordinates(place.latitude!, place.longitude!, locale)
     : null;
 
   return (
     <section id="lokasi" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
         <MapPin className="h-5 w-5 text-brand-700" />
-        Lokasi
+        {t("locationHeading")}
       </h2>
 
       <div className="mt-3 overflow-hidden rounded-2xl border border-border bg-card">
@@ -69,7 +73,7 @@ export function LocationCard({
               {placeLabel || place.name}
             </p>
             <p className="text-xs text-muted-foreground">
-              {coordinates ?? "Koordinat belum tersedia"}
+              {coordinates ?? t("coordinatesMissing")}
             </p>
           </div>
           <a
@@ -78,7 +82,7 @@ export function LocationCard({
             rel="noreferrer noopener"
             className="inline-flex shrink-0 items-center justify-center gap-2 rounded-full border border-border px-4 py-2 text-sm font-semibold transition hover:bg-brand-tint/10"
           >
-            Buka di Google Maps
+            {t("openInMaps")}
             <ExternalLink className="h-3.5 w-3.5" />
           </a>
         </div>

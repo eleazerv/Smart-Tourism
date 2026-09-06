@@ -4,8 +4,9 @@ import { createClient } from "@/lib/supabase/client";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { AuthError, AuthSubmit } from "@/components/auth/auth-shell";
-import { useRouter } from "next/navigation";
+import { useRouter } from "@/i18n/navigation";
 import { useState } from "react";
+import { useTranslations } from "next-intl";
 
 const MIN_LENGTH = 6;
 
@@ -22,13 +23,15 @@ const MIN_LENGTH = 6;
 export function UpdatePasswordForm({
   mode = "reset",
   redirectTo,
-  submitLabel = "Simpan kata sandi",
+  submitLabel,
 }: {
   mode?: "reset" | "account";
   /** Where to go after a successful change. Omit to confirm in place. */
   redirectTo?: string;
   submitLabel?: string;
 }) {
+  const t = useTranslations("password");
+  const auth = useTranslations("auth");
   const [current, setCurrent] = useState("");
   const [password, setPassword] = useState("");
   const [confirm, setConfirm] = useState("");
@@ -49,15 +52,15 @@ export function UpdatePasswordForm({
     clearFeedback();
 
     if (password.length < MIN_LENGTH) {
-      setError(`Kata sandi baru minimal ${MIN_LENGTH} karakter.`);
+      setError(t("tooShort", { min: MIN_LENGTH }));
       return;
     }
     if (password !== confirm) {
-      setError("Konfirmasi kata sandi baru tidak cocok.");
+      setError(t("mismatch"));
       return;
     }
     if (needsCurrent && password === current) {
-      setError("Kata sandi baru harus berbeda dari kata sandi saat ini.");
+      setError(t("mustDiffer"));
       return;
     }
 
@@ -74,7 +77,7 @@ export function UpdatePasswordForm({
         const email = session?.user?.email;
 
         if (!email) {
-          setError("Sesi Anda sudah berakhir. Silakan masuk lagi.");
+          setError(t("sessionExpired"));
           return;
         }
 
@@ -83,7 +86,7 @@ export function UpdatePasswordForm({
           password: current,
         });
         if (reauthError) {
-          setError("Kata sandi saat ini salah.");
+          setError(t("currentWrong"));
           return;
         }
       }
@@ -105,7 +108,7 @@ export function UpdatePasswordForm({
       setError(
         error instanceof Error
           ? error.message
-          : "Terjadi kesalahan. Coba lagi.",
+          : auth("genericError"),
       );
     } finally {
       setIsLoading(false);
@@ -116,7 +119,7 @@ export function UpdatePasswordForm({
     <form onSubmit={handleSubmit} className="flex flex-col gap-5">
       {needsCurrent && (
         <div className="grid gap-2">
-          <Label htmlFor="current-password">Kata sandi saat ini</Label>
+          <Label htmlFor="current-password">{t("currentLabel")}</Label>
           <Input
             id="current-password"
             type="password"
@@ -132,7 +135,7 @@ export function UpdatePasswordForm({
       )}
 
       <div className="grid gap-2">
-        <Label htmlFor="password">Kata sandi baru</Label>
+        <Label htmlFor="password">{t("newLabel")}</Label>
         <Input
           id="password"
           type="password"
@@ -151,7 +154,7 @@ export function UpdatePasswordForm({
       </div>
 
       <div className="grid gap-2">
-        <Label htmlFor="confirm-password">Ulangi kata sandi baru</Label>
+        <Label htmlFor="confirm-password">{t("repeatLabel")}</Label>
         <Input
           id="confirm-password"
           type="password"
@@ -173,7 +176,7 @@ export function UpdatePasswordForm({
           role="status"
           className="rounded-lg border border-brand-700/30 bg-brand-tint/10 px-3 py-2 text-sm text-brand-900"
         >
-          Kata sandi berhasil diperbarui.
+          {t("updated")}
         </p>
       )}
 

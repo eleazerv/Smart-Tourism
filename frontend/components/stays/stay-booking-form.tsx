@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState, useTransition } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import {
   BedDouble,
   CreditCard,
@@ -16,6 +16,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { bookStayAndPay } from "@/lib/stay-booking-actions";
 import { formatIDR } from "@/lib/seeded-random";
 import { formatDateLabel } from "@/lib/stays-search";
+import { useLocale, useTranslations } from "next-intl";
 
 /** What the reader is booking, resolved by the page before this renders. */
 export type StayBookingSummary = {
@@ -83,6 +84,9 @@ export function StayBookingForm({
   } | null>(null);
   const [pending, startTransition] = useTransition();
 
+  const t = useTranslations("stays");
+  const locale = useLocale();
+
   const roomCount = guestsPerRoom.length;
   const totalGuests = guestsPerRoom.reduce((sum, n) => sum + n, 0);
   const roomTotal = stay.pricePerNight * stay.nights;
@@ -93,19 +97,19 @@ export function StayBookingForm({
     // A hand-edited or long-stale link can point at a date already gone. The
     // API refuses it too, but not until after the confirmation dialog.
     if (stay.checkIn < today) {
-      return "Tanggal check-in sudah lewat. Pilih tanggal menginap yang baru.";
+      return t("checkInPassed");
     }
     if (stay.available !== null && stay.available < roomCount) {
-      return `Hanya ${stay.available} kamar yang bebas untuk tanggal ini.`;
+      return t("onlyRoomsFree", { count: stay.available });
     }
     if (stay.maxGuests !== null) {
       const over = guestsPerRoom.findIndex((n) => n > stay.maxGuests!);
       if (over >= 0) {
-        return `Kamar ${over + 1} melebihi kapasitas ${stay.maxGuests} tamu.`;
+        return t("roomOverCapacity", { room: over + 1, max: stay.maxGuests });
       }
     }
     return null;
-  }, [guestsPerRoom, roomCount, stay.available, stay.checkIn, stay.maxGuests, today]);
+  }, [guestsPerRoom, roomCount, stay.available, stay.checkIn, stay.maxGuests, t, today]);
 
   const setRoomCount = (next: number) => {
     const clamped = Math.min(Math.max(next, 1), roomCeiling);
@@ -161,25 +165,29 @@ export function StayBookingForm({
         <div className="flex flex-wrap items-center justify-between gap-3">
           <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
             <BedDouble className="h-4 w-4 text-brand-700" />
-            Kamar
+            {t("roomLabel")}
           </h2>
           <div className="flex items-center gap-2">
-            <span className="text-xs text-muted-foreground">Jumlah kamar</span>
+            <span className="text-xs text-muted-foreground">
+              {t("roomCount")}
+            </span>
             <Stepper
               value={roomCount}
               min={1}
               max={roomCeiling}
-              label="kamar"
+              label={t("roomLabel")}
               onChange={setRoomCount}
             />
           </div>
         </div>
 
         <p className="mt-2 text-xs text-muted-foreground">
-          {formatDateLabel(stay.checkIn)} – {formatDateLabel(stay.checkOut)}
+          {formatDateLabel(stay.checkIn, locale)} –{" "}
+          {formatDateLabel(stay.checkOut, locale)}
           {" · "}
-          {stay.nights} malam
-          {stay.maxGuests !== null && ` · maksimal ${stay.maxGuests} tamu/kamar`}
+          {t("nights", { count: stay.nights })}
+          {stay.maxGuests !== null &&
+            t("maxGuestsPerRoom", { count: stay.maxGuests })}
         </p>
 
         <ul className="mt-4 space-y-2">
@@ -189,9 +197,14 @@ export function StayBookingForm({
               className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-border px-3.5 py-3"
             >
               <div className="min-w-0">
-                <p className="text-sm font-semibold">Kamar {index + 1}</p>
+                <p className="text-sm font-semibold">
+                  {t("roomN", { n: index + 1 })}
+                </p>
                 <p className="mt-0.5 text-xs text-muted-foreground">
-                  {formatIDR(stay.pricePerNight)} × {stay.nights} malam ={" "}
+                  {t("priceTimesNights", {
+                    price: formatIDR(stay.pricePerNight),
+                    nights: stay.nights,
+                  })}
                   <span className="font-medium tabular-nums text-foreground">
                     {formatIDR(roomTotal)}
                   </span>
@@ -207,7 +220,7 @@ export function StayBookingForm({
                   value={guests}
                   min={1}
                   max={guestCeiling}
-                  label={`tamu di kamar ${index + 1}`}
+                  label={t("guestsInRoom", { n: index + 1 })}
                   onChange={(next) => setGuests(index, next)}
                 />
               </div>
@@ -216,8 +229,7 @@ export function StayBookingForm({
         </ul>
 
         <p className="mt-3 text-xs text-muted-foreground">
-          Total {totalGuests} tamu di {roomCount} kamar. Pembagian tamu per
-          kamar mengikuti pilihan Anda, bukan dihitung otomatis.
+          {t("guestSplitNote", { guests: totalGuests, rooms: roomCount })}
         </p>
       </section>
 
@@ -225,18 +237,18 @@ export function StayBookingForm({
       <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
         <h2 className="flex items-center gap-2 font-display text-base font-bold tracking-tight">
           <UserRound className="h-4 w-4 text-brand-700" />
-          Pemesan
+          {t("booker")}
         </h2>
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex flex-wrap items-baseline justify-between gap-2">
-            <dt className="text-muted-foreground">Nama</dt>
+            <dt className="text-muted-foreground">{t("name")}</dt>
             <dd className="font-medium">
               {contactName || (
                 <Link
                   href="/akun"
                   className="font-semibold text-brand-700 underline underline-offset-2"
                 >
-                  Lengkapi nama di profil
+                  {t("completeName")}
                 </Link>
               )}
             </dd>
@@ -247,35 +259,37 @@ export function StayBookingForm({
           </div>
         </dl>
         <p className="mt-3 text-xs leading-snug text-muted-foreground">
-          Pesanan dicatat atas akun ini, jadi konfirmasi dan status
-          pembayarannya bisa dibuka kembali kapan saja dari halaman Pesanan.
+          {t("accountNote")}
         </p>
       </section>
 
       {/* ------------------------------------------------------ payment --- */}
       <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
         <h2 className="font-display text-base font-bold tracking-tight">
-          Rincian harga
+          {t("priceBreakdown")}
         </h2>
 
         <dl className="mt-3 space-y-2 text-sm">
           <div className="flex items-baseline justify-between gap-3">
             <dt className="text-muted-foreground">
-              {formatIDR(stay.pricePerNight)} × {stay.nights} malam ×{" "}
-              {roomCount} kamar
+              {t("priceLine", {
+                price: formatIDR(stay.pricePerNight),
+                nights: stay.nights,
+                rooms: roomCount,
+              })}
             </dt>
             <dd className="tabular-nums">{formatIDR(total)}</dd>
           </div>
           <div className="flex items-baseline justify-between gap-3">
-            <dt className="text-muted-foreground">Pajak &amp; biaya layanan</dt>
+            <dt className="text-muted-foreground">{t("taxes")}</dt>
             <dd className="text-xs text-muted-foreground">
-              Sudah termasuk harga
+              {t("taxIncluded")}
             </dd>
           </div>
         </dl>
 
         <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border pt-3">
-          <span className="text-sm font-semibold">Total pembayaran</span>
+          <span className="text-sm font-semibold">{t("totalDue")}</span>
           <span className="font-display text-xl font-bold tabular-nums">
             {formatIDR(total)}
           </span>
@@ -295,7 +309,7 @@ export function StayBookingForm({
                 href={`/akun/pesanan/${failure.bookingId}`}
                 className="inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
               >
-                Buka pesanan dan coba bayar lagi
+                {t("reopenBooking")}
               </Link>
             )}
           </div>
@@ -312,26 +326,33 @@ export function StayBookingForm({
           ) : (
             <CreditCard className="h-4 w-4" />
           )}
-          {pending ? "Menyiapkan pembayaran..." : "Pesan & bayar"}
+          {pending ? t("preparingPayment") : t("bookAndPay")}
         </button>
 
         <p className="mt-2.5 flex items-start gap-1.5 text-[11px] leading-snug text-muted-foreground">
           <ShieldCheck aria-hidden="true" className="mt-px h-3.5 w-3.5 shrink-0" />
-          Kamar ditahan begitu pesanan dibuat, lalu pembayaran diselesaikan di
-          halaman Xendit.
+          {t("holdNote")}
         </p>
       </section>
 
       <ConfirmDialog
         open={confirming}
         icon={<BedDouble className="h-5 w-5" />}
-        title="Pesan kamar ini?"
-        description={`${roomCount} kamar di ${stay.name} untuk ${stay.nights} malam, ${formatDateLabel(stay.checkIn)} – ${formatDateLabel(stay.checkOut)}.`}
-        confirmLabel={pending ? "Memproses..." : `Bayar ${formatIDR(total)}`}
+        title={t("confirmTitle")}
+        description={t("confirmDescription", {
+          rooms: roomCount,
+          name: stay.name,
+          nights: stay.nights,
+          from: formatDateLabel(stay.checkIn, locale),
+          to: formatDateLabel(stay.checkOut, locale),
+        })}
+        confirmLabel={
+          pending ? t("processing") : t("payAmount", { amount: formatIDR(total) })
+        }
         confirmIcon={<CreditCard className="h-4 w-4" />}
-        cancelLabel="Periksa lagi"
+        cancelLabel={t("checkAgain")}
         pending={pending}
-        footnote="Kamar ditahan atas nama Anda begitu pesanan dibuat. Pembayaran diproses oleh Xendit di halaman terpisah."
+        footnote={t("confirmFootnote")}
         onConfirm={book}
         onCancel={() => setConfirming(false)}
       />

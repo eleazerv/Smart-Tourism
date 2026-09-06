@@ -5,6 +5,7 @@ import { loadSavedIds } from "@/lib/saved-destinations";
 import { DestinationCard } from "@/components/home/destination-card";
 import { Rail } from "@/components/home/rail";
 import { Section } from "@/components/home/section";
+import { getTranslations } from "next-intl/server";
 
 const SHOWN = 8;
 
@@ -101,26 +102,31 @@ export async function NearbyDestinations({ stay }: { stay: Accommodation }) {
     .sort((a, b) => (a.km ?? Infinity) - (b.km ?? Infinity))
     .slice(0, SHOWN);
 
+  const t = await getTranslations("stays");
+  const common = await getTranslations("common");
+
   const savedIds = await loadSavedIds();
   const place = stay.cities?.name ?? stay.cities?.provinces?.name ?? null;
 
   return (
     <Section
-      title="Destinasi di sekitar penginapan"
+      title={t("nearbyHeading")}
       subtitle={
         place
-          ? `Yang bisa dikunjungi selama menginap di ${place}, diurutkan dari yang terdekat.`
-          : "Yang bisa dikunjungi selama menginap, diurutkan dari yang terdekat."
+          ? t("nearbyWithPlace", { place })
+          : t("nearby")
       }
-      action={{ label: "Jelajahi semua", href: catalogueHref(stay) }}
+      action={{ label: common("exploreAll"), href: catalogueHref(stay) }}
     >
-      <Rail label="Destinasi di sekitar penginapan">
+      <Rail label={t("nearbyHeading")}>
         {ranked.map(({ destination, km }) => (
           <DestinationCard
             key={destination.id}
             destination={destination}
             saved={savedIds.has(destination.id)}
-            note={km === null ? undefined : `${formatKm(km)} dari penginapan`}
+            note={
+              km === null ? undefined : t("fromStay", { km: formatKm(km) })
+            }
           />
         ))}
       </Rail>

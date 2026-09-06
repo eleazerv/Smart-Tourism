@@ -4,6 +4,7 @@ import { useEffect, useId, useRef } from "react";
 import { Check, X } from "lucide-react";
 import { SeatPicker } from "@/components/flights/seat-picker";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 type Passenger = { name: string; seat: string | null };
 
@@ -35,6 +36,8 @@ export function SeatDialog({
   onPick: (seat: string) => void;
   onClose: () => void;
 }) {
+  const t = useTranslations("flights");
+
   const ref = useRef<HTMLDialogElement>(null);
   const titleId = useId();
 
@@ -82,17 +85,16 @@ export function SeatDialog({
               id={titleId}
               className="font-display text-lg font-bold tracking-tight"
             >
-              Pilih kursi
+              {t("seatDialogTitle")}
             </h2>
             <p className="mt-1 text-sm text-muted-foreground">
-              {seated} dari {passengers.length} penumpang sudah berkursi. Tekan
-              kursi yang sudah dipilih untuk melepasnya.
+              {t("seatDialogBody", { seated, total: passengers.length })}
             </p>
           </div>
           <button
             type="button"
             onClick={onClose}
-            aria-label="Tutup pemilihan kursi"
+            aria-label={t("closeSeatDialog")}
             className="-mr-1 -mt-1 grid h-8 w-8 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted hover:text-foreground"
           >
             <X className="h-4 w-4" />
@@ -115,7 +117,7 @@ export function SeatDialog({
                       : "border border-border bg-card hover:bg-brand-tint/10",
                   )}
                 >
-                  {passenger.name.trim() || `Penumpang ${index + 1}`}
+                  {passenger.name.trim() || t("passengerN", { n: index + 1 })}
                   {passenger.seat ? ` · ${passenger.seat}` : ""}
                 </button>
               ))}
@@ -126,7 +128,7 @@ export function SeatDialog({
             <Legend className="border-border bg-card" label="Tersedia" />
             <Legend
               className="border-brand-700 bg-brand-700"
-              label="Pilihan Anda"
+              label={t("yourChoice")}
             />
             <Legend
               className="border-transparent bg-muted"
@@ -144,9 +146,7 @@ export function SeatDialog({
           />
 
           <p className="mt-4 rounded-xl bg-muted/60 px-3 py-2.5 text-[11px] leading-snug text-muted-foreground">
-            Denah ini memakai konfigurasi 3-3 yang umum dipakai pesawat
-            domestik. Yang tercatat di sistem hanya nomor kursi yang sudah
-            diambil, bukan denah asli pesawatnya, jadi posisi kursi bisa berbeda
+            {t("seatMapNote")}
             di hari keberangkatan.
           </p>
         </div>

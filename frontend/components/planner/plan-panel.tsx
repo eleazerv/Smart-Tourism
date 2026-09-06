@@ -41,6 +41,8 @@ import {
   type TripItem,
   type TripStop,
 } from "@/lib/api";
+import { useLocale, useTranslations } from "next-intl";
+import { intlLocale } from "@/lib/intl";
 
 const TIER_LABEL: Record<string, string> = {
   budget: "Hemat",
@@ -74,11 +76,7 @@ type Props = {
   onCheckout: (passengerNames: string[]) => Promise<void>;
 };
 
-const STATUS_LABEL: Record<string, string> = {
-  suggested: "diusulkan",
-  confirmed: "dikonfirmasi",
-  booked: "dipesan",
-};
+
 
 /**
  * Label status penginapan, meluruskan kosakata database.
@@ -87,27 +85,20 @@ const STATUS_LABEL: Record<string, string> = {
  * "menunggu sesuatu". Nama kolomnya menyesatkan, jadi labelnya di sini yang
  * membetulkan.
  */
-const STAY_STATUS_LABEL: Record<string, string> = {
-  none: "belum dipilih",
-  suggested: "usulan AI",
-  pending: "siap dipesan",
-  booked: "dipesan",
-};
 
-const ROLE_LABEL: Record<TripFlightRole, string> = {
-  arrival: "Masuk",
-  departure: "Keluar",
-};
 
-function shortDate(value: string | null) {
+function shortDate(value: string | null, locale: string) {
   if (!value) return null;
   const d = new Date(`${value}T00:00:00`);
-  return d.toLocaleDateString("id-ID", { day: "numeric", month: "short" });
+  return d.toLocaleDateString(intlLocale(locale), {
+    day: "numeric",
+    month: "short",
+  });
 }
 
 /** Nama kota stop ini, atau penanda jujur kalau relasinya kosong. */
-function cityName(stop: TripStop) {
-  return stop.cities?.name ?? "Kota tidak dikenal";
+function cityName(stop: TripStop, fallback: string) {
+  return stop.cities?.name ?? fallback;
 }
 
 /**
@@ -169,6 +160,9 @@ export function PlanPanel({
   onPickFlight,
   onCheckout,
 }: Props) {
+  const t = useTranslations("planner");
+  const locale = useLocale();
+
   // Nama penumpang hanya diminta kalau ada tiket yang benar-benar akan
   // dipesan: backend menolak checkout berisi penerbangan tanpa nama, dan
   // meminta nama untuk pemesanan yang cuma berisi hotel jadi mubazir.
@@ -177,7 +171,7 @@ export function PlanPanel({
   if (!canvas?.trip) {
     return (
       <p className="p-5 text-sm text-muted-foreground">
-        Buka atau buat percakapan untuk melihat rencananya di sini.
+        {t("openConversation")}
       </p>
     );
   }
@@ -200,21 +194,20 @@ export function PlanPanel({
     <div className="flex h-full flex-col">
       <div className="border-b border-border px-4 py-3">
         <p className="font-display text-base font-bold tracking-tight">
-          {trip.name ?? "Rencana tanpa nama"}
+          {trip.name ?? t("unnamedTrip")}
         </p>
         <p className="mt-0.5 text-xs text-muted-foreground">
-          {shortDate(trip.start_date) ?? "tanggal?"} →{" "}
-          {shortDate(trip.end_date) ?? "?"} · {trip.travelers} orang
-          {trip.cities?.name ? ` · dari ${trip.cities.name}` : ""}
+          {shortDate(trip.start_date, locale) ?? t("dateUnknown")} →{" "}
+          {shortDate(trip.end_date, locale) ?? "?"} ·{" "}
+          {t("travelers", { count: trip.travelers })}
+          {trip.cities?.name ? t("fromCity", { city: trip.cities.name }) : ""}
         </p>
       </div>
 
       <div className="flex-1 space-y-4 overflow-y-auto p-4">
         {stops.length === 0 ? (
           <p className="text-xs leading-relaxed text-muted-foreground">
-            Belum ada kota di rencana ini. Ceritakan maumu lewat chat, atau
-            tambahkan destinasi dari kartu yang ditawarkan AI — kotanya
-            menyusul sendiri.
+            {t("noStops")}
           </p>
         ) : (
           stops.map((stop) => (
@@ -240,18 +233,18 @@ export function PlanPanel({
         {needsPassengers && (
           <label className="mb-2 block">
             <span className="mb-1 block text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
-              Nama penumpang
+              {t("passengerNames")}
             </span>
             <input
               type="text"
               value={passengers}
               disabled={busy}
-              placeholder="Pisahkan dengan koma"
+              placeholder={t("separateWithCommas")}
               onChange={(e) => setPassengers(e.target.value)}
               className="w-full rounded-md border border-input bg-background px-2 py-1.5 text-xs disabled:opacity-50"
             />
             <span className="mt-1 block text-[11px] leading-relaxed text-muted-foreground">
-              Dipakai untuk semua tiket dalam pemesanan ini.
+              {t("passengerNote")}
             </span>
           </label>
         )}
@@ -264,14 +257,14 @@ export function PlanPanel({
           {busy && <Loader2 className="h-4 w-4 animate-spin" />}
           {!hasSomethingToBook
             ? plan.alreadyBooked
-              ? "Semuanya sudah dipesan"
-              : "Belum ada yang bisa dipesan"
+              ? t("allBooked")
+              : t("nothingBookable")
             : needsPassengers && passengerNames.length === 0
-              ? "Isi nama penumpang dulu"
-              : `Pesan ${summarise(plan)}`}
+              ? t("fillPassengers")
+              : t("bookSummary", { summary: summarise(plan, t) })}
         </Button>
         <p className="mt-2 text-center text-[11px] text-muted-foreground">
-          Semua pesanan lahir berstatus pending sampai dibayar.
+          {t("pendingNote")}
         </p>
       </div>
     </div>
@@ -306,9 +299,11 @@ function StopCard({
   onDropFlight: Props["onDropFlight"];
   onPickFlight: Props["onPickFlight"];
 }) {
+  const t = useTranslations("planner");
   const [pending, setPending] = useState(false);
   const stay = stop.accommodations;
   const locked = stop.accommodation_status === "booked";
+
 
   const run = async (fn: () => Promise<void>) => {
     setPending(true);
@@ -330,7 +325,7 @@ function StopCard({
         <div className="min-w-0 flex-1">
           <p className="flex items-center gap-1.5 truncate text-sm font-semibold">
             <MapPin className="h-3.5 w-3.5 shrink-0 text-muted-foreground" />
-            {cityName(stop)}
+            {cityName(stop, t("unknownCity"))}
           </p>
           {stop.cities?.provinces?.name && (
             <p className="truncate text-xs text-muted-foreground">
@@ -343,7 +338,7 @@ function StopCard({
             size="sm"
             variant="ghost"
             className="h-7 shrink-0 rounded-full px-2 text-destructive hover:text-destructive"
-            aria-label={`Hapus ${cityName(stop)} dari rencana`}
+            aria-label={t("removeStop", { city: cityName(stop, t("unknownCity")) })}
             disabled={frozen}
             onClick={() => run(() => onRemoveStop(stop.id))}
           >
@@ -369,10 +364,9 @@ function StopCard({
 
       <div className="mt-2.5">
         <div className="flex items-center justify-between gap-2">
-          <SectionTitle>Penginapan</SectionTitle>
+          <SectionTitle>{t("stays")}</SectionTitle>
           <span className="mb-1.5 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-            {STAY_STATUS_LABEL[stop.accommodation_status] ??
-              stop.accommodation_status}
+            {t(`stayStatus.${stop.accommodation_status}`)}
           </span>
         </div>
         <p className="text-xs text-muted-foreground">
@@ -382,7 +376,7 @@ function StopCard({
               {formatIDR(stay.price_per_night)}/malam
             </>
           ) : (
-            "Belum pilih penginapan — opsional, hanya perlu kalau mau dipesan lewat sini."
+            t("noStayPicked")
           )}
         </p>
 
@@ -401,7 +395,7 @@ function StopCard({
       </div>
 
       <div className="mt-3">
-        <SectionTitle>Penerbangan</SectionTitle>
+        <SectionTitle>{t("flights")}</SectionTitle>
         <ul className="space-y-1.5">
           {(["arrival", "departure"] as const).map((role) => (
             <FlightRow
@@ -423,10 +417,10 @@ function StopCard({
       </div>
 
       <div className="mt-3">
-        <SectionTitle>Destinasi</SectionTitle>
+        <SectionTitle>{t("destinations")}</SectionTitle>
         {stop.trip_items.length === 0 ? (
           <p className="text-xs text-muted-foreground">
-            Belum ada destinasi di kota ini.
+            {t("noDestinations")}
           </p>
         ) : (
           <ul className="space-y-1.5">
@@ -457,11 +451,13 @@ function FlightRow({
   busy: boolean;
   onDrop: () => void;
 }) {
+  const t = useTranslations("planner");
+
   if (!leg) {
     return (
       <li className="flex items-center gap-1.5 text-xs text-muted-foreground">
         <Plane className="h-3.5 w-3.5 shrink-0" />
-        {ROLE_LABEL[role]}: belum dipilih
+        {t("roleNotPicked", { role: t(`role.${role}`) })}
       </li>
     );
   }
@@ -473,11 +469,11 @@ function FlightRow({
       <div className="flex items-center justify-between gap-2">
         <span className="flex items-center gap-1.5 text-[11px] font-semibold uppercase tracking-wide text-muted-foreground">
           <Plane className="h-3.5 w-3.5" />
-          {ROLE_LABEL[role]}
+          {t(`role.${role}`)}
         </span>
         {leg.booked_at ? (
           <span className="rounded-full bg-brand-tint/10 px-2 py-0.5 text-[11px] font-medium text-brand-700">
-            dipesan
+            {t("itemStatus.booked")}
           </span>
         ) : (
           <span className="text-xs font-medium">
@@ -493,7 +489,7 @@ function FlightRow({
         {option?.arrival_time.slice(11, 16)}
         {/* Leg yang masih usulan AI tidak ikut checkout. Menyebutnya di sini
             supaya tidak ada yang mengira tiketnya sudah aman. */}
-        {!leg.booked_at && !leg.confirmed && " · masih usulan"}
+        {!leg.booked_at && !leg.confirmed && t("stillSuggested")}
       </p>
       {!leg.booked_at && (
         <Button
@@ -503,7 +499,7 @@ function FlightRow({
           disabled={busy}
           onClick={onDrop}
         >
-          Lepas pilihan
+          {t("dropChoice")}
         </Button>
       )}
     </li>
@@ -521,6 +517,7 @@ function ItemRow({
   onPatch: Props["onPatchItem"];
   onRemove: Props["onRemoveItem"];
 }) {
+  const t = useTranslations("planner");
   const [pending, setPending] = useState(false);
   const locked = item.status === "booked";
 
@@ -549,7 +546,7 @@ function ItemRow({
           )}
         </div>
         <span className="shrink-0 rounded-full bg-muted px-2 py-0.5 text-[11px] text-muted-foreground">
-          {STATUS_LABEL[item.status] ?? item.status}
+          {t(`itemStatus.${item.status}`)}
         </span>
       </div>
 
@@ -573,11 +570,11 @@ function ItemRow({
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
             ) : item.status === "confirmed" ? (
               <>
-                <X className="h-3.5 w-3.5" /> Batalkan
+                <X className="h-3.5 w-3.5" /> {t("cancel")}
               </>
             ) : (
               <>
-                <Check className="h-3.5 w-3.5" /> Konfirmasi
+                <Check className="h-3.5 w-3.5" /> {t("confirm")}
               </>
             )}
           </Button>
@@ -585,7 +582,9 @@ function ItemRow({
             size="sm"
             variant="ghost"
             className="h-7 rounded-full px-2 text-destructive hover:text-destructive"
-            aria-label={`Hapus ${item.destinations?.name ?? "destinasi"} dari rencana`}
+            aria-label={t("removeItem", {
+              name: item.destinations?.name ?? t("aDestination"),
+            })}
             disabled={frozen}
             onClick={() => run(() => onRemove(item.id))}
           >
@@ -606,10 +605,14 @@ function SectionTitle({ children }: { children: React.ReactNode }) {
 }
 
 /** Label tombol checkout: menyebut apa yang akan dipesan, bukan "checkout". */
-function summarise(plan: ReturnType<typeof bookingPlan>) {
+function summarise(
+  plan: ReturnType<typeof bookingPlan>,
+  t: ReturnType<typeof useTranslations<"planner">>,
+) {
   const parts: string[] = [];
-  if (plan.stays.length) parts.push(`${plan.stays.length} penginapan`);
-  if (plan.flights.length) parts.push(`${plan.flights.length} penerbangan`);
+  if (plan.stays.length) parts.push(t("staysCount", { count: plan.stays.length }));
+  if (plan.flights.length)
+    parts.push(t("flightsCount", { count: plan.flights.length }));
   return parts.join(" & ");
 }
 
@@ -621,41 +624,44 @@ function summarise(plan: ReturnType<typeof bookingPlan>) {
  * supaya tidak ada kejutan setelah tombolnya ditekan.
  */
 function BookingSummary({ plan }: { plan: ReturnType<typeof bookingPlan> }) {
+  const t = useTranslations("planner");
   const bookable = plan.stays.length > 0 || plan.flights.length > 0;
 
   if (!bookable) {
     return (
       <p className="rounded-2xl border border-border p-3 text-xs leading-relaxed text-muted-foreground">
-        {plan.alreadyBooked
-          ? "Semua yang siap dipesan di rencana ini sudah dipesan. Lanjutkan pembayarannya di halaman Pesanan."
-          : "Rencana ini tersimpan apa adanya. Penginapan dan penerbangan sifatnya opsional — isi salah satunya kalau kamu memang mau memesan lewat sini."}
+        {plan.alreadyBooked ? t("alreadyBookedNote") : t("savedAsIsNote")}
       </p>
     );
   }
 
   return (
     <div className="rounded-2xl border border-border p-3 text-xs leading-relaxed">
-      <p className="mb-1.5 font-semibold">Yang akan dipesan</p>
+      <p className="mb-1.5 font-semibold">{t("willBeBooked")}</p>
       <ul className="space-y-1 text-muted-foreground">
         {plan.flights.map(({ stop, flight }) => (
           <li key={flight.id}>
-            · Penerbangan {ROLE_LABEL[flight.flight_role].toLowerCase()}{" "}
-            {cityName(stop)} — {flight.flight_options?.airline}{" "}
-            {flight.flight_options?.flight_number}
+            {t("flightLine", {
+              role: t(`role.${flight.flight_role}`).toLowerCase(),
+              city: cityName(stop, t("unknownCity")),
+              airline: flight.flight_options?.airline ?? "",
+              number: flight.flight_options?.flight_number ?? "",
+            })}
           </li>
         ))}
         {plan.stays.map((stop) => (
           <li key={stop.id}>
-            · {stop.accommodations?.name} di {cityName(stop)}
+            {t("stayLine", {
+              name: stop.accommodations?.name ?? "",
+              city: cityName(stop, t("unknownCity")),
+            })}
           </li>
         ))}
       </ul>
 
       {plan.skipped.length > 0 && (
         <p className="mt-2 text-muted-foreground">
-          {plan.skipped.length} kota lain tidak ikut dipesan karena penginapan,
-          tanggal, atau konfirmasi destinasinya belum lengkap. Itu tidak apa-apa
-          — rencananya tetap tersimpan.
+          {t("skippedNote", { count: plan.skipped.length })}
         </p>
       )}
     </div>
@@ -691,6 +697,7 @@ function StayPicker({
   const [options, setOptions] = useState<NearbyAccommodation[] | null>(null);
   const [failed, setFailed] = useState(false);
 
+  const t = useTranslations("planner");
   const anchor = stop.trip_items[0]?.destinations?.id ?? null;
 
   async function toggle() {
@@ -726,7 +733,7 @@ function StayPicker({
         aria-expanded={open}
       >
         <BedDouble className="h-3.5 w-3.5" />
-        {selectedId ? "Ganti penginapan" : "Pilih penginapan"}
+        {selectedId ? t("changeStay") : t("pickStay")}
         <ChevronDown
           className={cn("h-3.5 w-3.5 transition", open && "rotate-180")}
         />
@@ -737,19 +744,19 @@ function StayPicker({
           {options === null && !failed && (
             <p className="flex items-center gap-1.5 px-3 py-4 text-xs text-muted-foreground">
               <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              Memuat penginapan…
+              {t("loadingStays")}
             </p>
           )}
 
           {failed && (
             <p className="px-3 py-4 text-xs text-muted-foreground">
-              Daftar penginapan belum bisa dimuat. Coba lagi sebentar lagi.
+              {t("stayLoadFailed")}
             </p>
           )}
 
           {options?.length === 0 && (
             <p className="px-3 py-4 text-xs leading-relaxed text-muted-foreground">
-              Belum ada penginapan terdaftar di {cityName(stop)}.
+              {t("noStaysIn", { city: cityName(stop, t("unknownCity")) })}
             </p>
           )}
 

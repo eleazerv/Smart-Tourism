@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import Image from "next/image";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { ArrowLeft, BedDouble, CalendarDays, LogIn, MapPinned } from "lucide-react";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
@@ -24,22 +24,30 @@ import {
   parseStaySearch,
   stayBookingHref,
   stayHref,
-  tierLabel,
   type RawSearchParams,
 } from "@/lib/stays-search";
+import { useLocale, useTranslations } from "next-intl";
+import { getTranslations } from "next-intl/server";
 
 type PageProps = {
-  params: Promise<{ id: string }>;
+  params: Promise<{ id: string; locale: string }>;
   searchParams: Promise<RawSearchParams>;
 };
 
-export const metadata: Metadata = {
-  title: "Detail Pemesanan",
-  description:
-    "Periksa kamar, tanggal, dan total biaya sebelum melanjutkan ke pembayaran.",
+export async function generateMetadata({
+  params,
+}: {
+  params: PageProps["params"];
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "checkout" });
+  return {
+  title: t("metaTitle"),
+  description: t("stayMetaDescription"),
   // A half-finished booking is not something search engines should surface.
   robots: { index: false, follow: false },
-};
+  };
+}
 
 export default function StayBookingPage({ params, searchParams }: PageProps) {
   return (
@@ -94,23 +102,27 @@ async function StayBooking({ params, searchParams }: PageProps) {
   const place = [stay.cities?.name, stay.cities?.provinces?.name]
     .filter(Boolean)
     .join(", ");
+  const t = await getTranslations("checkout");
+  const stays = await getTranslations("stays");
+  const catalogue = await getTranslations("catalogue");
+
   const backHref = stayHref(state, stay.id);
 
   return (
     <div className="container-page py-6">
       <Breadcrumb
         items={[
-          { label: "Beranda", href: "/" },
-          { label: "Hotel", href: "/hotels" },
+          { label: catalogue("home"), href: "/" },
+          { label: stays("crumb"), href: "/hotels" },
           { label: stay.name, href: backHref },
-          { label: "Pemesanan" },
+          { label: t("crumb") },
         ]}
       />
 
       <div className="mt-3 flex flex-wrap items-start justify-between gap-4">
         <div className="min-w-0">
           <h1 className="font-display text-2xl font-bold tracking-tight sm:text-3xl">
-            Lengkapi pemesanan
+            {t("heading")}
           </h1>
           <p className="mt-1 text-sm text-muted-foreground">
             {stay.name}
@@ -122,7 +134,7 @@ async function StayBooking({ params, searchParams }: PageProps) {
           className="inline-flex items-center gap-1.5 rounded-full border border-border bg-card px-4 py-2 text-sm font-medium transition hover:border-brand-700 hover:bg-brand-tint/10"
         >
           <ArrowLeft className="h-4 w-4" />
-          Kembali ke penginapan
+          {t("backToStay")}
         </Link>
       </div>
 
@@ -157,10 +169,10 @@ async function StayBooking({ params, searchParams }: PageProps) {
           ) : (
             <section className="rounded-2xl border border-border bg-card p-4 shadow-card sm:p-5">
               <h2 className="font-display text-base font-bold tracking-tight">
-                Pemesan
+                {stays("booker")}
               </h2>
               <p className="mt-1.5 text-sm text-muted-foreground">
-                Masuk dulu untuk menahan kamar dan melanjutkan ke pembayaran.
+                {t("signInFirstStay")}
               </p>
               <div className="mt-4">
                 <SignInFirst
@@ -174,26 +186,23 @@ async function StayBooking({ params, searchParams }: PageProps) {
         <aside className="lg:sticky lg:top-24">
           <div className="rounded-2xl border border-border bg-card p-4 shadow-card">
             <h2 className="font-display text-base font-bold tracking-tight">
-              Ketentuan
+              {t("terms")}
             </h2>
             <ul className="mt-2 space-y-1.5 text-xs text-muted-foreground">
-              <li>{availabilityNote(availability?.available ?? null)}</li>
-              <li>Satu pesanan menampung maksimal 5 kamar.</li>
+              <li>{availabilityNote(availability?.available ?? null, t)}</li>
+              <li>{t("maxRooms")}</li>
               {stay.max_guests !== null && (
-                <li>Kapasitas satu kamar {stay.max_guests} tamu.</li>
+                <li>{t("roomCapacity", { count: stay.max_guests })}</li>
               )}
-              <li>Kamar ditahan begitu pesanan dibuat, sebelum dibayar.</li>
-              <li>Pembayaran diproses oleh Xendit di halaman terpisah.</li>
-              <li>
-                Pesanan yang belum dibayar dapat dibatalkan dari halaman
-                pesanan.
-              </li>
+              <li>{t("heldBeforePayment")}</li>
+              <li>{t("xenditNote")}</li>
+              <li>{t("cancellable")}</li>
             </ul>
             <Link
               href="/akun/pesanan"
               className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
             >
-              Lihat Pesanan saya
+              {t("seeMyBookings")}
             </Link>
           </div>
         </aside>
@@ -216,6 +225,10 @@ function PropertyCard({
   checkOut: string;
   nights: number;
 }) {
+  const t = useTranslations("checkout");
+  const stays = useTranslations("stays");
+  const locale = useLocale();
+
   return (
     <section className="overflow-hidden rounded-2xl border border-border bg-card shadow-card">
       <div className="flex flex-col gap-4 p-4 sm:flex-row sm:p-5">
@@ -231,7 +244,7 @@ function PropertyCard({
 
         <div className="min-w-0 flex-1">
           <p className="text-xs font-medium text-brand-700">
-            {tierLabel(stay.tier)}
+            {stays(`tier.${stay.tier}`)}
           </p>
           <h2 className="mt-0.5 font-display text-lg font-bold tracking-tight">
             {stay.name}
@@ -244,7 +257,7 @@ function PropertyCard({
           )}
           {stay.partner_name && (
             <p className="mt-1 text-xs text-muted-foreground">
-              Dikelola {stay.partner_name}
+              {t("managedBy", { partner: stay.partner_name })}
             </p>
           )}
         </div>
@@ -253,7 +266,7 @@ function PropertyCard({
           <p className="text-lg font-bold tabular-nums">
             {formatIDR(stay.price_per_night)}
           </p>
-          <p className="text-xs text-muted-foreground">per malam</p>
+          <p className="text-xs text-muted-foreground">{t("perNightPlain")}</p>
         </div>
       </div>
 
@@ -261,10 +274,13 @@ function PropertyCard({
         <div className="flex items-start gap-2.5 bg-card px-4 py-3 sm:px-5">
           <CalendarDays className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">Tanggal menginap</dt>
+            <dt className="text-xs text-muted-foreground">{t("stayDates")}</dt>
             <dd className="text-sm font-medium">
-              {formatDateLabel(checkIn)} – {formatDateLabel(checkOut)}{" "}
-              <span className="text-muted-foreground">({nights} malam)</span>
+              {formatDateLabel(checkIn, locale)} –{" "}
+              {formatDateLabel(checkOut, locale)}{" "}
+              <span className="text-muted-foreground">
+                ({stays("nights", { count: nights })})
+              </span>
             </dd>
           </div>
         </div>
@@ -272,11 +288,13 @@ function PropertyCard({
         <div className="flex items-start gap-2.5 bg-card px-4 py-3 sm:px-5">
           <BedDouble className="mt-0.5 h-4 w-4 shrink-0 text-muted-foreground" />
           <div className="min-w-0">
-            <dt className="text-xs text-muted-foreground">Kapasitas kamar</dt>
+            <dt className="text-xs text-muted-foreground">
+              {t("roomCapacityLabel")}
+            </dt>
             <dd className="text-sm font-medium">
               {stay.max_guests === null
-                ? "Tidak dicantumkan"
-                : `${stay.max_guests} tamu per kamar`}
+                ? stays("notRecorded")
+                : stays("capacityValue", { count: stay.max_guests })}
             </dd>
           </div>
         </div>
@@ -286,6 +304,8 @@ function PropertyCard({
 }
 
 function SignInFirst({ nextHref }: { nextHref: string }) {
+  const t = useTranslations("checkout");
+
   return (
     <div className="space-y-3">
       <Link
@@ -293,11 +313,10 @@ function SignInFirst({ nextHref }: { nextHref: string }) {
         className="inline-flex w-full items-center justify-center gap-2 rounded-full bg-brand-700 px-5 py-3 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
         <LogIn className="h-4 w-4" />
-        Masuk untuk memesan
+        {t("signInToBook")}
       </Link>
       <p className="text-xs leading-snug text-muted-foreground">
-        Pemesanan tercatat pada akun Anda, jadi konfirmasi dan status
-        pembayarannya bisa dibuka kembali kapan saja.
+        {t("accountRecordNote")}
       </p>
     </div>
   );
@@ -308,17 +327,20 @@ function SignInFirst({ nextHref }: { nextHref: string }) {
  * small the property is has no bearing on whether this booking can proceed,
  * and only the last few rooms are worth naming a number for.
  */
-function availabilityNote(available: number | null): string {
-  if (available === null) {
-    return "Ketersediaan kamar belum bisa dicek untuk tanggal ini.";
-  }
-  if (available === 0) return "Kamar penuh untuk tanggal ini.";
-  if (available <= 3) return `Tersisa ${available} kamar untuk tanggal ini.`;
-  return "Kamar tersedia untuk tanggal ini.";
+function availabilityNote(
+  available: number | null,
+  t: Awaited<ReturnType<typeof getTranslations<"checkout">>>,
+): string {
+  if (available === null) return t("availabilityUnknown");
+  if (available === 0) return t("availabilityNone");
+  if (available <= 3) return t("availabilityFew", { count: available });
+  return t("availabilityOk");
 }
 
 /** Reached when the checkout is opened without the stay having been dated. */
 function NeedDates({ stayId, name }: { stayId: string; name: string }) {
+  const t = useTranslations("checkout");
+
   return (
     <div className="container-page py-20 text-center">
       <span
@@ -328,17 +350,16 @@ function NeedDates({ stayId, name }: { stayId: string; name: string }) {
         <CalendarDays className="h-6 w-6" />
       </span>
       <h1 className="mt-4 font-display text-2xl font-bold tracking-tight">
-        Pilih tanggal menginap dulu
+        {t("needDatesTitle")}
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Total biaya dan ketersediaan kamar di {name} baru bisa dihitung setelah
-        tanggal check-in dan check-out ditentukan.
+        {t("needDatesBody", { name })}
       </p>
       <Link
         href={`/hotels/${stayId}`}
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Pilih tanggal
+        {t("pickDates")}
       </Link>
     </div>
   );
@@ -349,20 +370,22 @@ function NeedDates({ stayId, name }: { stayId: string; name: string }) {
  * or a bookmark whose listing has since been removed.
  */
 function Missing() {
+  const t = useTranslations("checkout");
+  const stays = useTranslations("stays");
+
   return (
     <div className="container-page py-20 text-center">
       <h1 className="font-display text-2xl font-bold tracking-tight">
-        Penginapan tidak ditemukan
+        {stays("notFound")}
       </h1>
       <p className="mx-auto mt-2 max-w-md text-sm text-muted-foreground">
-        Penginapan untuk tautan ini sudah tidak tersedia. Silakan cari ulang
-        penginapan Anda.
+        {t("missingBody")}
       </p>
       <Link
         href="/hotels"
         className="mt-6 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Cari penginapan
+        {t("findStay")}
       </Link>
     </div>
   );

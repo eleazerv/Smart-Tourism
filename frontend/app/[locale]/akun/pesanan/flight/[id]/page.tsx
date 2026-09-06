@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import { notFound } from "next/navigation";
-import { AlertTriangle, ArrowLeft, ExternalLink, Plane, Search } from "lucide-react";
+import { AlertTriangle, ExternalLink, Plane, Search } from "lucide-react";
 import { AccountSection } from "@/components/account/account-section";
+import { BackLink } from "@/components/account/back-link";
 import { BookingActions } from "@/components/account/booking-actions";
 import { BookingStatus, isClosed } from "@/components/account/booking-status";
 import {
@@ -24,21 +25,17 @@ import { requireAccessToken } from "@/lib/api/session";
 import { deadlinePassed, formatDateTime } from "@/lib/format-date";
 import { formatDateLabel } from "@/lib/flights-search";
 import { formatIDR } from "@/lib/seeded-random";
+import { useLocale, useTranslations } from "next-intl";
+import { getLocale, getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = { title: "Detail Pesanan" };
 
-type PageProps = { params: Promise<{ id: string }> };
+type PageProps = { params: Promise<{ id: string; locale: string }> };
 
 export default function BookingDetailPage({ params }: PageProps) {
   return (
     <div className="space-y-5">
-      <Link
-        href="/akun/pesanan"
-        className="inline-flex items-center gap-1.5 text-sm font-medium text-muted-foreground transition hover:text-foreground"
-      >
-        <ArrowLeft className="h-4 w-4" />
-        Semua pesanan
-      </Link>
+      <BackLink href="/akun/pesanan" labelKey="allBookings" />
 
       <Suspense fallback={<DetailSkeleton />}>
         <BookingDetail params={params} />
@@ -49,6 +46,8 @@ export default function BookingDetailPage({ params }: PageProps) {
 
 async function BookingDetail({ params }: PageProps) {
   const { id } = await params;
+  const t = await getTranslations("orderDetail");
+  const locale = await getLocale();
   const token = await requireAccessToken();
 
   let booking: FlightBooking | null;
@@ -57,7 +56,7 @@ async function BookingDetail({ params }: PageProps) {
   } catch {
     return (
       <p className="rounded-2xl border border-border bg-card px-5 py-6 text-sm text-muted-foreground">
-        Detail pesanan belum bisa dimuat. Coba muat ulang halaman ini nanti.
+        {t("loadError")}
       </p>
     );
   }
@@ -78,7 +77,9 @@ async function BookingDetail({ params }: PageProps) {
   return (
     <AccountSection
       title={booking.booking_code}
-      description={`Dipesan ${formatDateTime(booking.created_at)}.`}
+      description={t("bookedAt", {
+        date: formatDateTime(booking.created_at, locale),
+      })}
     >
       <div className="space-y-4">
         <div className="rounded-2xl border border-border bg-card p-5">
@@ -97,15 +98,18 @@ async function BookingDetail({ params }: PageProps) {
 
           <dl className="mt-4 space-y-1.5 text-sm">
             {booking.paid_at && (
-              <Row label="Dibayar" value={formatDateTime(booking.paid_at)} />
+              <Row
+                label={t("paidAt")}
+                value={formatDateTime(booking.paid_at, locale)}
+              />
             )}
             {booking.payment_method && (
-              <Row label="Metode" value={booking.payment_method} />
+              <Row label={t("method")} value={booking.payment_method} />
             )}
             {booking.invoice_expires_at && booking.payment_status !== "paid" && (
               <Row
-                label={closed ? "Batas pembayaran berakhir" : "Batas pembayaran"}
-                value={formatDateTime(booking.invoice_expires_at)}
+                label={closed ? t("deadlinePassed") : t("deadline")}
+                value={formatDateTime(booking.invoice_expires_at, locale)}
               />
             )}
           </dl>
@@ -122,7 +126,7 @@ async function BookingDetail({ params }: PageProps) {
                   rel="noopener noreferrer"
                   className="inline-flex items-center gap-1.5 text-sm font-medium text-brand-700 underline underline-offset-2"
                 >
-                  Buka tagihan yang sudah dibuat
+                  {t("openInvoice")}
                   <ExternalLink className="h-3.5 w-3.5" />
                 </a>
               )}
@@ -132,7 +136,7 @@ async function BookingDetail({ params }: PageProps) {
 
         {items.length === 0 ? (
           <p className="text-sm text-muted-foreground">
-            Rincian penerbangan untuk pesanan ini tidak tersedia.
+            {t("noFlightItems")}
           </p>
         ) : (
           items.map((item) => (
@@ -145,22 +149,25 @@ async function BookingDetail({ params }: PageProps) {
 }
 
 /** Why a closed booking ended, and the one thing left to do about it. */
-const CLOSED_COPY: Partial<Record<PaymentStatus, { title: string; body: string }>> = {
+const CLOSED_COPY: Partial<
+  Record<PaymentStatus, { titleKey: string; bodyKey: string }>
+> = {
   failed: {
-    title: "Pembayaran tidak selesai",
-    body: "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kursi yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "failedTitle",
+    bodyKey: "failedBody",
   },
   expired: {
-    title: "Tagihan sudah kedaluwarsa",
-    body: "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kursinya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "expiredTitle",
+    bodyKey: "expiredBody",
   },
   cancelled: {
-    title: "Pesanan dibatalkan",
-    body: "Pesanan ini dibatalkan dan kursinya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    titleKey: "cancelledTitle",
+    bodyKey: "cancelledBody",
   },
 };
 
 function ClosedNotice({ status }: { status: PaymentStatus }) {
+  const t = useTranslations("orderDetail");
   const copy = CLOSED_COPY[status];
   if (!copy) return null;
 
@@ -186,8 +193,8 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
       />
 
       <div className="min-w-0">
-        <p className="text-sm font-semibold">{copy.title}</p>
-        <p className="mt-1 text-sm text-muted-foreground">{copy.body}</p>
+        <p className="text-sm font-semibold">{t(copy.titleKey)}</p>
+        <p className="mt-1 text-sm text-muted-foreground">{t(copy.bodyKey)}</p>
 
         <Link
           href="/flights"
@@ -208,12 +215,14 @@ function ItemCard({
   item: FlightBookingItem;
   closed: boolean;
 }) {
+  const t = useTranslations("orderDetail");
+  const locale = useLocale();
   const flight = item.flight_options;
 
   if (!flight) {
     return (
       <div className="rounded-2xl border border-border bg-card p-5 text-sm text-muted-foreground">
-        Data penerbangan untuk item ini sudah tidak tersedia.
+        {t("noFlightData")}
       </div>
     );
   }
@@ -232,10 +241,12 @@ function ItemCard({
     >
       <div className="flex flex-wrap items-center justify-between gap-2">
         <p className="text-xs font-bold uppercase tracking-wide text-muted-foreground">
-          {item.flight_type === "return" ? "Penerbangan pulang" : "Keberangkatan"}
+          {item.flight_type === "return"
+            ? t("returnFlight")
+            : t("outboundFlight")}
         </p>
         <span className="text-xs text-muted-foreground">
-          {formatDateLabel(dateOf(flight.departure_time))}
+          {formatDateLabel(dateOf(flight.departure_time), locale)}
         </span>
       </div>
 
@@ -289,7 +300,7 @@ function ItemCard({
       </div>
 
       <p className="mt-4 border-t border-border pt-3 text-sm">
-        <span className="text-muted-foreground">Harga tiket </span>
+        <span className="text-muted-foreground">{t("ticketPrice")}</span>
         <span
           className={
             closed
@@ -301,7 +312,7 @@ function ItemCard({
         </span>
         {closed && (
           <span className="ml-2 text-xs text-muted-foreground">
-            tiket tidak berlaku
+            {t("ticketVoid")}
           </span>
         )}
       </p>

@@ -1,15 +1,11 @@
 import Image from "next/image";
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { CalendarDays, ChevronRight, MapPinned, Sun } from "lucide-react";
 import type { ProvinceRef } from "@/lib/api";
 import { photo } from "@/lib/home-data";
-import {
-  MONTHS,
-  monthName,
-  seasonLabel,
-  timingHref,
-  type TimingState,
-} from "@/lib/recommendations-data";
+import { isDrySeason, timingHref, type TimingState } from "@/lib/recommendations-data";
+import { monthName, monthNames } from "@/lib/intl";
 import { cn } from "@/lib/utils";
 
 /**
@@ -33,7 +29,9 @@ export function TimingHero({
   /** That province's season — "34 dari 38" says nothing when the set is one. */
   season: string | null;
 }) {
-  const name = monthName(state.month);
+  const t = useTranslations("timing");
+  const locale = useLocale();
+  const name = monthName(state.month, locale);
 
   return (
     <section className="relative isolate overflow-hidden bg-brand-900">
@@ -58,54 +56,54 @@ export function TimingHero({
                 href="/"
                 className="underline-offset-2 transition hover:text-white hover:underline"
               >
-                Beranda
+                {t("home")}
               </Link>
             </li>
             <li className="flex items-center gap-1">
               <ChevronRight className="h-3 w-3 shrink-0" />
-              <span className="text-brand-100">Waktu Terbaik</span>
+              <span className="text-brand-100">{t("crumb")}</span>
             </li>
           </ol>
         </nav>
 
         <h1 className="mt-3 max-w-3xl font-display text-3xl font-bold tracking-tight text-white sm:text-4xl">
           {province
-            ? `Waktu terbaik ke ${province.name}`
-            : `Ke mana di bulan ${name}?`}
+            ? t("titleProvince", { province: province.name })
+            : t("titleMonth", { month: name })}
         </h1>
         <p className="mt-2 max-w-2xl text-sm leading-relaxed text-brand-100/90">
-          Musim tiap provinsi dipadukan dengan statistik kunjungan terakhir,
-          supaya Anda bisa memilih daerah yang cuacanya sedang bagus sekaligus
-          belum ramai.
+          {t("subtitle")}
         </p>
 
         <dl className="mt-5 flex flex-wrap gap-x-6 gap-y-3 text-brand-100">
           <div className="flex items-center gap-2">
             <CalendarDays className="h-4 w-4 shrink-0" />
-            <dt className="sr-only">Bulan</dt>
+            <dt className="sr-only">{t("month")}</dt>
             <dd className="text-sm font-semibold">{name}</dd>
           </div>
           <div className="flex items-center gap-2">
             <Sun className="h-4 w-4 shrink-0" />
-            <dt className="sr-only">Musim</dt>
+            <dt className="sr-only">{t("season")}</dt>
             <dd className="text-sm font-semibold">
               {province
                 ? season
-                  ? `Musim ${seasonLabel(season)}`
-                  : "Musim belum tercatat"
-                : `${dryCount} dari ${provinceCount} provinsi sedang kemarau`}
+                  ? isDrySeason(season)
+                    ? t("seasonDry")
+                    : t("seasonWet")
+                  : t("seasonUnknown")
+                : t("dryCount", { dry: dryCount, total: provinceCount })}
             </dd>
           </div>
           {province && (
             <div className="flex items-center gap-2">
               <MapPinned className="h-4 w-4 shrink-0" />
-              <dt className="sr-only">Filter provinsi</dt>
+              <dt className="sr-only">{t("provinceFilter")}</dt>
               <dd>
                 <Link
                   href={timingHref(state, { provinceId: null })}
                   className="text-sm font-semibold underline underline-offset-4 transition hover:text-white"
                 >
-                  Lihat semua provinsi
+                  {t("seeAllProvinces")}
                 </Link>
               </dd>
             </div>
@@ -118,13 +116,13 @@ export function TimingHero({
           <div
             className="no-scrollbar -mx-4 flex gap-2 overflow-x-auto px-4 py-3 sm:mx-0 sm:px-0"
             role="group"
-            aria-label="Pilih bulan"
+            aria-label={t("pickMonth")}
           >
             {/* Penanda bulan kemarau sengaja tidak dipasang di sini: panel
                 provinsi di bawah sudah menggambarkannya sebagai strip dua
                 belas bulan berikut legendanya. Ini cukup jadi pemindah bulan
                 saja. */}
-            {MONTHS.map((label, index) => {
+            {monthNames(locale).map((label, index) => {
               const month = index + 1;
               const current = month === state.month;
               return (

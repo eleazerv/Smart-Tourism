@@ -1,8 +1,9 @@
-import Link from "next/link";
+import { Link } from "@/i18n/navigation";
 import type { FlightCalendarDay } from "@/lib/api";
 import { longDate } from "@/lib/calendar";
 import { shortIDR } from "@/lib/format-price";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 const DAYS_SHOWN = 7;
 
@@ -26,6 +27,8 @@ export function PriceCalendar({
   selected: string;
   hrefFor: (date: string) => string;
 }) {
+  const t = useTranslations("flights");
+
   const window = around(days, selected);
   if (window.length === 0) return null;
 
@@ -36,7 +39,7 @@ export function PriceCalendar({
   );
 
   return (
-    <section aria-label="Harga termurah per tanggal">
+    <section aria-label={t("calendarLabel")}>
       <ul className="grid grid-cols-7 gap-1.5 sm:gap-2">
         {window.map((day) => {
           const active = day.date === selected;

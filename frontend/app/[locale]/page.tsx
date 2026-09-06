@@ -12,8 +12,14 @@ import { SeasonalRail } from "@/components/home/seasonal-rail";
 import { SiteFooter } from "@/components/home/site-footer";
 import { SiteHeader } from "@/components/home/site-header";
 import { GridSkeleton, RailSkeleton } from "@/components/home/skeletons";
+import { setRequestLocale } from "next-intl/server";
 
-export default function Home() {
+export default async function Home({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}) {
+  setRequestLocale((await params).locale);
   return (
     <div className="flex min-h-screen flex-col">
       <SiteHeader />

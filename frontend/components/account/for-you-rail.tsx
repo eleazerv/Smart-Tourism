@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { getTranslations } from "next-intl/server";
+import { Link } from "@/i18n/navigation";
 import { getPersonalRecommendations } from "@/lib/api";
 import { getAccessToken } from "@/lib/api/session";
 import { loadSavedIds } from "@/lib/saved-destinations";
@@ -15,16 +16,20 @@ import { Section } from "@/components/home/section";
  * is missing instead.
  */
 export async function ForYouRail({
-  title = "Untuk Anda",
+  title,
   explainEmpty = false,
   bare = false,
 }: {
+  /** Dibiarkan kosong berarti pakai judul bawaan dari kamus. */
   title?: string;
   /** Show a call to action instead of disappearing when there is nothing yet. */
   explainEmpty?: boolean;
   /** Drop the page gutter, for rendering inside the account column. */
   bare?: boolean;
 }) {
+  const t = await getTranslations("home.forYou");
+  const heading = title ?? t("title");
+
   const token = await getAccessToken();
   if (!token) return null;
 
@@ -40,11 +45,11 @@ export async function ForYouRail({
   if (destinations.length === 0) {
     if (!explainEmpty) return null;
     return (
-      <Section title={title} bare={bare}>
+      <Section title={heading} bare={bare}>
         <p className="rounded-2xl border border-dashed border-border px-4 py-10 text-center text-sm text-muted-foreground">
           {preferenceTags.length === 0
-            ? "Pilih minat perjalanan Anda dulu, lalu rekomendasi akan muncul di sini."
-            : "Belum ada destinasi yang cocok dengan minat Anda saat ini."}
+            ? t("emptyNoPreferences")
+            : t("emptyNoMatches")}
         </p>
       </Section>
     );
@@ -55,13 +60,13 @@ export async function ForYouRail({
   return (
     <Section
       bare={bare}
-      title={title}
-      subtitle={`Dipilih dari minat Anda: ${preferenceTags
-        .map((tag) => tag.name)
-        .join(", ")}`}
-      action={{ label: "Atur minat", href: "/akun/minat" }}
+      title={heading}
+      subtitle={t("subtitle", {
+        tags: preferenceTags.map((tag) => tag.name).join(", "),
+      })}
+      action={{ label: t("manage"), href: "/akun/minat" }}
     >
-      <Rail label="Rekomendasi untuk Anda">
+      <Rail label={t("railLabel")}>
         {destinations.map((destination) => (
           <DestinationCard
             key={destination.id}
@@ -69,9 +74,11 @@ export async function ForYouRail({
             saved={savedIds.has(destination.id)}
             note={
               destination.matched_tags.length > 0
-                ? `Cocok: ${destination.matched_tags
-                    .map((tag) => tag.name)
-                    .join(", ")}`
+                ? t("matched", {
+                    tags: destination.matched_tags
+                      .map((tag) => tag.name)
+                      .join(", "),
+                  })
                 : undefined
             }
           />
@@ -83,6 +90,8 @@ export async function ForYouRail({
 
 /** Sign-in nudge shown on the public home page in place of the rail. */
 export async function ForYouPrompt() {
+  const t = await getTranslations("home.forYou");
+
   const token = await getAccessToken();
   if (token) return null;
 
@@ -91,18 +100,17 @@ export async function ForYouPrompt() {
       <div className="flex flex-col items-start gap-3 rounded-2xl border border-border bg-card p-6 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h2 className="font-display text-lg font-bold tracking-tight">
-            Dapatkan rekomendasi sesuai minat Anda
+            {t("promptTitle")}
           </h2>
           <p className="mt-1 text-sm text-muted-foreground">
-            Masuk, pilih jenis destinasi yang Anda sukai, dan lihat pilihan yang
-            dipersonalisasi.
+            {t("promptBody")}
           </p>
         </div>
         <Link
           href="/auth/login"
           className="shrink-0 rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
-          Masuk
+          {t("promptCta")}
         </Link>
       </div>
     </section>

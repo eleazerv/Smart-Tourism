@@ -2,6 +2,7 @@
 
 import { AISLE_AFTER, SEAT_LETTERS, cabinRows, seatNumber } from "@/lib/seat-map";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /**
  * The cabin grid. Seats already claimed by other passengers are disabled;
@@ -22,6 +23,7 @@ export function SeatPicker({
   activeIndex: number;
   onPick: (seat: string) => void;
 }) {
+  const t = useTranslations("flights");
   return (
     <div className="overflow-x-auto">
       <div className="mx-auto w-max px-1 pb-1">
@@ -62,10 +64,10 @@ export function SeatPicker({
                     aria-pressed={mine >= 0}
                     aria-label={
                       isTaken
-                        ? `Kursi ${seat} sudah terisi`
+                        ? t("seatTaken", { seat })
                         : mine >= 0
-                          ? `Kursi ${seat}, penumpang ${mine + 1}`
-                          : `Pilih kursi ${seat}`
+                          ? t("seatMine", { seat, n: mine + 1 })
+                          : t("pickSeat", { seat })
                     }
                     onClick={() => onPick(seat)}
                     className={cn(
@@ -90,7 +92,7 @@ export function SeatPicker({
       </div>
 
       <p className="sr-only" aria-live="polite">
-        Memilih kursi untuk penumpang {activeIndex + 1}.
+        {t("pickingFor", { n: activeIndex + 1 })}
       </p>
     </div>
   );

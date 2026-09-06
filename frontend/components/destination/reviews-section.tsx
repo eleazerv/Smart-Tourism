@@ -1,8 +1,9 @@
 import { MessagesSquare } from "lucide-react";
+import { getTranslations } from "next-intl/server";
 import { getReviews, type Review } from "@/lib/api";
 import { getAccessToken } from "@/lib/api/session";
 import { createClient } from "@/lib/supabase/server";
-import { removeReview, submitReview } from "@/app/destinations/[id]/actions";
+import { removeReview, submitReview } from "@/app/[locale]/destinations/[id]/actions";
 import { LoadError } from "@/components/home/load-error";
 import { ReviewForm } from "@/components/destination/review-form";
 import { ReviewList } from "@/components/destination/review-list";
@@ -22,6 +23,8 @@ export async function ReviewsSection({
   /** `avg_rating` from the destination row — the authoritative average. */
   average: number | null;
 }) {
+  const t = await getTranslations("destination");
+
   const token = await getAccessToken();
 
   const supabase = await createClient();
@@ -39,12 +42,12 @@ export async function ReviewsSection({
     <section id="ulasan" className="scroll-mt-24">
       <h2 className="flex items-center gap-2 font-display text-xl font-bold tracking-tight">
         <MessagesSquare className="h-5 w-5 text-brand-700" />
-        Ulasan pengunjung
+        {t("reviewsHeading")}
       </h2>
 
       {reviews === null ? (
         <div className="mt-3">
-          <LoadError what="Ulasan" />
+          <LoadError what={t("reviewsLoadErrorWhat")} />
         </div>
       ) : (
         <div className="mt-3 space-y-4">

@@ -1,4 +1,5 @@
-import Link from "next/link";
+import { useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { Compass } from "lucide-react";
 import type { Tag } from "@/lib/api";
 import {
@@ -9,18 +10,20 @@ import {
 } from "@/lib/destinations-search";
 
 /** Suggestions to broaden the query, most likely culprit first. */
-function loosenings(state: SearchState, tags: Tag[]) {
+type Copy = ReturnType<typeof useTranslations<"catalogue">>;
+
+function loosenings(state: SearchState, tags: Tag[], t: Copy) {
   const options: { label: string; href: string }[] = [];
 
   if (state.minRating > 0) {
     options.push({
-      label: `Hapus batas rating ${formatRating(state.minRating)}+`,
+      label: t("loosenRating", { rating: formatRating(state.minRating) }),
       href: withFilter(state, { minRating: 0 }),
     });
   }
   if (state.provinceId !== null) {
     options.push({
-      label: "Cari di seluruh provinsi",
+      label: t("loosenProvince"),
       href: withFilter(state, { provinceId: null }),
     });
   }
@@ -28,13 +31,13 @@ function loosenings(state: SearchState, tags: Tag[]) {
     const last = state.tags[state.tags.length - 1];
     const tag = tags.find((entry) => entry.slug === last);
     options.push({
-      label: `Lepas jenis "${tag?.name ?? last}"`,
+      label: t("loosenTag", { tag: tag?.name ?? last }),
       href: withTagToggled(state, last),
     });
   }
   if (state.q) {
     options.push({
-      label: `Telusuri tanpa kata kunci "${state.q}"`,
+      label: t("loosenQuery", { q: state.q }),
       href: withFilter(state, { q: "" }),
     });
   }
@@ -49,7 +52,8 @@ export function EmptyResults({
   state: SearchState;
   tags: Tag[];
 }) {
-  const options = loosenings(state, tags);
+  const t = useTranslations("catalogue");
+  const options = loosenings(state, tags, t);
 
   return (
     <div className="rounded-2xl border border-dashed border-border bg-card px-6 py-12 text-center">
@@ -61,11 +65,10 @@ export function EmptyResults({
       </span>
 
       <h2 className="mt-4 font-display text-lg font-bold tracking-tight">
-        Belum ada destinasi yang cocok
+        {t("emptyTitle")}
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        Kombinasi filter ini terlalu sempit. Longgarkan satu filter, atau mulai
-        lagi dari seluruh katalog.
+        {t("emptyBody")}
       </p>
 
       {options.length > 0 && (
@@ -87,7 +90,7 @@ export function EmptyResults({
         href="/destinations"
         className="mt-5 inline-block rounded-full bg-brand-700 px-5 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Lihat semua destinasi
+        {t("seeAllDestinations")}
       </Link>
     </div>
   );

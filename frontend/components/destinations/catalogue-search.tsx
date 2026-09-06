@@ -1,7 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useTranslations } from "next-intl";
+import { useRouter } from "@/i18n/navigation";
 import { Search, X } from "lucide-react";
 import { withFilter, type SearchState } from "@/lib/destinations-search";
 
@@ -10,6 +11,7 @@ import { withFilter, type SearchState } from "@/lib/destinations-search";
  * stay server-rendered and the query lands in a shareable URL.
  */
 export function CatalogueSearch({ state }: { state: SearchState }) {
+  const t = useTranslations("catalogue");
   const router = useRouter();
   const [value, setValue] = useState(state.q);
 
@@ -36,14 +38,14 @@ export function CatalogueSearch({ state }: { state: SearchState }) {
         id="catalogue-search"
         value={value}
         onChange={(event) => setValue(event.target.value)}
-        placeholder="Cari destinasi atau kota..."
+        placeholder={t("searchPlaceholder")}
         className="min-w-0 flex-1 bg-transparent py-2 text-sm outline-none placeholder:text-muted-foreground"
       />
       {value && (
         <button
           type="button"
           onClick={() => setValue("")}
-          aria-label="Kosongkan pencarian"
+          aria-label={t("clearSearch")}
           className="grid h-7 w-7 shrink-0 place-items-center rounded-full text-muted-foreground transition hover:bg-muted"
         >
           <X className="h-4 w-4" />

@@ -34,7 +34,7 @@ import { useEffect, useRef, useState } from "react";
 import * as L from "leaflet";
 import "leaflet/dist/leaflet.css";
 import {
-  DENSITY_LEVELS,
+  DENSITY_COLORS,
   NATIONAL_BOUNDS,
   formatVisitorsShort,
   type Bounds,
@@ -52,6 +52,7 @@ import {
   MAP_ATTRIBUTION,
   MAP_TILE_URL,
 } from "@/lib/map-tiles";
+import { useLocale, useTranslations } from "next-intl";
 
 /**
  * Camera target. `token` changes whenever the map should actually move, so a
@@ -136,6 +137,9 @@ export default function CrowdMapView({
    *  two together. */
   highlighted: number | null;
 }) {
+  const t = useTranslations("map");
+  const locale = useLocale();
+
   const containerRef = useRef<HTMLDivElement>(null);
   const mapRef = useRef<L.Map | null>(null);
   /** Bumped whenever a new map exists, so every dependent effect re-runs. */
@@ -231,14 +235,14 @@ export default function CrowdMapView({
       const isSelected =
         selectedCode !== null &&
         datum.members.some((member) => member.code === selectedCode);
-      const level = DENSITY_LEVELS[datum.level];
+      const color = DENSITY_COLORS[datum.level];
 
       const layer = L.geoJSON(shape as GeoJSON.Feature, {
         style: {
-          color: isSelected ? selectedStroke : level.color,
+          color: isSelected ? selectedStroke : color,
           weight: isSelected ? 2 : 0.6,
           opacity: inRegion ? 1 : 0.3,
-          fillColor: level.color,
+          fillColor: color,
           // Lighter than the city dots on purpose: this layer is the backdrop.
           fillOpacity: isSelected ? 0.75 : inRegion ? 0.45 : 0.1,
         },
@@ -248,16 +252,20 @@ export default function CrowdMapView({
         .bindTooltip(
           datum.merged
             ? tooltipList(
-                `${datum.lead.name} dan sekitarnya`,
+                t("andSurroundings", { name: datum.lead.name }),
                 datum.members.map(
                   (member) =>
-                    `${member.name}: ${formatVisitorsShort(member.visitorCount)} pengunjung`,
+                    `${member.name}: ${t("visitorsSuffix", {
+                      count: formatVisitorsShort(member.visitorCount, locale),
+                    })}`,
                 ),
-                "Digambar sebagai satu wilayah — batas pemekaran 2022 belum tersedia.",
+                t("mergedNote"),
               )
             : tooltipHtml(
                 datum.lead.name,
-                `${formatVisitorsShort(datum.lead.visitorCount)} pengunjung · ${level.label}`,
+                `${t("visitorsSuffix", {
+                  count: formatVisitorsShort(datum.lead.visitorCount, locale),
+                })} · ${t(`density.${datum.level}`)}`,
               ),
           { ...TOOLTIP_OPTIONS, sticky: true },
         )
@@ -302,7 +310,7 @@ export default function CrowdMapView({
         fillOpacity: inRegion || lit ? 1 : 0.25,
       })
         .bindTooltip(
-          tooltipHtml(stop.name, `${stop.total} destinasi · klik untuk tambah`),
+          tooltipHtml(stop.name, t("tooltipAdd", { count: stop.total })),
           { ...TOOLTIP_OPTIONS, offset: [0, -6] },
         )
         .on("click", () => handlers.current.onToggleStop(stop.id))
@@ -322,7 +330,7 @@ export default function CrowdMapView({
         }),
       })
         .bindTooltip(
-          tooltipHtml(`${index + 1}. ${stop.name}`, "Klik untuk hapus dari rute"),
+          tooltipHtml(`${index + 1}. ${stop.name}`, t("tooltipRemove")),
           { ...TOOLTIP_OPTIONS, offset: [0, -16] },
         )
         .on("click", () => handlers.current.onToggleStop(stop.id))
@@ -341,6 +349,10 @@ export default function CrowdMapView({
     region,
     selectedCode,
     highlighted,
+    // Tooltip digambar di dalam efek ini, jadi berganti bahasa harus
+    // menggambar ulang lapisannya.
+    locale,
+    t,
   ]);
 
   /* ----------------------------------------------------------- camera --- */

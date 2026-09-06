@@ -1,10 +1,10 @@
-import Link from "next/link";
+import { useLocale, useTranslations } from "next-intl";
+import { Link } from "@/i18n/navigation";
 import { ArrowRight, CloudRain, Sun, Users } from "lucide-react";
 import { formatCount, type CrowdLevel } from "@/lib/destination-data";
 import {
   formatActivities,
   isDrySeason,
-  seasonLabel,
   timingHref,
   type ProvinceTiming,
   type TimingState,
@@ -22,6 +22,7 @@ const BADGE =
 
 /** Musim provinsi ini: kemarau kuning matahari, hujan biru langit. */
 export function SeasonBadge({ season }: { season: string }) {
+  const t = useTranslations("timing");
   const dry = isDrySeason(season);
   const Icon = dry ? Sun : CloudRain;
 
@@ -35,17 +36,19 @@ export function SeasonBadge({ season }: { season: string }) {
       )}
     >
       <Icon className="h-3 w-3" />
-      {seasonLabel(season)}
+      {dry ? t("seasonDry") : t("seasonWet")}
     </span>
   );
 }
 
 /** Ramai-tidaknya provinsi pada periode statistik terakhir. */
 export function CrowdBadge({ crowd }: { crowd: CrowdLevel }) {
+  const t = useTranslations("crowd");
+
   return (
     <span className={cn(BADGE, TONE[crowd.tone])}>
       <Users className="h-3 w-3" />
-      {crowd.label}
+      {t(crowd.tone)}
     </span>
   );
 }
@@ -65,6 +68,9 @@ export function TimingCard({
   /** Position in the "quietest" ranking, when the card is part of one. */
   rank?: number;
 }) {
+  const t = useTranslations("timing");
+  const locale = useLocale();
+
   const { info, crowd, visitors } = timing;
 
   return (
@@ -88,14 +94,16 @@ export function TimingCard({
 
       {info.recommended_activities.length > 0 && (
         <p className="mt-3 text-sm leading-relaxed text-muted-foreground">
-          Cocok untuk {formatActivities(info.recommended_activities)}.
+          {t("goodFor", {
+            activities: formatActivities(info.recommended_activities, locale),
+          })}
         </p>
       )}
 
       <div className="mt-3 flex items-baseline justify-between gap-3 border-t border-border pt-3 text-sm">
-        <span className="text-muted-foreground">Kunjungan terakhir</span>
+        <span className="text-muted-foreground">{t("lastVisits")}</span>
         <span className="font-medium tabular-nums">
-          {visitors === null ? "Belum ada data" : formatCount(visitors)}
+          {visitors === null ? t("noData") : formatCount(visitors, locale)}
         </span>
       </div>
 
@@ -105,7 +113,7 @@ export function TimingCard({
           href={timingHref(state, { provinceId: info.province.id })}
           className="mt-3 inline-flex items-center gap-1 text-sm font-semibold text-brand-700 underline-offset-4 hover:underline"
         >
-          Lihat rekomendasi provinsi ini
+          {t("seeProvince")}
           <ArrowRight className="h-4 w-4" />
         </Link>
       )}
