@@ -5,7 +5,6 @@ import {
 } from "@/components/account/for-you-rail";
 import { DestinationRail } from "@/components/home/destination-rail";
 import { HeroSearch } from "@/components/home/hero-search";
-import { InspirationRail } from "@/components/home/inspiration-rail";
 import { InterestGrid } from "@/components/home/interest-grid";
 import { PlannerPromo } from "@/components/home/planner-promo";
 import { PromoBanner } from "@/components/home/promo-banner";
@@ -47,8 +46,6 @@ export default function Home() {
         <Suspense fallback={<RailSkeleton />}>
           <DestinationRail />
         </Suspense>
-
-        <InspirationRail />
 
         <Suspense fallback={<RailSkeleton aspect="aspect-[3/4] lg:aspect-[4/3]" />}>
           <SeasonalRail />
