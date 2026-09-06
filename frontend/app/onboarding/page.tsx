@@ -76,14 +76,18 @@ export default function OnboardingPage() {
 function WizardSkeleton() {
   return (
     <div className="flex min-h-svh flex-col">
-      <div className="container-page flex h-16 items-center justify-between">
+      <div className="container-page flex h-16 shrink-0 items-center justify-between">
         <div className="h-7 w-28 animate-pulse rounded bg-muted" />
         <div className="h-7 w-16 animate-pulse rounded-full bg-muted" />
       </div>
-      <div className="flex flex-1 items-start justify-center px-4 pt-2 sm:items-center">
-        <div className="w-full max-w-xl">
-          <div className="h-1.5 animate-pulse rounded-full bg-muted" />
-          <div className="mt-5 h-[26rem] animate-pulse rounded-3xl bg-muted" />
+      <div className="container-page shrink-0 pb-4">
+        <div className="h-1.5 animate-pulse rounded-full bg-muted" />
+      </div>
+      <div className="container-page flex flex-1 py-8">
+        <div className="m-auto w-full max-w-xl space-y-4">
+          <div className="h-8 w-2/3 animate-pulse rounded bg-muted" />
+          <div className="h-4 w-full animate-pulse rounded bg-muted" />
+          <div className="h-[24rem] animate-pulse rounded-2xl bg-muted" />
         </div>
       </div>
     </div>

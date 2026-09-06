@@ -12,7 +12,7 @@ import { cn } from "@/lib/utils";
  * itu sebabnya langkah ini yang mendapat gambar, dan satu-satunya yang punya.
  *
  * Katalognya 24 tag dan bisa terus bertambah, jadi petaknya digulung di dalam
- * kotak setinggi dua baris alih-alih memanjangkan kartu wizard. Ini sekaligus
+ * kotak setinggi tiga baris alih-alih memanjangkan halaman. Ini sekaligus
  * yang paling ringan: `next/image` menunda unduhan gambar yang belum masuk
  * layar, dan baris di bawah lipatan memang belum masuk layar.
  */
@@ -72,7 +72,7 @@ export function InterestTiles({
                   className={cn(
                     "group relative block aspect-[3/2] w-full overflow-hidden rounded-2xl bg-brand-900 text-left transition",
                     active
-                      ? "ring-2 ring-brand-700 ring-offset-2 ring-offset-card"
+                      ? "ring-2 ring-brand-700 ring-offset-2 ring-offset-background"
                       : "hover:opacity-95",
                   )}
                 >
@@ -110,10 +110,12 @@ export function InterestTiles({
         </ul>
       </div>
 
+      {/* Memudar ke `background`, bukan `transparent`: gradien ke transparan
+          melewati abu-abu di Safari dan meninggalkan pita kotor. */}
       <span
         aria-hidden
         className={cn(
-          "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-card to-card/0 transition-opacity duration-200",
+          "pointer-events-none absolute inset-x-0 bottom-0 h-12 bg-gradient-to-t from-background to-background/0 transition-opacity duration-200",
           atEnd && "opacity-0",
         )}
       />

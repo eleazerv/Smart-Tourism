@@ -22,7 +22,7 @@ import { cn } from "@/lib/utils";
 const STEPS = [
   {
     title: "Kenalan dulu",
-    subtitle: "Dua isian saja — sisanya bisa dilengkapi kapan-kapan.",
+    subtitle: "Isi seadanya dulu — semuanya bisa diubah kapan saja.",
   },
   {
     title: "Liburan seperti apa yang Anda suka?",
@@ -134,104 +134,111 @@ export function OnboardingWizard({
         </button>
       </header>
 
-      <main className="flex flex-1 items-start justify-center px-4 pb-12 pt-2 sm:items-center sm:pb-16">
-        <div className="w-full max-w-xl">
-          <StepProgress step={step} total={STEPS.length} />
+      {/* Di luar alur kartu, dan tepat di bawah header yang tingginya tetap —
+          jadi posisinya sama persis di ketiga langkah, sepanjang apa pun isi
+          kartu di bawahnya. */}
+      <div className="container-page shrink-0 pb-4">
+        <StepProgress step={step} total={STEPS.length} />
+      </div>
 
-          <div className="mt-5 rounded-3xl border border-border bg-card p-5 shadow-card sm:p-7">
-            <h1 className="font-display text-2xl font-bold tracking-tight">
-              {current.title}
-            </h1>
-            <p className="mt-1.5 text-sm text-muted-foreground">
-              {current.subtitle}
-            </p>
+      {/* Tanpa bingkai maupun latar sendiri — isinya menyatu dengan halaman.
+          Dipusatkan dengan `m-auto`, bukan `justify-center`: kalau isinya
+          pernah lebih tinggi dari sisa layar, margin otomatis tetap bisa
+          digulir sampai ke pucuknya, sementara `justify-center` memotongnya. */}
+      <main className="container-page flex flex-1 py-8">
+        <div className="m-auto w-full max-w-xl">
+          <h1 className="font-display text-2xl font-bold tracking-tight">
+            {current.title}
+          </h1>
+          <p className="mt-1.5 text-sm text-muted-foreground">
+            {current.subtitle}
+          </p>
 
-            {/* `key` memaksa remount tiap langkah, supaya transisi masuknya
-                terputar lagi alih-alih hanya sekali di render pertama. */}
-            <div
-              key={step}
-              className="mt-6 duration-300 animate-in fade-in-0 slide-in-from-bottom-2"
-            >
-              {step === 0 && (
-                <IdentityStep
-                  fullName={fullName}
-                  onNameChange={setFullName}
-                  nameValid={nameValid}
-                  homeCity={homeCity}
-                  onCityChange={setHomeCity}
-                  cities={cities}
-                  party={party}
-                  onPartyChange={setParty}
-                />
-              )}
-
-              {step === 1 && (
-                <div className="space-y-3">
-                  <InterestTiles
-                    allTags={allTags}
-                    chosen={tagIds}
-                    onToggle={toggleTag}
-                  />
-                  {allTags.length > 0 && (
-                    <p className="text-sm text-muted-foreground" role="status">
-                      {remaining > 0
-                        ? `Pilih ${remaining} tema lagi.`
-                        : `${tagIds.size} tema dipilih.`}
-                    </p>
-                  )}
-                </div>
-              )}
-
-              {step === 2 && (
-                <WelcomeStep
-                  name={firstName(trimmedName)}
-                  heroSlug={allTags.find((tag) => tagIds.has(tag.id))?.slug}
-                />
-              )}
-            </div>
-
-            {error && (
-              <p
-                role="alert"
-                className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
-              >
-                {error}
-              </p>
+          {/* `key` memaksa remount tiap langkah, supaya transisi masuknya
+              terputar lagi alih-alih hanya sekali di render pertama. */}
+          <div
+            key={step}
+            className="mt-6 duration-300 animate-in fade-in-0 slide-in-from-bottom-2"
+          >
+            {step === 0 && (
+              <IdentityStep
+                fullName={fullName}
+                onNameChange={setFullName}
+                nameValid={nameValid}
+                homeCity={homeCity}
+                onCityChange={setHomeCity}
+                cities={cities}
+                party={party}
+                onPartyChange={setParty}
+              />
             )}
 
-            <div className="mt-7 flex items-center justify-between gap-3 border-t border-border pt-5">
-              <button
-                type="button"
-                onClick={() => {
-                  setError(null);
-                  setStep((value) => Math.max(0, value - 1));
-                }}
-                disabled={step === 0 || pending}
-                className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:invisible"
-              >
-                <ArrowLeft className="h-4 w-4" aria-hidden />
-                Kembali
-              </button>
+            {step === 1 && (
+              <div className="space-y-3">
+                <InterestTiles
+                  allTags={allTags}
+                  chosen={tagIds}
+                  onToggle={toggleTag}
+                />
+                {allTags.length > 0 && (
+                  <p className="text-sm text-muted-foreground" role="status">
+                    {remaining > 0
+                      ? `Pilih ${remaining} tema lagi.`
+                      : `${tagIds.size} tema dipilih.`}
+                  </p>
+                )}
+              </div>
+            )}
 
-              <button
-                type="button"
-                onClick={advance}
-                disabled={!canContinue || pending}
-                className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
-              >
-                {pending && (
-                  <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
-                )}
-                {pending
-                  ? "Menyimpan..."
-                  : step === LAST
-                    ? "Mulai jelajahi"
-                    : "Lanjut"}
-                {!pending && step < LAST && (
-                  <ArrowRight className="h-4 w-4" aria-hidden />
-                )}
-              </button>
-            </div>
+            {step === 2 && (
+              <WelcomeStep
+                name={firstName(trimmedName)}
+                heroSlug={allTags.find((tag) => tagIds.has(tag.id))?.slug}
+              />
+            )}
+          </div>
+
+          {error && (
+            <p
+              role="alert"
+              className="mt-5 rounded-lg border border-destructive/30 bg-destructive/10 px-3 py-2 text-sm text-destructive"
+            >
+              {error}
+            </p>
+          )}
+
+          <div className="mt-7 flex items-center justify-between gap-3 border-t border-border pt-5">
+            <button
+              type="button"
+              onClick={() => {
+                setError(null);
+                setStep((value) => Math.max(0, value - 1));
+              }}
+              disabled={step === 0 || pending}
+              className="inline-flex items-center gap-1.5 rounded-full px-3 py-2 text-sm font-medium text-muted-foreground transition hover:text-foreground disabled:invisible"
+            >
+              <ArrowLeft className="h-4 w-4" aria-hidden />
+              Kembali
+            </button>
+
+            <button
+              type="button"
+              onClick={advance}
+              disabled={!canContinue || pending}
+              className="inline-flex items-center gap-2 rounded-full bg-brand-700 px-6 py-2.5 text-sm font-semibold text-white transition hover:bg-brand-900 disabled:cursor-not-allowed disabled:opacity-50"
+            >
+              {pending && (
+                <Loader2 className="h-4 w-4 animate-spin" aria-hidden />
+              )}
+              {pending
+                ? "Menyimpan..."
+                : step === LAST
+                  ? "Mulai jelajahi"
+                  : "Lanjut"}
+              {!pending && step < LAST && (
+                <ArrowRight className="h-4 w-4" aria-hidden />
+              )}
+            </button>
           </div>
         </div>
       </main>
