@@ -1,6 +1,6 @@
 import express from 'express';
 import { authMiddleware } from '../middleware/AuthMiddleware.js';
-import { globalLimiter, moderateLimiter, chatLimiter, strictLimiter } from '../middleware/RateLimit.js';
+import { globalLimiter, moderateLimiter, chatLimiter, chatDailyLimiter } from '../middleware/RateLimit.js';
 import {
   createRoom,
   listRooms,
@@ -91,8 +91,8 @@ router.get('/rooms/:id', globalLimiter, getRoom);
  *       502:
  *         description: Groq tidak bisa dihubungi
  */
-// strictLimiter dipakai karena satu pesan bisa memicu beberapa panggilan
-// ke Groq sekaligus beberapa kueri database.
-router.post('/rooms/:id/messages', chatLimiter, sendMessage);
+// chatLimiter dipakai karena satu pesan bisa memicu beberapa panggilan
+// ke deepseek sekaligus beberapa kueri database.
+router.post('/rooms/:id/messages', chatLimiter,chatDailyLimiter, sendMessage);
 
 export default router;

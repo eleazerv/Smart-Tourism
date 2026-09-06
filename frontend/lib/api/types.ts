@@ -665,10 +665,12 @@ export type ChatTurn = {
  * semuanya, dibayar lewat POST /api/trip-bookings/:id/pay.
  */
 export type CheckoutResult = {
+  id: string ; 
   booking_code: string;
   total_price: number;
   flight_count: number;
   accommodation_count: number;
+  payment_url: string ; 
 };
 
 /**
