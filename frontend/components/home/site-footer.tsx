@@ -44,7 +44,7 @@ export function SiteFooter() {
         <div className="mt-10 flex flex-col items-start gap-4 border-t border-border pt-6 sm:flex-row sm:items-center sm:justify-between">
           <div className="space-y-1">
             <p className="text-xs text-muted-foreground">
-              &copy; 2026 Smart Tourism. Seluruh hak cipta dilindungi.
+              &copy; 2026 Jelantara. Seluruh hak cipta dilindungi.
             </p>
             <p className="text-xs text-muted-foreground">
               Sumber data: BPS, BMKG, dan pencatatan pengelola destinasi.

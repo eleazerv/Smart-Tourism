@@ -50,7 +50,7 @@ export async function updateSession(request: NextRequest) {
   const { data } = await supabase.auth.getClaims();
   const user = data?.claims;
 
-  // Smart Tourism is a public catalogue: browsing destinations, events and the
+  // Jelantara is a public catalogue: browsing destinations, events and the
   // heatmap must not require an account. Only the signed-in area is gated.
   const isProtected = PROTECTED_PREFIXES.some((prefix) =>
     request.nextUrl.pathname.startsWith(prefix),

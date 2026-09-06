@@ -2,7 +2,7 @@
 
 # 🗺️ Jelantara
 
-### Smart Tourism Indonesia — Karena Indonesia Bukan Cuma Bali
+### Explore the Wonders of Indonesia — Karena Indonesia Bukan Cuma Bali
 
 [![Live Demo](https://img.shields.io/badge/🚀_Live_Demo-Visit_Site-success?style=for-the-badge)](https://jelantara.iitech.id)
 [![GitHub](https://img.shields.io/badge/GitHub-Repository-181717?style=for-the-badge&logo=github)](https://github.com/eleazerv/Smart-Tourism)

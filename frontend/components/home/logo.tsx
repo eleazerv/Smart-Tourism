@@ -11,7 +11,7 @@ export function Logo({
   return (
     <Link
       href="/"
-      aria-label="Smart Tourism, beranda"
+      aria-label="Jelantara, beranda"
       className={cn("inline-flex items-center gap-2", className)}
     >
       <svg
@@ -48,7 +48,7 @@ export function Logo({
           tone === "dark" ? "text-brand-700 dark:text-brand-100" : "text-white",
         )}
       >
-        Smart<span className="font-normal">Tourism</span>
+        Jelan<span className="font-normal">tara</span>
       </span>
     </Link>
   );

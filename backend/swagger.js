@@ -4,9 +4,9 @@ const options = {
   definition: {
     openapi: '3.0.0',
     info: {
-      title: 'Smart Tourism Indonesia API',
+      title: 'Jelantara API',
       version: '1.0.0',
-      description: 'Dokumentasi API untuk Smart Tourism Indonesia — ITechno Cup 2026',
+      description: 'Dokumentasi API untuk Jelantara — ITechno Cup 2026',
     },
     servers: [
       { url: 'http://localhost:4000', description: 'Local development' },
