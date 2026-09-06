@@ -190,7 +190,7 @@ async function Booking({ searchParams }: Pick<PageProps, "searchParams">) {
               href="/akun/pesanan"
               className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
             >
-              Lihat Pesanan saya
+              {t("seeMyBookings")}
             </Link>
           </div>
         </aside>

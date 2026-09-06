@@ -397,6 +397,8 @@ function Stepper({
   label: string;
   onChange: (next: number) => void;
 }) {
+  const ui = useTranslations("ui");
+
   return (
     <div className="inline-flex items-center gap-1 rounded-full border border-border p-0.5">
       <StepButton
@@ -410,7 +412,7 @@ function Stepper({
         {value}
       </span>
       <StepButton
-        label={`Tambah ${label}`}
+        label={ui("increase", { label })}
         disabled={value >= max}
         onClick={() => onChange(value + 1)}
       >

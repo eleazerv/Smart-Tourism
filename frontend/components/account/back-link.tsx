@@ -1,16 +1,18 @@
-import { Suspense } from "react";
+"use client";
+
 import { ArrowLeft } from "lucide-react";
-import { getTranslations } from "next-intl/server";
+import { useTranslations } from "next-intl";
 import { Link } from "@/i18n/navigation";
 
 /**
  * Tautan "kembali" di puncak halaman detail.
  *
- * Batas Suspense-nya bukan hiasan. `Link` versi i18n membaca bahasa yang
- * sedang aktif untuk menyusun href-nya, dan di rute berparameter dinamis
- * (`/akun/pesanan/flight/[id]`) bahasa itu baru diketahui saat request —
- * Cache Components menolaknya di dalam cangkang yang mau di-prerender. Dengan
- * batas ini, tautannya menyusul lewat stream dan sisa cangkangnya tetap statis.
+ * Komponen klien, walaupun tidak ada interaksi di dalamnya. Ia dirender di
+ * cangkang statis rute berparameter dinamis (`/akun/pesanan/flight/[id]`), dan
+ * di sana `getTranslations` membaca bahasa saat request — data runtime yang
+ * membatalkan prerender seluruh cangkang. Di sisi klien label dan prefiks
+ * bahasanya sama-sama datang dari NextIntlClientProvider, tanpa satu pun
+ * pembacaan saat request.
  */
 export function BackLink({
   href,
@@ -20,17 +22,7 @@ export function BackLink({
   /** Kunci di namespace `orderDetail`. */
   labelKey: string;
 }) {
-  return (
-    <Suspense
-      fallback={<span className="block h-5 w-32 rounded bg-muted" aria-hidden />}
-    >
-      <Anchor href={href} labelKey={labelKey} />
-    </Suspense>
-  );
-}
-
-async function Anchor({ href, labelKey }: { href: string; labelKey: string }) {
-  const t = (k)=>k;
+  const t = useTranslations("orderDetail");
 
   return (
     <Link

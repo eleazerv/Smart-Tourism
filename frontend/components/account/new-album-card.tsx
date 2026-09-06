@@ -16,6 +16,7 @@ import { useTranslations } from "next-intl";
  * appears — rather than hiding the action in a toolbar above.
  */
 export function NewAlbumCard() {
+  const ui = useTranslations("ui");
   const t = useTranslations("albums");
   const [creating, setCreating] = useState(false);
   const [name, setName] = useState("");
@@ -106,7 +107,7 @@ export function NewAlbumCard() {
             setName("");
             setError(null);
           }}
-          aria-label="Batal"
+          aria-label={ui("cancel")}
           className="grid h-9 w-9 shrink-0 place-items-center rounded-full border border-border transition hover:bg-muted"
         >
           <X className="h-4 w-4" />

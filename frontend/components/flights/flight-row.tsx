@@ -135,7 +135,7 @@ export function FlightRow({
             </h4>
             <dl className="mt-2.5 space-y-1.5 text-xs">
               <Row
-                label="Tarif per penumpang"
+                label={t("farePerPassenger")}
                 value={formatIDR(flight.price)}
               />
               <Row label="Mata uang" value={flight.currency} />

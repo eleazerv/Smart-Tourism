@@ -221,7 +221,7 @@ export function AirportPicker({
   );
 }
 
-type Group = { title: string; items: Airport[] };
+type Group = { titleKey?: string; title?: string; items: Airport[] };
 
 /**
  * Empty search opens on the busy airports; typing drops the grouping and ranks
@@ -242,7 +242,7 @@ function grouped(airports: Airport[], query: string): Group[] {
 
     return [
       ...(popular.length > 0 ? [{ title: "Kota populer", items: popular }] : []),
-      ...(rest.length > 0 ? [{ title: "Semua bandara", items: rest }] : []),
+      ...(rest.length > 0 ? [{ titleKey: "allAirports", items: rest }] : []),
     ];
   }
 

@@ -40,8 +40,8 @@ function asSaved(rows: AlbumDestination[]): SavedDestination[] {
 }
 
 async function AlbumDetail({ params }: PageProps) {
-  const t = await getTranslations("albums");
   const { id } = await params;
+  const t = await getTranslations("albums");
   const token = await requireAccessToken();
 
   // The loose bucket is not an album row, so it never reaches the API.

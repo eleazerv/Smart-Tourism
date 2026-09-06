@@ -3,7 +3,7 @@ import { Link } from "@/i18n/navigation";
 import { cacheLife } from "next/cache";
 import { getTranslations } from "next-intl/server";
 import { getTags } from "@/lib/api";
-import { photo } from "@/lib/home-data";
+import { tagImage } from "@/lib/tag-image";
 import { LoadError } from "@/components/home/load-error";
 import { Section } from "@/components/home/section";
 
@@ -45,7 +45,7 @@ export async function InterestGrid() {
             className="group relative aspect-[4/5] overflow-hidden rounded-2xl bg-brand-700 sm:aspect-[4/3]"
           >
             <Image
-              src={photo(tag.slug, 600, 700)}
+              src={tagImage(tag.slug, 600, 700)}
               alt=""
               fill
               sizes="(min-width: 1024px) 25vw, 50vw"

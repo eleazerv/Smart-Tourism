@@ -94,9 +94,9 @@ export default function StayPage({ params, searchParams }: PageProps) {
 }
 
 async function StayDetail({ params, searchParams }: PageProps) {
+  const { id } = await params;
   const t = await getTranslations("stays");
   const catalogue = await getTranslations("catalogue");
-  const { id } = await params;
   // The dates, guests, and rooms ride along from the listing, so the
   // availability check answers for the stay the reader was actually planning.
   const state = parseStaySearch(await searchParams);

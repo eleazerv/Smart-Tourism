@@ -310,6 +310,9 @@ function CitySelect({
   disabled: boolean;
   onChange: (value: string) => void;
 }) {
+  const t = useTranslations("planner");
+  const ui = useTranslations("ui");
+
   return (
     <label className="block">
       <span className="sr-only">{label}</span>
@@ -320,7 +323,9 @@ function CitySelect({
         onChange={(e) => onChange(e.target.value)}
         className="w-full rounded-md border border-input bg-background px-2 py-1 text-xs disabled:opacity-50"
       >
-        <option value="">{cities === null ? "Memuat…" : `${label} kota`}</option>
+        <option value="">
+          {cities === null ? ui("loading") : t("pickCityShort", { label })}
+        </option>
         {cities?.map((city) => (
           <option key={city.id} value={city.id}>
             {city.name}

@@ -148,7 +148,7 @@ export function DestinationPreview({
 
   if (!destinationId) return null;
 
-  const name = detail?.name ?? fallbackName ?? "Destinasi";
+  const name = detail?.name ?? fallbackName ?? t("aDestinationTitle");
   const place = [detail?.cities?.name, detail?.provinces?.name]
     .filter(Boolean)
     .join(", ");
@@ -227,7 +227,7 @@ export function DestinationPreview({
         {loading && (
           <p className="flex items-center gap-2 py-6 text-sm text-muted-foreground">
             <Loader2 className="h-4 w-4 animate-spin" />
-            Memuat detail destinasi…
+            {t("loadingDetail")}
           </p>
         )}
 
@@ -319,7 +319,7 @@ export function DestinationPreview({
 
       <div className="sticky bottom-0 flex gap-2 border-t border-border bg-card/95 px-5 py-4 backdrop-blur-sm">
         <Button variant="outline" className="shrink-0 rounded-full" asChild>
-          <Link href={`/destinations/${destinationId}`}>Halaman lengkap</Link>
+          <Link href={`/destinations/${destinationId}`}>{t("fullPage")}</Link>
         </Button>
         <Button
           className="flex-1 rounded-full"

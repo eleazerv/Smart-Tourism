@@ -119,7 +119,7 @@ export function StayCityPicker({
         <MapPin className="h-4 w-4 shrink-0 text-muted-foreground" />
         <span className="min-w-0 flex-1">
           <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
-            Kota atau area
+            {t("cityOrArea")}
           </span>
           <span className="block truncate text-sm font-semibold">
             {selected ? selected.name : t("allCities")}
@@ -127,7 +127,7 @@ export function StayCityPicker({
           <span className="block truncate text-[11px] text-muted-foreground">
             {selected
               ? selected.province || `${selected.count} penginapan`
-              : `${cities.length} kota tersedia`}
+              : t("citiesAvailable", { count: cities.length })}
           </span>
         </span>
       </button>
@@ -165,7 +165,7 @@ export function StayCityPicker({
               active={options[active] === ALL}
               selected={value === null}
               title={t("allCities")}
-              subtitle={`${cities.length} kota tersedia`}
+              subtitle={t("citiesAvailable", { count: cities.length })}
               onSelect={() => choose(ALL)}
               onHover={() => setActive(0)}
             />

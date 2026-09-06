@@ -124,7 +124,7 @@ export function ShareAlbumDialog({
                 {t("shareHeading", { name: album.name })}
               </h2>
               <p className="text-xs text-muted-foreground">
-                {album.item_count} destinasi
+                {t("itemCount", { count: album.item_count })}
               </p>
             </div>
           </div>

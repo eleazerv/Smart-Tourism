@@ -373,7 +373,9 @@ function StopCard({
           {stay ? (
             <>
               <span className="font-medium text-foreground">{stay.name}</span> ·{" "}
-              {formatIDR(stay.price_per_night)}/malam
+              {t("perNightPrice", {
+                price: formatIDR(stay.price_per_night),
+              })}
             </>
           ) : (
             t("noStayPicked")
@@ -716,8 +718,7 @@ function StayPicker({
   if (!anchor) {
     return (
       <p className="mt-2 text-[11px] leading-relaxed text-muted-foreground">
-        Tambahkan satu destinasi di kota ini dulu, baru penginapannya bisa
-        dipilih.
+        {t("addDestinationFirstLong")}
       </p>
     );
   }
@@ -785,7 +786,9 @@ function StayPicker({
                       </span>
                       <span className="block truncate text-[11px] text-muted-foreground">
                         {TIER_LABEL[option.tier] ?? option.tier} ·{" "}
-                        {formatIDR(option.price_per_night)}/malam
+                        {t("perNightPrice", {
+                        price: formatIDR(option.price_per_night),
+                      })}
                         {option.distance_km != null &&
                           ` · ${option.distance_km} km`}
                       </span>

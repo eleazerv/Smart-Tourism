@@ -28,7 +28,13 @@ import { formatIDR } from "@/lib/seeded-random";
 import { useLocale, useTranslations } from "next-intl";
 import { getLocale, getTranslations } from "next-intl/server";
 
-export const metadata: Metadata = { title: "Detail Pesanan" };
+export async function generateMetadata({
+  params,
+}: PageProps): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "orderDetail" });
+  return { title: t("metaTitle") };
+}
 
 type PageProps = { params: Promise<{ id: string; locale: string }> };
 
@@ -168,6 +174,7 @@ const CLOSED_COPY: Partial<
 
 function ClosedNotice({ status }: { status: PaymentStatus }) {
   const t = useTranslations("orderDetail");
+  const flights = useTranslations("flights");
   const copy = CLOSED_COPY[status];
   if (!copy) return null;
 
@@ -201,7 +208,7 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
           className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Search className="h-4 w-4" />
-          Cari penerbangan lagi
+          {flights("findFlightAgain")}
         </Link>
       </div>
     </div>

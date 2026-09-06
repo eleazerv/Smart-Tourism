@@ -8,6 +8,7 @@ import {
   useAnchoredPanel,
 } from "@/components/ui/anchored-panel";
 import { cn } from "@/lib/utils";
+import { useTranslations } from "next-intl";
 
 /** Roughly a header, three album rows, and the "album baru" line. */
 const PANEL_WIDTH = 300;
@@ -25,6 +26,7 @@ export function FavoriteButton({
   initialSaved?: boolean;
   className?: string;
 }) {
+  const t = useTranslations("albums");
   const { saved, pending, toggle, pickerOpen, closePicker } = useSaveToggle(
     destinationId,
     initialSaved,
@@ -44,7 +46,9 @@ export function FavoriteButton({
         type="button"
         aria-pressed={saved}
         aria-busy={pending}
-        aria-label={saved ? `Hapus ${label} dari tersimpan` : `Simpan ${label}`}
+        aria-label={
+        saved ? t("removeSaved", { name: label }) : t("save", { name: label })
+      }
         onClick={(event) => {
           // The bookmark sits on top of the cover, which is itself a link to the
           // destination — without this, saving also navigates away from the list.
@@ -71,7 +75,7 @@ export function FavoriteButton({
         <AnchoredPanel
           anchor={anchor}
           panelRef={panelRef}
-          label="Simpan ke album"
+          label={t("saveToAlbum")}
         >
           {/* A React portal still bubbles events through the React tree, so a
               click in here would otherwise reach the card link behind it and

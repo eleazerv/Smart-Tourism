@@ -253,6 +253,8 @@ function AccommodationItemCard({
   stay: TripBookingDetail["accommodation_bookings"][number];
   closed: boolean;
 }) {
+  const stayCopy = useTranslations("stays");
+
   const rooms = stay.accommodation_booking_rooms ?? [];
 
   return (
@@ -292,7 +294,10 @@ function AccommodationItemCard({
           {rooms.map((room) => (
             <li key={room.id} className="flex items-center justify-between gap-3">
               <span className="text-muted-foreground">
-                {room.room_name} · {room.nights} malam
+                {stayCopy("nightsShort", {
+                  name: room.room_name,
+                  count: room.nights,
+                })}
               </span>
               <span className="text-xs text-muted-foreground">
                 {dateOf(room.check_in)} – {dateOf(room.check_out)}

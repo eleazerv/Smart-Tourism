@@ -170,7 +170,7 @@ async function StayBookingDetail({ params }: PageProps) {
                 href={`/hotels/${property.id}`}
                 className="mt-3 inline-block text-xs font-semibold text-brand-700 underline underline-offset-2"
               >
-                Lihat halaman penginapan
+                {t("openStayPage")}
               </Link>
             )}
           </section>
@@ -311,7 +311,7 @@ function ClosedNotice({ status }: { status: PaymentStatus }) {
           className="mt-3 inline-flex items-center gap-1.5 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
         >
           <Search className="h-4 w-4" />
-          Cari penginapan lagi
+          {t("searchStaysAgain")}
         </Link>
       </div>
     </div>

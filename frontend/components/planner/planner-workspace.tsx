@@ -210,7 +210,7 @@ useEffect(() => {
       // supaya label di sidebar tidak tertinggal "Percakapan baru".
       setRooms(await listChatRooms(await auth()));
     } catch (err) {
-      report(err, "Pesan gagal diproses. Coba lagi sebentar lagi.");
+      report(err, t("messageFailed"));
       setMessages((prev) => prev.filter((m) => m.id !== optimistic.id));
     } finally {
       setSending(false);
@@ -238,10 +238,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => addTripItem(tripId, destinationId, token),
-        "Destinasi itu gagal ditambahkan.",
+        t("addDestinationFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const pickAccommodation = useCallback(
@@ -255,10 +255,10 @@ useEffect(() => {
             { accommodation_id: accommodationId },
             token,
           ),
-        "Penginapan itu gagal dipilih.",
+        t("stayPickFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const patchStop = useCallback(
@@ -266,10 +266,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => updateTripStop(tripId, stopId, patch, token),
-        "Perubahan itu gagal disimpan.",
+        t("saveChangeFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropStop = useCallback(
@@ -277,10 +277,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripStop(tripId, stopId, token),
-        "Kota itu gagal dihapus.",
+        t("removeCityFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const pickFlight = useCallback(
@@ -332,10 +332,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => updateTripItem(tripId, itemId, patch, token),
-        "Perubahan itu gagal disimpan.",
+        t("saveChangeFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropItem = useCallback(
@@ -343,10 +343,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripItem(tripId, itemId, token),
-        "Destinasi itu gagal dihapus.",
+        t("removeDestinationFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   const dropFlight = useCallback(
@@ -354,10 +354,10 @@ useEffect(() => {
       if (!tripId) return;
       await mutate(
         (token) => removeTripFlight(tripId, stopId, role, token),
-        "Penerbangan itu gagal dilepas.",
+        t("flightDropFailed"),
       );
     },
-    [mutate, tripId],
+    [mutate, t, tripId],
   );
 
   /**

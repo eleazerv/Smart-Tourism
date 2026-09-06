@@ -61,7 +61,7 @@ export async function submitReview(
   }
 
   revalidatePath(`/destinations/${destinationId}`);
-  return { ok: true, message: "Terima kasih, ulasan Anda sudah tayang." };
+  return { ok: true, message: t("submitted") };
 }
 
 export async function removeReview(

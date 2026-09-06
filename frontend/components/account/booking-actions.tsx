@@ -28,11 +28,12 @@ export function BookingActions({
   kind?: "flight" | "stay";
 }) {
   const t = useTranslations("bookings");
+  const ui = useTranslations("ui");
 
   const actions =
     kind === "stay"
-      ? { pay: payStayBooking, cancel: cancelStayBooking, held: "Kamar" }
-      : { pay: payBooking, cancel: cancelBooking, held: "Kursi" };
+      ? { pay: payStayBooking, cancel: cancelStayBooking, held: t("rooms") }
+      : { pay: payBooking, cancel: cancelBooking, held: t("seats") };
 
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -106,7 +107,7 @@ export function BookingActions({
         title={t("cancelTitle")}
         description={t("cancelBody", { held: actions.held })}
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}
-        cancelLabel="Kembali"
+        cancelLabel={ui("back")}
         destructive
         pending={cancelling}
         onConfirm={cancel}

@@ -32,7 +32,7 @@ export function CatalogueSearch({ state }: { state: SearchState }) {
     >
       <Search className="h-4 w-4 shrink-0 text-muted-foreground" />
       <label htmlFor="catalogue-search" className="sr-only">
-        Cari destinasi, kota, atau taman nasional
+        {t("searchLabelLong")}
       </label>
       <input
         id="catalogue-search"
@@ -55,7 +55,7 @@ export function CatalogueSearch({ state }: { state: SearchState }) {
         type="submit"
         className="shrink-0 rounded-full bg-brand-700 px-4 py-2 text-sm font-semibold text-white transition hover:bg-brand-900"
       >
-        Cari
+        {t("searchButton")}
       </button>
     </form>
   );

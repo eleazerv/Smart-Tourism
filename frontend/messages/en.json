@@ -313,7 +313,9 @@
     "goodFor": "Good for",
     "noDescription": "No description for {name} yet. The crowding, best times, and visitor reviews below can still help you plan.",
     "crowdDisclaimer": "Crowding figures come from the latest provincial visitor statistics, not from a daily headcount at this destination.",
-    "pageViews": "This page has been viewed {count} times."
+    "pageViews": "This page has been viewed {count} times.",
+    "ratingAria": "Rated {value} out of 5",
+    "thanks": "Thank you, your review is live."
   },
   "monthStrip": {
     "currentMonthSuffix": "current month",
@@ -372,7 +374,9 @@
     "browseTitle": "Explore destinations across Indonesia",
     "browseSubtitle": "From beaches to old town centres. Filter by type, province, and visitor rating, then open a page to see the best time to visit.",
     "mapPromoTitle": "See the crowd map and intercity routes",
-    "mapPromoBody": "Compare visitor numbers between provinces before settling on a destination."
+    "mapPromoBody": "Compare visitor numbers between provinces before settling on a destination.",
+    "searchLabelLong": "Search destinations, cities, or national parks",
+    "searchButton": "Search"
   },
   "ui": {
     "filter": "Filters",
@@ -384,7 +388,11 @@
     "prevPage": "Previous page",
     "nextPage": "Next page",
     "page": "Page {n}",
-    "filterSheet": "Filter results"
+    "filterSheet": "Filter results",
+    "cancel": "Cancel",
+    "back": "Back",
+    "increase": "Add {label}",
+    "loading": "Loading…"
   },
   "map": {
     "metaTitle": "Crowd Map",
@@ -619,7 +627,10 @@
     "emptyBody": "Try loosening the price cap or accommodation class",
     "emptyBodyTail": ", or search across all cities.",
     "clearFilters": "Clear all filters",
-    "notRecorded": "Not recorded"
+    "notRecorded": "Not recorded",
+    "cityOrArea": "City or area",
+    "citiesAvailable": "{count} cities available",
+    "nightsShort": "{name} · {count} nights"
   },
   "checkout": {
     "metaTitle": "Booking Details",
@@ -765,7 +776,11 @@
     "seatTaken": "Seat {seat} is taken",
     "seatMine": "Seat {seat}, passenger {n}",
     "pickSeat": "Pick seat {seat}",
-    "pickingFor": "Picking a seat for passenger {n}."
+    "pickingFor": "Picking a seat for passenger {n}.",
+    "allAirports": "All airports",
+    "farePerPassenger": "Fare per passenger",
+    "pickCityShort": "{label} city",
+    "findFlightAgain": "Search flights again"
   },
   "bookings": {
     "status": {
@@ -800,7 +815,10 @@
     "tabFlight": "Flights",
     "tabAccommodation": "Stays",
     "heading": "My bookings",
-    "description": "All of your bookings — trip packages, flights, and stays — with their payment status."
+    "description": "All of your bookings — trip packages, flights, and stays — with their payment status.",
+    "openPaymentFailed": "Could not open the payment page. Try again shortly.",
+    "seats": "Seats",
+    "rooms": "Rooms"
   },
   "albums": {
     "nameTaken": "That name is already taken.",
@@ -858,7 +876,9 @@
     "renameFailed": "Could not rename.",
     "cancelLabel": "Cancel",
     "updateFailed": "Could not update the album. Try again.",
-    "albumNamePlaceholder": "Album name, e.g. Bali 2026"
+    "albumNamePlaceholder": "Album name, e.g. Bali 2026",
+    "removeSaved": "Remove {name} from saved",
+    "save": "Save {name}"
   },
   "profile": {
     "editName": "Edit name",
@@ -908,7 +928,11 @@
     "cancelledBodyStay": "This booking was cancelled and its rooms released. There is nothing left for you to pay on this booking.",
     "failedBodyTrip": "The payment deadline passed, so the invoice was closed and the held seats and rooms released. There is nothing left for you to pay on this booking.",
     "expiredBodyTrip": "This booking's invoice passed its deadline before being paid, so the seats and rooms were released. There is nothing left for you to pay on this booking.",
-    "cancelledBodyTrip": "This booking was cancelled and its seats and rooms released. There is nothing left for you to pay on this booking."
+    "cancelledBodyTrip": "This booking was cancelled and its seats and rooms released. There is nothing left for you to pay on this booking.",
+    "openStayPage": "Open the stay page",
+    "searchStaysAgain": "Search stays again",
+    "ordersDescription": "All of your bookings — trip packages, flights, and stays — with their payment status.",
+    "seeMyBookings": "See my bookings"
   },
   "planner": {
     "stayStatus": {
@@ -1050,7 +1074,21 @@
     "intoVia": "Into {city} (via {airport})",
     "outVia": "Out of {city} (via {airport})",
     "nearestAirport": "the nearest airport",
-    "flightPickFailed": "That flight could not be used. Its seats may already be gone."
+    "flightPickFailed": "That flight could not be used. Its seats may already be gone.",
+    "aDestinationTitle": "Destination",
+    "loadingDetail": "Loading destination details…",
+    "fullPage": "Full page",
+    "perNightPrice": "{price}/night",
+    "addDestinationFirstLong": "Add a destination in this city first, then a stay can be picked.",
+    "messageFailed": "The message could not be processed. Try again shortly.",
+    "addDestinationFailed": "That destination could not be added.",
+    "removeCityFailed": "That city could not be removed.",
+    "removeDestinationFailed": "That destination could not be removed.",
+    "stayPickFailed": "That stay could not be selected.",
+    "saveChangeFailed": "That change could not be saved.",
+    "flightDropFailed": "That flight could not be dropped.",
+    "plannerMetaDescription": "Plan a trip with the AI assistant: find destinations, pick stays and flights, then book them directly.",
+    "metaTitle": "Trip Planner"
   },
   "payment": {
     "successMetaTitle": "Payment Received",

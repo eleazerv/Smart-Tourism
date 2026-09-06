@@ -3,13 +3,20 @@ import { Suspense } from "react";
 import { SiteHeader } from "@/components/home/site-header";
 import { PlannerWorkspace } from "@/components/planner/planner-workspace";
 import { requireAccessToken } from "@/lib/api/session";
-import { setRequestLocale } from "next-intl/server";
+import { getTranslations, setRequestLocale } from "next-intl/server";
 
-export const metadata: Metadata = {
-  title: "Rencana Perjalanan",
-  description:
-    "Susun rencana perjalanan bersama asisten AI: cari destinasi, pilih penginapan dan penerbangan, lalu pesan sekaligus.",
-};
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ locale: string }>;
+}): Promise<Metadata> {
+  const { locale } = await params;
+  const t = await getTranslations({ locale, namespace: "planner" });
+  return {
+    title: t("metaTitle"),
+    description: t("plannerMetaDescription"),
+  };
+}
 
 /**
  * Kerangka halaman mengikuti /peta, bukan halaman katalog: ruang kerja ini

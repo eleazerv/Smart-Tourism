@@ -313,7 +313,9 @@
     "goodFor": "Cocok untuk",
     "noDescription": "Deskripsi {name} belum tersedia. Kepadatan, waktu terbaik, dan ulasan pengunjung di bawah tetap bisa membantu Anda merencanakan kunjungan.",
     "crowdDisclaimer": "Angka kepadatan berasal dari statistik kunjungan provinsi periode terakhir, bukan hitungan pengunjung harian destinasi ini.",
-    "pageViews": "Halaman ini sudah dilihat {count} kali."
+    "pageViews": "Halaman ini sudah dilihat {count} kali.",
+    "ratingAria": "Peringkat {value} dari 5",
+    "thanks": "Terima kasih, ulasan Anda sudah tayang."
   },
   "monthStrip": {
     "currentMonthSuffix": "bulan berjalan",
@@ -372,7 +374,9 @@
     "browseTitle": "Jelajahi destinasi Indonesia",
     "browseSubtitle": "Dari pantai sampai pusat kota tua. Saring berdasarkan jenis, provinsi, dan rating pengunjung, lalu buka halamannya untuk melihat waktu terbaik berkunjung.",
     "mapPromoTitle": "Lihat peta kepadatan dan rute antarkota",
-    "mapPromoBody": "Bandingkan jumlah kunjungan antarprovinsi sebelum menentukan tujuan."
+    "mapPromoBody": "Bandingkan jumlah kunjungan antarprovinsi sebelum menentukan tujuan.",
+    "searchLabelLong": "Cari destinasi, kota, atau taman nasional",
+    "searchButton": "Cari"
   },
   "ui": {
     "filter": "Filter",
@@ -384,7 +388,11 @@
     "prevPage": "Halaman sebelumnya",
     "nextPage": "Halaman berikutnya",
     "page": "Halaman {n}",
-    "filterSheet": "Saring hasil"
+    "filterSheet": "Saring hasil",
+    "cancel": "Batal",
+    "back": "Kembali",
+    "increase": "Tambah {label}",
+    "loading": "Memuat…"
   },
   "map": {
     "metaTitle": "Peta Wisata",
@@ -619,7 +627,10 @@
     "emptyBody": "Coba longgarkan batas harga atau kelas akomodasi",
     "emptyBodyTail": ", atau cari di seluruh kota.",
     "clearFilters": "Hapus semua filter",
-    "notRecorded": "Tidak dicatat"
+    "notRecorded": "Tidak dicatat",
+    "cityOrArea": "Kota atau area",
+    "citiesAvailable": "{count} kota tersedia",
+    "nightsShort": "{name} · {count} malam"
   },
   "checkout": {
     "metaTitle": "Detail Pemesanan",
@@ -765,7 +776,11 @@
     "seatTaken": "Kursi {seat} sudah terisi",
     "seatMine": "Kursi {seat}, penumpang {n}",
     "pickSeat": "Pilih kursi {seat}",
-    "pickingFor": "Memilih kursi untuk penumpang {n}."
+    "pickingFor": "Memilih kursi untuk penumpang {n}.",
+    "allAirports": "Semua bandara",
+    "farePerPassenger": "Tarif per penumpang",
+    "pickCityShort": "{label} kota",
+    "findFlightAgain": "Cari penerbangan lagi"
   },
   "bookings": {
     "status": {
@@ -800,7 +815,10 @@
     "tabFlight": "Penerbangan",
     "tabAccommodation": "Penginapan",
     "heading": "Pesanan saya",
-    "description": "Semua pesanan Anda — paket trip, tiket pesawat, dan penginapan — beserta status pembayarannya."
+    "description": "Semua pesanan Anda — paket trip, tiket pesawat, dan penginapan — beserta status pembayarannya.",
+    "openPaymentFailed": "Gagal membuka pembayaran. Coba lagi sebentar lagi.",
+    "seats": "Kursi",
+    "rooms": "Kamar"
   },
   "albums": {
     "nameTaken": "Nama itu sudah dipakai.",
@@ -858,7 +876,9 @@
     "renameFailed": "Gagal mengganti nama.",
     "cancelLabel": "Batal",
     "updateFailed": "Gagal memperbarui album. Coba lagi.",
-    "albumNamePlaceholder": "Nama album, mis. Bali 2026"
+    "albumNamePlaceholder": "Nama album, mis. Bali 2026",
+    "removeSaved": "Hapus {name} dari tersimpan",
+    "save": "Simpan {name}"
   },
   "profile": {
     "editName": "Ubah nama",
@@ -908,7 +928,11 @@
     "cancelledBodyStay": "Pesanan ini dibatalkan dan kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
     "failedBodyTrip": "Batas waktu pembayaran sudah lewat, jadi tagihannya ditutup dan kursi/kamar yang ditahan dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
     "expiredBodyTrip": "Tagihan pesanan ini melewati batas waktunya sebelum dibayar, sehingga kursi/kamarnya dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
-    "cancelledBodyTrip": "Pesanan ini dibatalkan dan kursi/kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini."
+    "cancelledBodyTrip": "Pesanan ini dibatalkan dan kursi/kamarnya sudah dilepas kembali. Tidak ada yang perlu Anda bayar untuk pesanan ini.",
+    "openStayPage": "Lihat halaman penginapan",
+    "searchStaysAgain": "Cari penginapan lagi",
+    "ordersDescription": "Semua pesanan Anda — paket trip, tiket pesawat, dan penginapan — beserta status pembayarannya.",
+    "seeMyBookings": "Lihat Pesanan saya"
   },
   "planner": {
     "stayStatus": {
@@ -1050,7 +1074,21 @@
     "intoVia": "Masuk {city} (lewat {airport})",
     "outVia": "Keluar {city} (lewat {airport})",
     "nearestAirport": "bandara terdekat",
-    "flightPickFailed": "Penerbangan itu gagal dipakai. Kursinya mungkin sudah habis."
+    "flightPickFailed": "Penerbangan itu gagal dipakai. Kursinya mungkin sudah habis.",
+    "aDestinationTitle": "Destinasi",
+    "loadingDetail": "Memuat detail destinasi…",
+    "fullPage": "Halaman lengkap",
+    "perNightPrice": "{price}/malam",
+    "addDestinationFirstLong": "Tambahkan satu destinasi di kota ini dulu, baru penginapannya bisa dipilih.",
+    "messageFailed": "Pesan gagal diproses. Coba lagi sebentar lagi.",
+    "addDestinationFailed": "Destinasi itu gagal ditambahkan.",
+    "removeCityFailed": "Kota itu gagal dihapus.",
+    "removeDestinationFailed": "Destinasi itu gagal dihapus.",
+    "stayPickFailed": "Penginapan itu gagal dipilih.",
+    "saveChangeFailed": "Perubahan itu gagal disimpan.",
+    "flightDropFailed": "Penerbangan itu gagal dilepas.",
+    "plannerMetaDescription": "Susun rencana perjalanan bersama asisten AI: cari destinasi, pilih penginapan dan penerbangan, lalu pesan langsung.",
+    "metaTitle": "Rencana Perjalanan"
   },
   "payment": {
     "successMetaTitle": "Pembayaran Diterima",

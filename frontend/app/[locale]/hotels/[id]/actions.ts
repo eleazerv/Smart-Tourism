@@ -70,7 +70,7 @@ export async function submitStayReview(
   }
 
   revalidatePath(`/hotels/${accommodationId}`);
-  return { ok: true, message: "Terima kasih, ulasan Anda sudah tayang." };
+  return { ok: true, message: t("submitted") };
 }
 
 export async function removeStayReview(

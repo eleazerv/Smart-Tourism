@@ -14,6 +14,7 @@ import { useTranslations } from "next-intl";
  * this owns only the name line.
  */
 export function NameEditor({ name }: { name: string }) {
+  const ui = useTranslations("ui");
   const t = useTranslations("profile");
 
   const [editing, setEditing] = useState(false);
@@ -117,7 +118,7 @@ export function NameEditor({ name }: { name: string }) {
           type="button"
           onClick={cancel}
           disabled={pending}
-          aria-label="Batal"
+          aria-label={ui("cancel")}
           className="shrink-0 rounded-full p-2 text-muted-foreground transition hover:bg-muted disabled:opacity-50"
         >
           <X className="h-3.5 w-3.5" />

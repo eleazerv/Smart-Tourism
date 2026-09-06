@@ -9,6 +9,7 @@ import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { useTranslations } from "next-intl";
 
 export function TripBookingActions({ bookingId }: { bookingId: string }) {
+  const ui = useTranslations("ui");
   const t = useTranslations("bookings");
 
   const [confirming, setConfirming] = useState(false);
@@ -26,7 +27,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
         const result = await payTripBooking(bookingId, { token });
         window.location.assign(result.invoice_url);
       } catch {
-        setError("Gagal membuka pembayaran. Coba lagi sebentar lagi.");
+        setError(t("openPaymentFailed"));
         router.refresh();
       }
     });
@@ -89,7 +90,7 @@ export function TripBookingActions({ bookingId }: { bookingId: string }) {
         title={t("cancelTripTitle")}
         description={t("cancelTripBody")}
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}
-        cancelLabel="Kembali"
+        cancelLabel={ui("back")}
         destructive
         pending={cancelling}
         onConfirm={cancel}

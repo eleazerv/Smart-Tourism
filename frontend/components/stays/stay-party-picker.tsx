@@ -130,6 +130,8 @@ function Stepper({
   max: number;
   onChange: (value: number) => void;
 }) {
+  const ui = useTranslations("ui");
+
   return (
     <div className="flex items-center justify-between gap-3 px-1 py-1.5">
       <div className="min-w-0">
@@ -151,7 +153,7 @@ function Stepper({
           {value}
         </span>
         <Round
-          label={`Tambah ${label.toLowerCase()}`}
+          label={ui("increase", { label: label.toLowerCase() })}
           disabled={value >= max}
           onClick={() => onChange(value + 1)}
         >
