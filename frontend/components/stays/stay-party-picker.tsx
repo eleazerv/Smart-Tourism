@@ -6,6 +6,7 @@ import {
   AnchoredPanel,
   useAnchoredPanel,
 } from "@/components/ui/anchored-panel";
+import { MAX_GUESTS, MAX_ROOMS } from "@/lib/stays-search";
 
 /**
  * Guests and rooms behind one field, opened by tapping anywhere on it — the
@@ -18,18 +19,25 @@ import {
 const PANEL_WIDTH = 288;
 const PANEL_HEIGHT = 200;
 
-const MAX_GUESTS = 12;
-const MAX_ROOMS = 6;
+/** The party the steppers open on once the reader engages with them. */
+const START_GUESTS = 2;
+const START_ROOMS = 1;
 
 export function StayPartyPicker({
   guests,
   rooms,
   onChange,
 }: {
-  guests: number;
-  rooms: number;
+  /** Null while the reader has not said — the field reads as unfilled then. */
+  guests: number | null;
+  rooms: number | null;
   onChange: (next: { guests: number; rooms: number }) => void;
 }) {
+  // The panel always has concrete numbers to step from; the trigger keeps
+  // showing a placeholder until one of them is actually committed.
+  const shownGuests = guests ?? START_GUESTS;
+  const shownRooms = rooms ?? START_ROOMS;
+  const chosen = guests !== null || rooms !== null;
   const [open, setOpen] = useState(false);
   const close = useCallback(() => setOpen(false), []);
   const { triggerRef, panelRef, anchor } = useAnchoredPanel({
@@ -54,13 +62,21 @@ export function StayPartyPicker({
           <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             Tamu &amp; kamar
           </span>
-          <span className="block truncate text-sm font-semibold">
-            {guests} tamu, {rooms} kamar
+          <span
+            className={
+              chosen
+                ? "block truncate text-sm font-semibold"
+                : "block truncate text-sm font-semibold text-muted-foreground"
+            }
+          >
+            {chosen ? `${shownGuests} tamu, ${shownRooms} kamar` : "Pilih tamu"}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {rooms > 1
-              ? `${Math.ceil(guests / rooms)} tamu per kamar`
-              : "Satu kamar"}
+            {!chosen
+              ? "Belum diisi"
+              : shownRooms > 1
+                ? `${Math.ceil(shownGuests / shownRooms)} tamu per kamar`
+                : "Satu kamar"}
           </span>
         </span>
       </button>
@@ -74,19 +90,19 @@ export function StayPartyPicker({
           <Stepper
             label="Tamu"
             hint="Termasuk anak-anak"
-            value={guests}
+            value={shownGuests}
             min={1}
             max={MAX_GUESTS}
-            onChange={(next) => onChange({ guests: next, rooms })}
+            onChange={(next) => onChange({ guests: next, rooms: shownRooms })}
           />
           <div className="my-2 border-t border-border" />
           <Stepper
             label="Kamar"
             hint="Kapasitas dihitung per kamar"
-            value={rooms}
+            value={shownRooms}
             min={1}
             max={MAX_ROOMS}
-            onChange={(next) => onChange({ guests, rooms: next })}
+            onChange={(next) => onChange({ guests: shownGuests, rooms: next })}
           />
         </AnchoredPanel>
       )}

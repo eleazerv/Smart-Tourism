@@ -21,12 +21,14 @@ export function StayRow({
   priority,
 }: {
   stay: Accommodation;
-  nights: number;
-  rooms: number;
+  /** Null until the reader has dated the stay; the total is hidden then. */
+  nights: number | null;
+  rooms: number | null;
   href: string;
   priority?: boolean;
 }) {
-  const total = stay.price_per_night * nights * rooms;
+  const total =
+    nights === null ? null : stay.price_per_night * nights * (rooms ?? 1);
   const place = [stay.cities?.name, stay.cities?.provinces?.name]
     .filter(Boolean)
     .join(", ");
@@ -101,8 +103,14 @@ export function StayRow({
               </span>
             </p>
             <p className="text-xs text-muted-foreground">
-              {formatIDR(total)} untuk {nights} malam
-              {rooms > 1 && `, ${rooms} kamar`}
+              {total === null ? (
+                "Pilih tanggal untuk melihat total"
+              ) : (
+                <>
+                  {formatIDR(total)} untuk {nights} malam
+                  {rooms !== null && rooms > 1 && `, ${rooms} kamar`}
+                </>
+              )}
             </p>
             <span
               aria-hidden="true"

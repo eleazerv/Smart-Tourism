@@ -110,6 +110,14 @@ async function Results({ searchParams }: PageProps) {
   );
 
   const nights = nightCount(state);
+  // Everything that describes the stay rather than the property is only said
+  // once the reader has actually said it.
+  const stayLabel = [
+    nights !== null ? `${nights} malam` : null,
+    state.guests !== null ? `${state.guests} tamu` : null,
+  ]
+    .filter(Boolean)
+    .join(", ");
   const resetHref = withFilter(state, { tiers: [], maxPrice: null });
   const filters = (
     <StayFilters
@@ -127,7 +135,11 @@ async function Results({ searchParams }: PageProps) {
         }
         subtitle={
           city
-            ? `Pilihan menginap di ${city.name}${city.province ? `, ${city.province}` : ""} untuk ${formatDateLabel(state.checkIn)} – ${formatDateLabel(state.checkOut)} (${nights} malam).`
+            ? `Pilihan menginap di ${city.name}${city.province ? `, ${city.province}` : ""}${
+                state.checkIn && state.checkOut
+                  ? ` untuk ${formatDateLabel(state.checkIn)} – ${formatDateLabel(state.checkOut)} (${nights} malam).`
+                  : ". Pilih tanggal menginap untuk melihat ketersediaan dan total biaya."
+              }`
             : "Dari homestay sampai resor. Bandingkan harga per malam, kelas akomodasi, dan kapasitas kamar di kota-kota wisata Indonesia."
         }
         seed={city ? `hotel-${city.name}` : "hotel-lobby-nusantara"}
@@ -156,8 +168,8 @@ async function Results({ searchParams }: PageProps) {
                   <span className="font-semibold text-foreground tabular-nums">
                     {matched.length}
                   </span>{" "}
-                  penginapan{city ? ` di ${city.name}` : ""} &middot; {nights}{" "}
-                  malam, {state.guests} tamu
+                  penginapan{city ? ` di ${city.name}` : ""}
+                  {stayLabel && ` · ${stayLabel}`}
                 </>
               )}
             </p>
@@ -231,8 +243,9 @@ function EmptyStays({
         Belum ada penginapan yang cocok
       </h2>
       <p className="mx-auto mt-1.5 max-w-md text-sm text-muted-foreground">
-        Coba longgarkan batas harga atau kelas akomodasi, kurangi jumlah tamu,
-        atau cari di seluruh kota.
+        Coba longgarkan batas harga atau kelas akomodasi
+        {state.guests !== null && ", kurangi jumlah tamu"}, atau cari di
+        seluruh kota.
       </p>
       <div className="mt-5 flex flex-wrap justify-center gap-2">
         {activeFilterCount(state) > 0 && (

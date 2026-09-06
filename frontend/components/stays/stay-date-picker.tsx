@@ -36,16 +36,22 @@ export function StayDatePicker({
   counterpart,
 }: {
   kind: "in" | "out";
-  /** `YYYY-MM-DD`. */
-  value: string;
+  /** `YYYY-MM-DD`, or null while this end of the stay is unchosen. */
+  value: string | null;
   onChange: (date: string) => void;
-  counterpart: string;
+  counterpart: string | null;
 }) {
   const [open, setOpen] = useState(false);
-  const [month, setMonth] = useState(() => value.slice(0, 7));
+  // With nothing chosen the calendar opens on the month the reader is most
+  // likely to book in — this one — rather than on an invented default date.
+  const [month, setMonth] = useState(
+    () => (value ?? counterpart ?? todayISO()).slice(0, 7),
+  );
 
   // The chosen date moving to another month (a new search, say) follows.
-  useEffect(() => setMonth(value.slice(0, 7)), [value]);
+  useEffect(() => {
+    if (value) setMonth(value.slice(0, 7));
+  }, [value]);
 
   const close = useCallback(() => setOpen(false), []);
   const { triggerRef, panelRef, anchor } = useAnchoredPanel({
@@ -56,10 +62,12 @@ export function StayDatePicker({
   });
 
   // Check-out cannot land on or before check-in, so its floor is the night
-  // after the arrival rather than today.
-  const floor = kind === "out" ? addDaysISO(counterpart, 1) : todayISO();
+  // after the arrival rather than today — until there is an arrival to follow.
+  const floor =
+    kind === "out" && counterpart ? addDaysISO(counterpart, 1) : todayISO();
   const [from, to] = kind === "in" ? [value, counterpart] : [counterpart, value];
-  const nights = nightsBetween(from, to);
+  // Only a complete pair has a length; a half-chosen stay says nothing yet.
+  const nights = from && to ? nightsBetween(from, to) : null;
 
   return (
     <div className="flex min-w-0">
@@ -76,11 +84,17 @@ export function StayDatePicker({
           <span className="block text-[11px] font-medium uppercase tracking-wide text-muted-foreground">
             {kind === "in" ? "Check-in" : "Check-out"}
           </span>
-          <span className="block truncate text-sm font-semibold">
-            {shortDate(value)}
+          <span
+            className={
+              value
+                ? "block truncate text-sm font-semibold"
+                : "block truncate text-sm font-semibold text-muted-foreground"
+            }
+          >
+            {value ? shortDate(value) : "Pilih tanggal"}
           </span>
           <span className="block truncate text-[11px] text-muted-foreground">
-            {weekdayName(value)}
+            {value ? weekdayName(value) : "Belum diisi"}
           </span>
         </span>
       </button>
@@ -94,17 +108,23 @@ export function StayDatePicker({
           <MonthCalendar
             month={month}
             onMonthChange={setMonth}
-            value={value}
+            value={value ?? undefined}
             onSelect={(date) => {
               onChange(date);
               close();
             }}
             minDate={floor}
-            inRange={(date) => date > from && date < to}
+            inRange={(date) =>
+              from !== null && to !== null && date > from && date < to
+            }
             footnote={
-              kind === "in"
-                ? `Menginap ${nights} malam, sampai ${shortDate(to)}.`
-                : `Menginap ${nights} malam, sejak ${shortDate(from)}.`
+              nights === null
+                ? kind === "in"
+                  ? "Pilih tanggal kedatangan."
+                  : "Pilih tanggal kepulangan."
+                : kind === "in"
+                  ? `Menginap ${nights} malam, sampai ${shortDate(to!)}.`
+                  : `Menginap ${nights} malam, sejak ${shortDate(from!)}.`
             }
           />
         </AnchoredPanel>

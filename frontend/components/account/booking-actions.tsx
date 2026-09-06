@@ -4,15 +4,33 @@ import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { CreditCard, Loader2, XCircle } from "lucide-react";
 import { cancelBooking, payBooking } from "@/lib/booking-actions";
+import {
+  cancelStayBooking,
+  payStayBooking,
+} from "@/lib/stay-booking-actions";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 
 /**
- * Pay or release one pending booking.
+ * Pay or release one pending booking, flight or accommodation.
  *
  * Payment leaves the app for the Xendit invoice; cancelling is confirmed first
- * because it hands the held seat back and cannot be undone.
+ * because it hands the held seat or room back and cannot be undone.
+ *
+ * The two kinds hit different endpoints but behave identically from here, so
+ * `kind` only picks the action pair and the noun in the confirmation.
  */
-export function BookingActions({ bookingId }: { bookingId: string }) {
+export function BookingActions({
+  bookingId,
+  kind = "flight",
+}: {
+  bookingId: string;
+  kind?: "flight" | "stay";
+}) {
+  const actions =
+    kind === "stay"
+      ? { pay: payStayBooking, cancel: cancelStayBooking, held: "Kamar" }
+      : { pay: payBooking, cancel: cancelBooking, held: "Kursi" };
+
   const [confirming, setConfirming] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [paying, startPaying] = useTransition();
@@ -22,7 +40,7 @@ export function BookingActions({ bookingId }: { bookingId: string }) {
   const pay = () => {
     setError(null);
     startPaying(async () => {
-      const result = await payBooking(bookingId);
+      const result = await actions.pay(bookingId);
       if (result.ok) {
         window.location.assign(result.invoiceUrl);
         return;
@@ -36,7 +54,7 @@ export function BookingActions({ bookingId }: { bookingId: string }) {
   const cancel = () => {
     setError(null);
     startCancelling(async () => {
-      const result = await cancelBooking(bookingId);
+      const result = await actions.cancel(bookingId);
       setConfirming(false);
       if (!result.ok) setError(result.message);
       router.refresh();
@@ -83,7 +101,7 @@ export function BookingActions({ bookingId }: { bookingId: string }) {
         open={confirming}
         icon={<XCircle className="h-5 w-5" />}
         title="Batalkan pesanan ini?"
-        description="Kursi yang ditahan akan dilepas kembali dan tautan pembayarannya dimatikan. Tindakan ini tidak bisa dibatalkan."
+        description={`${actions.held} yang ditahan akan dilepas kembali dan tautan pembayarannya dimatikan. Tindakan ini tidak bisa dibatalkan.`}
         confirmLabel={cancelling ? "Membatalkan..." : "Ya, batalkan"}
         cancelLabel="Kembali"
         destructive

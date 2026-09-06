@@ -39,7 +39,8 @@ export function MonthCalendar({
 }: {
   month: string;
   onMonthChange: (month: string) => void;
-  value: string;
+  /** Undefined while nothing is chosen, so no cell reads as selected. */
+  value?: string;
   onSelect: (date: string) => void;
   minDate?: string;
   isDisabled?: (date: string) => boolean;
