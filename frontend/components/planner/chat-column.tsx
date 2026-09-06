@@ -14,6 +14,7 @@ import { Button } from "@/components/ui/button";
 import { InteractiveCards } from "@/components/planner/interactive-cards";
 import type {
   ChatMessage,
+  City,
   PlannerFlightOption,
   TripCanvas,
   TripFlightRole,
@@ -22,6 +23,7 @@ import type {
 type Props = {
   messages: ChatMessage[];
   canvas: TripCanvas | null;
+  cities: City[],
   sending: boolean;
   /**
    * Kotak tulisnya tidak pernah dikunci karena belum ada percakapan: pesan
@@ -44,6 +46,7 @@ type Props = {
 export function ChatColumn({
   messages,
   canvas,
+  cities,
   sending,
   onSend,
   onAddDestination,
@@ -105,6 +108,7 @@ export function ChatColumn({
                   <InteractiveCards
                     blocks={m.interactive ?? []}
                     canvas={canvas}
+                    cities={cities}
                     onAddDestination={onAddDestination}
                     onPickAccommodation={onPickAccommodation}
                     onPickFlight={onPickFlight}
@@ -262,11 +266,12 @@ function MarkdownLite({ text }: { text: string }) {
   const lines = text.split("\n");
   const blocks: React.ReactNode[] = [];
   let list: React.ReactNode[] = [];
+  let listStart = 0;
 
   const flush = () => {
     if (list.length) {
       blocks.push(
-        <ul key={blocks.length} className="my-1 list-disc space-y-0.5 pl-5">
+        <ul key={`ul-${listStart}`} className="my-1 list-disc space-y-0.5 pl-5">
           {list}
         </ul>,
       );
@@ -274,32 +279,98 @@ function MarkdownLite({ text }: { text: string }) {
     }
   };
 
-  lines.forEach((line, i) => {
+  // Baris pemisah tabel: |---|---|---| atau |:--|--:|
+  const isTableSeparator = (line: string) =>
+    /^\s*\|?(\s*:?-+:?\s*\|)+\s*:?-*:?\s*\|?\s*$/.test(line);
+
+  const splitRow = (line: string) =>
+    line
+      .trim()
+      .replace(/^\|/, "")
+      .replace(/\|$/, "")
+      .split("|")
+      .map((cell) => cell.trim());
+
+  let i = 0;
+  while (i < lines.length) {
+    const line = lines[i];
+
+    // Tabel: baris ini punya '|', baris berikutnya separator '---'.
+    if (
+      line.includes("|") &&
+      i + 1 < lines.length &&
+      isTableSeparator(lines[i + 1])
+    ) {
+      flush();
+      const header = splitRow(line);
+      const rows: string[][] = [];
+      let j = i + 2;
+      while (j < lines.length && lines[j].includes("|") && lines[j].trim() !== "") {
+        rows.push(splitRow(lines[j]));
+        j++;
+      }
+
+      blocks.push(
+        <div key={`table-${i}`} className="my-2 overflow-x-auto">
+          <table className="w-full border-collapse text-xs">
+            <thead>
+              <tr>
+                {header.map((cell, ci) => (
+                  <th
+                    key={ci}
+                    className="border-b border-border px-2 py-1 text-left font-semibold"
+                  >
+                    {inline(cell)}
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((row, ri) => (
+                <tr key={ri}>
+                  {row.map((cell, ci) => (
+                    <td key={ci} className="border-b border-border px-2 py-1">
+                      {inline(cell)}
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>,
+      );
+
+      i = j;
+      continue;
+    }
+
     const bullet = line.match(/^\s*[-*]\s+(.*)/);
     if (bullet) {
-      list.push(<li key={i}>{inline(bullet[1])}</li>);
-      return;
+      if (list.length === 0) listStart = i;
+      list.push(<li key={`li-${i}`}>{inline(bullet[1])}</li>);
+      i++;
+      continue;
     }
     flush();
 
     const heading = line.match(/^#{1,4}\s+(.*)/);
     if (heading) {
       blocks.push(
-        <p key={i} className="mt-2 font-semibold first:mt-0">
+        <p key={`h-${i}`} className="mt-2 font-semibold first:mt-0">
           {inline(heading[1])}
         </p>,
       );
     } else if (line.trim() === "") {
-      blocks.push(<div key={i} className="h-1.5" />);
+      blocks.push(<div key={`sp-${i}`} className="h-1.5" />);
     } else {
-      blocks.push(<p key={i}>{inline(line)}</p>);
+      blocks.push(<p key={`p-${i}`}>{inline(line)}</p>);
     }
-  });
+    i++;
+  }
   flush();
 
   return <>{blocks}</>;
 }
-
 function inline(text: string) {
   return text.split(/(\*\*[^*]+\*\*)/g).map((part, i) =>
     part.startsWith("**") && part.endsWith("**") && part.length > 4 ? (

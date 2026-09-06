@@ -86,20 +86,31 @@ export function minutesOfDay(timestamp: string): number {
 }
 
 /**
- * Time in the air, straight from the two clocks the API prints.
+ * Time in the air, dikoreksi selisih zona waktu antar bandara.
  *
- * No zone correction: `flight_options` quotes both ends on the same clock, so
- * a Jakarta-Denpasar sector reads as the 1h50m it actually flies rather than
- * gaining the hour the map would suggest.
+ * `flight_options` mencatat tiap jam sebagai waktu lokal bandaranya
+ * masing-masing (WIB/WITA/WIT), bukan satu jam bersama — jadi selisih jam
+ * mentah harus dikoreksi dengan selisih UTC offset kedua kota supaya durasi
+ * terbangnya benar. Rute lintas zona (mis. Jakarta WIB ↔ Denpasar WITA) akan
+ * mendapat tambahan 1 jam dibanding selisih jam yang tertulis di tiket.
  */
 export function durationMinutes(flight: {
+  origin_city_id: number;
+  destination_city_id: number;
   departure_time: string;
   arrival_time: string;
 }): number {
-  return (
+  const rawDiff =
     minutesSinceEpoch(flight.arrival_time) -
-    minutesSinceEpoch(flight.departure_time)
-  );
+    minutesSinceEpoch(flight.departure_time);
+
+  const originOffset = airportByCityId(flight.origin_city_id)?.utcOffset ?? 7;
+  const destOffset = airportByCityId(flight.destination_city_id)?.utcOffset ?? 7;
+
+  // Selisih offset ditambahkan ke selisih jam mentah: kalau tujuan lebih
+  // timur (WITA dari WIB), jam kedatangan yang tertulis "terlihat" lebih
+  // awal dari yang sebenarnya, jadi durasi aslinya lebih panjang.
+  return rawDiff + (destOffset - originOffset) * 60;
 }
 
 /** How many calendar days after departure the flight lands. */

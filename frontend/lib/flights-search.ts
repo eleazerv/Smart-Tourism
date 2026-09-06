@@ -207,11 +207,13 @@ export function toView(flight: FlightOption): FlightView {
     flight,
     departMinutes: minutesOfDay(flight.departure_time),
     arriveMinutes: minutesOfDay(flight.arrival_time) + dayOffset * 1440,
-    durationMin: durationMinutes(flight),
+    // Pakai durasi yang sudah dikoreksi zona waktu dari backend
+    // (`flight_options_enriched`). Fallback ke hitungan mentah kalau field
+    // ini belum ada -- backend lama atau endpoint yang belum dimigrasi.
+    durationMin: flight.duration_minutes ?? durationMinutes(flight),
     dayOffset,
   };
 }
-
 /** Decorates a whole board. */
 export function toViews(flights: FlightOption[]): FlightView[] {
   return flights.map(toView);

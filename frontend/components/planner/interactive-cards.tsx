@@ -20,6 +20,7 @@ import { coverImage } from "@/lib/home-data";
 import { formatIDR } from "@/lib/seeded-random";
 import type {
   AccommodationOption,
+  City,
   DestinationOption,
   InteractiveBlock,
   PlannerFlightOption,
@@ -31,6 +32,7 @@ import type {
 type Props = {
   blocks: InteractiveBlock[];
   canvas: TripCanvas | null;
+  cities: City[];
   onAddDestination: (id: string) => Promise<void>;
   /** Penginapan menempel ke kota, jadi yang dialamatkan stop — bukan item. */
   onPickAccommodation: (
@@ -63,6 +65,7 @@ function clock(iso: string) {
 export function InteractiveCards({
   blocks,
   canvas,
+  cities,
   onAddDestination,
   onPickAccommodation,
   onPickFlight,
@@ -92,7 +95,7 @@ export function InteractiveCards({
             />
           );
         }
-        return <FlightCard key={i} block={block} canvas={canvas} onPick={onPickFlight} />;
+        return <FlightCard key={i} block={block} canvas={canvas} cities={cities} onPick={onPickFlight}  />;
       })}
     </div>
   );
@@ -414,10 +417,12 @@ function AccommodationCard({
 function FlightCard({
   block,
   canvas,
+  cities,
   onPick,
 }: {
   block: Extract<InteractiveBlock, { type: "flight" }>;
   canvas: TripCanvas | null;
+  cities: City[];
   onPick: (
     option: PlannerFlightOption,
     stopId: string,
@@ -427,28 +432,69 @@ function FlightCard({
   const [busy, setBusy] = useState<string | null>(null);
   const stops = canvas?.stops ?? [];
 
+  // Kota asal/tujuan penerbangan ini, dari katalog kota — dipakai untuk tahu
+  // provinsinya saat kotanya sendiri belum jadi stop di rencana.
+  const originCity = cities.find((c) => c.id === block.origin_city_id);
+  const destinationCity = cities.find((c) => c.id === block.destination_city_id);
+
+  /**
+   * Cocokkan sebuah stop ke kota tujuan/asal leg ini.
+   *
+   * Kota yang sama persis dicoba dulu. Kalau tidak ada, dicoba kota lain di
+   * provinsi yang sama — bandara besar (mis. Denpasar) sering melayani
+   * seluruh provinsi, bukan cuma satu kota administratifnya, dan rencana bisa
+   * saja disusun dari kota lain di provinsi itu (mis. Gianyar untuk Bali).
+   * Match provinsi ditandai lewat `exact: false` supaya labelnya tetap jujur
+   * ke pengguna tentang kota mana yang sebenarnya disinggahi penerbangan itu.
+   */
+  function matchStop(
+    cityId: number,
+    cityRef: City | undefined,
+  ): { stop: TripStop; exact: boolean } | null {
+    const exact = stops.find((s) => s.cities?.id === cityId);
+    if (exact) return { stop: exact, exact: true };
+
+    const provinceId = cityRef?.provinces?.id;
+    if (provinceId == null) return null;
+
+    const sameProvince = stops.find(
+      (s) => s.cities?.province_id === provinceId,
+    );
+    return sameProvince ? { stop: sameProvince, exact: false } : null;
+  }
+
   // Peran sebuah leg ditentukan kotanya, bukan ditanyakan ke pengguna: rute
   // ini mendarat di `destination_city_id`, jadi bagi kota itu ia penerbangan
   // MASUK; dan ia lepas landas dari `origin_city_id`, jadi bagi kota itu ia
-  // penerbangan KELUAR. Kota yang belum jadi stop tidak punya tempat untuk
-  // menampung leg-nya, jadi tombolnya tidak ditawarkan.
+  // penerbangan KELUAR. Kota (atau provinsinya) yang belum jadi stop tidak
+  // punya tempat untuk menampung leg-nya, jadi tombolnya tidak ditawarkan.
   const targets: { stop: TripStop; role: TripFlightRole; label: string }[] = [];
 
-  const arrivalStop = stops.find((s) => s.cities?.id === block.destination_city_id);
-  if (arrivalStop) {
+  const arrivalMatch = matchStop(block.destination_city_id, destinationCity);
+  if (arrivalMatch) {
+    const { stop, exact } = arrivalMatch;
     targets.push({
-      stop: arrivalStop,
+      stop,
       role: "arrival",
-      label: `Masuk ${arrivalStop.cities?.name ?? "kota tujuan"}`,
+      label: exact
+        ? `Masuk ${stop.cities?.name ?? "kota tujuan"}`
+        : `Masuk ${stop.cities?.name ?? "kota tujuan"} (lewat ${
+            destinationCity?.name ?? "bandara terdekat"
+          })`,
     });
   }
 
-  const departureStop = stops.find((s) => s.cities?.id === block.origin_city_id);
-  if (departureStop) {
+  const departureMatch = matchStop(block.origin_city_id, originCity);
+  if (departureMatch) {
+    const { stop, exact } = departureMatch;
     targets.push({
-      stop: departureStop,
+      stop,
       role: "departure",
-      label: `Keluar ${departureStop.cities?.name ?? "kota asal"}`,
+      label: exact
+        ? `Keluar ${stop.cities?.name ?? "kota asal"}`
+        : `Keluar ${stop.cities?.name ?? "kota asal"} (lewat ${
+            originCity?.name ?? "bandara terdekat"
+          })`,
     });
   }
 
@@ -479,7 +525,7 @@ function FlightCard({
           <Row
             key={f.id}
             name={`${f.airline} ${f.flight_number}`}
-            detail={`${clock(f.departure_time)}–${clock(f.arrival_time)} · ${formatIDR(f.price)}`}
+            detail={`${clock(f.departure_time)}${f.origin_timezone ?? ""}–${clock(f.arrival_time)}${f.destination_timezone ?? ""} · ${formatIDR(f.price)}`}           
             action={
               used ? (
                 <Added

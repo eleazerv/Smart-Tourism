@@ -644,10 +644,10 @@ const HANDLERS = {
     return { month: target, cheapest_day: cheapest, days: days.slice(0, 31) };
   },
 
-  async search_flights_by_date({ origin_city_id, destination_city_id, date }) {
+async search_flights_by_date({ origin_city_id, destination_city_id, date }) {
     const { data, error } = await supabase
-      .from('flight_options')
-      .select('id, airline, flight_number, departure_time, arrival_time, price, available_seats')
+      .from('flight_options_enriched')
+      .select('id, airline, flight_number, departure_time, arrival_time, price, available_seats, origin_timezone, destination_timezone, duration_minutes')
       .eq('origin_city_id', origin_city_id)
       .eq('destination_city_id', destination_city_id)
       .gte('departure_time', maxTimestamp(`${date}T00:00:00`, nowLocalTimestamp()))
@@ -659,7 +659,7 @@ const HANDLERS = {
 
     if (!data.length) return { date, message: 'Tidak ada penerbangan pada tanggal ini.' };
     return { date, flights: data };
-  },
+},
 
   async get_events({ month, city_id, province_id }) {
     let q = supabase

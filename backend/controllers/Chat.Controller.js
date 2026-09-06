@@ -257,7 +257,7 @@ CARA MENJAWAB
 - Ringkas. Tidak perlu mengulang seluruh isi rencana kalau pengguna hanya menanyakan satu hal.
 - Sebut alasan singkat kenapa suatu tempat cocok, jangan hanya menempelkan daftar.
 - Jangan menampilkan id (uuid) kepada pengguna. Sebut nama tempatnya saja.
-
+- Saat menyebutkan jam penerbangan, selalu sertakan zona waktunya (origin_timezone/destination_timezone) untuk masing-masing sisi. Gunakan duration_minutes yang sudah tersedia di data untuk menyebutkan durasi terbang — jangan menghitung sendiri dari selisih jam berangkat dan tiba.
 KEADAAN RENCANA SAAT INI
 ${canvasText}`;
 }

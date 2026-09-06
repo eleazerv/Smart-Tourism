@@ -1,17 +1,21 @@
 import { supabase } from "../lib/supabase.js";
 
 const FLIGHT_FIELDS = `
-    id, origin_city_id, destination_city_id, airline, flight_number,
+    id, origin_city_id, destination_city_id,
+    origin_airport_code, destination_airport_code,
+    origin_timezone, destination_timezone, duration_minutes,
+    airline, flight_number,
     departure_time, arrival_time, price, available_seats, currency
 `;
- 
+
 const FLIGHT_DETAIL_FIELDS = `
     id, airline, flight_number, departure_time, arrival_time,
     price, available_seats, currency,
+    origin_airport_code, destination_airport_code,
+    origin_timezone, destination_timezone, duration_minutes,
     origin:origin_city_id ( id, name, provinces ( id, code, name ) ),
     destination:destination_city_id ( id, name, provinces ( id, code, name ) )
 `;
-
 const pad = (n) => String(n).padStart(2, '0');
  
 
@@ -127,7 +131,7 @@ export const getFlightsByDate = async (req, res) => {
         const rangeEnd = `${date}T23:59:59`;
  
         const { data, error } = await supabase
-            .from('flight_options')
+            .from('flight_options_enriched')
             .select(FLIGHT_FIELDS)
             .eq('origin_city_id', origin_city_id)
             .eq('destination_city_id', destination_city_id)
@@ -168,7 +172,7 @@ export const searchFlightsByCode = async (req, res) => {
         }
 
         let query = supabase
-            .from('flight_options')
+            .from('flight_options_enriched')            
             .select(FLIGHT_DETAIL_FIELDS)
             .ilike('flight_number', flight_number.trim())
             .order('departure_time', { ascending: true });
@@ -218,7 +222,7 @@ export const getFlightById = async (req, res) => {
         const flightId = req.params.id;
  
         const { data, error } = await supabase
-            .from('flight_options')
+            .from('flight_options_enriched')
             .select(FLIGHT_DETAIL_FIELDS)
             .eq('id', flightId)
             .maybeSingle();

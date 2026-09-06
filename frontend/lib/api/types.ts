@@ -212,6 +212,9 @@ export type FlightOption = {
   price: number;
   available_seats: number;
   currency: string;
+  origin_timezone?: string;
+  destination_timezone?: string;
+  duration_minutes?: number;
 };
 
 /** `GET /api/flights/:id` joins the two cities that the list only keys by id. */
@@ -423,6 +426,9 @@ export type PlannerFlightOption = {
   arrival_time: string;
   price: number;
   available_seats: number;
+  origin_timezone?: string;
+  destination_timezone?: string;
+  duration_minutes?: number;
 };
 
 export type InteractiveBlock =

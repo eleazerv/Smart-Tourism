@@ -16,6 +16,7 @@ import { ChatColumn } from "@/components/planner/chat-column";
 import { PlanPanel } from "@/components/planner/plan-panel";
 import {
   ApiError,
+  listCities,
   addTripItem,
   checkoutTrip,
   createChatRoom,
@@ -28,6 +29,7 @@ import {
   setTripFlight,
   updateTripItem,
   updateTripStop,
+  type City,
   type ChatMessage,
   type ChatRoom,
   type PlannerFlightOption,
@@ -48,6 +50,7 @@ export function PlannerWorkspace() {
   const [tripId, setTripId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [canvas, setCanvas] = useState<TripCanvas | null>(null);
+  const [cities, setCities] = useState<City[]>([]);
 
   const [loading, setLoading] = useState(true);
   const [sending, setSending] = useState(false);
@@ -86,6 +89,17 @@ export function PlannerWorkspace() {
       }
     })();
   }, [auth, report]);
+
+
+useEffect(() => {
+  (async () => {
+    try {
+      setCities(await listCities());
+    } catch {
+      // Kartu penerbangan tetap jalan tanpa pencocokan provinsi kalau ini gagal.
+    }
+  })();
+}, []);
 
   const openRoom = useCallback(
     async (id: string) => {
@@ -420,6 +434,7 @@ export function PlannerWorkspace() {
         )}
         <div className="min-h-0 flex-1">
           <ChatColumn
+            cities={cities}
             messages={messages}
             canvas={canvas}
             sending={sending}
