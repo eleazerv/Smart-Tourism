@@ -36,25 +36,33 @@ export function StaySearchPanel({
   const [guests, setGuests] = useState(state.guests);
   const [rooms, setRooms] = useState(state.rooms);
 
-  /** Moving the arrival past the departure drags the departure with it. */
+  /**
+   * Moving the arrival past the departure drags the departure with it — and
+   * picking a first arrival seeds a one-night stay, so the reader is never
+   * left with half a date range.
+   */
   const chooseCheckIn = (date: string) => {
     setCheckIn(date);
-    if (date >= checkOut) setCheckOut(addDaysISO(date, 1));
+    if (checkOut === null || date >= checkOut) setCheckOut(addDaysISO(date, 1));
   };
 
   function submit(event: React.FormEvent) {
     event.preventDefault();
-    router.push(
-      withFilter(state, {
-        cityId,
-        checkIn,
-        // A checkout that is not after the checkin is meaningless; nudge it
-        // rather than refusing the search.
-        checkOut: checkOut > checkIn ? checkOut : addDaysISO(checkIn, 1),
-        guests,
-        rooms,
-      }),
-    );
+
+    // The dates travel as a pair or not at all: half a range prices nothing,
+    // and the parser drops it anyway.
+    const dated =
+      checkIn !== null
+        ? {
+            checkIn,
+            checkOut:
+              checkOut !== null && checkOut > checkIn
+                ? checkOut
+                : addDaysISO(checkIn, 1),
+          }
+        : { checkIn: null, checkOut: null };
+
+    router.push(withFilter(state, { cityId, ...dated, guests, rooms }));
   }
 
   return (

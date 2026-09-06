@@ -39,18 +39,40 @@ const SORT_KEYS = SORTS.map((sort) => sort.key) as readonly SortKey[];
 /** Nightly-rate ceilings offered in the sidebar. */
 export const PRICE_CAPS = [500_000, 1_000_000, 2_000_000, 5_000_000] as const;
 
+/** Ceilings the party picker offers and the parser enforces. */
+export const MAX_GUESTS = 12;
+export const MAX_ROOMS = 6;
+
 export type StaySearchState = {
   cityId: number | null;
-  /** `YYYY-MM-DD`. */
-  checkIn: string;
-  checkOut: string;
-  guests: number;
-  rooms: number;
+  /**
+   * `YYYY-MM-DD`, or null while the reader has not said when.
+   *
+   * Nothing is assumed on their behalf: a stay nobody has dated cannot be
+   * priced or checked for availability, and quietly inventing a week-from-now
+   * default would put a total on screen that the reader never asked for.
+   */
+  checkIn: string | null;
+  /** Always strictly after `checkIn` when both are set. */
+  checkOut: string | null;
+  /** Null until the reader states the party size. */
+  guests: number | null;
+  rooms: number | null;
   tiers: AccommodationTier[];
   maxPrice: number | null;
   sort: SortKey;
   page: number;
 };
+
+/** A search whose stay is fully dated — the only kind that can be priced. */
+export type DatedStaySearch = StaySearchState & {
+  checkIn: string;
+  checkOut: string;
+};
+
+export function hasStayDates(state: StaySearchState): state is DatedStaySearch {
+  return state.checkIn !== null && state.checkOut !== null;
+}
 
 export type RawSearchParams = Record<string, string | string[] | undefined>;
 
@@ -70,51 +92,24 @@ function parseList(value: string | string[] | undefined): string[] {
   ];
 }
 
-function toISODate(date: Date): string {
-  return date.toISOString().slice(0, 10);
-}
-
-function addDays(date: Date, days: number): Date {
-  const copy = new Date(date);
-  copy.setDate(copy.getDate() + days);
-  return copy;
-}
-
-/**
- * A week out, for two nights — the same "sometime soon" default every booking
- * form opens with. Computed from the server clock and threaded through as
- * state, so the form and the results always agree on the dates.
- */
-export function defaultDates(now = new Date()) {
-  return {
-    checkIn: toISODate(addDays(now, 7)),
-    checkOut: toISODate(addDays(now, 9)),
-  };
-}
-
 const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
 
-export function parseStaySearch(
-  params: RawSearchParams,
-  now = new Date(),
-): StaySearchState {
-  const fallback = defaultDates(now);
-
+export function parseStaySearch(params: RawSearchParams): StaySearchState {
   const rawIn = firstValue(params.checkin);
   const rawOut = firstValue(params.checkout);
-  const checkIn = ISO_DATE.test(rawIn) ? rawIn : fallback.checkIn;
-  // A checkout on or before the checkin would make the stay zero nights long,
-  // so an out-of-order pair falls back to one night after the arrival.
-  const checkOut =
-    ISO_DATE.test(rawOut) && rawOut > checkIn
+
+  // The dates only mean anything as a pair: a lone arrival prices no nights,
+  // and a departure that is not after it describes no stay at all. A partial
+  // pair is dropped rather than repaired, so "not chosen yet" stays honest.
+  const arrival = ISO_DATE.test(rawIn) ? rawIn : null;
+  const departure =
+    arrival !== null && ISO_DATE.test(rawOut) && rawOut > arrival
       ? rawOut
-      : checkIn >= fallback.checkOut
-        ? toISODate(addDays(new Date(checkIn), 2))
-        : fallback.checkOut;
+      : null;
+  const checkIn = departure === null ? null : arrival;
 
   // `Number("")` is 0, not NaN, so an absent parameter has to be caught before
-  // the conversion — otherwise "no guests given" clamps to 1 instead of the
-  // default 2.
+  // the conversion — otherwise "no guests given" would read as a real 0.
   const number = (value: string | string[] | undefined): number | null => {
     const raw = firstValue(value);
     if (raw === "") return null;
@@ -122,9 +117,10 @@ export function parseStaySearch(
     return Number.isFinite(parsed) ? parsed : null;
   };
 
+  const clamp = (value: number | null, max: number): number | null =>
+    value !== null && value >= 1 ? Math.min(Math.floor(value), max) : null;
+
   const cityId = number(params.city);
-  const guests = number(params.guests);
-  const rooms = number(params.rooms);
   const maxPrice = number(params.maxprice);
   const page = number(params.page);
   const sort = firstValue(params.sort) as SortKey;
@@ -134,9 +130,9 @@ export function parseStaySearch(
   return {
     cityId: cityId !== null && cityId > 0 ? cityId : null,
     checkIn,
-    checkOut,
-    guests: guests === null ? 2 : Math.min(Math.max(guests, 1), 12),
-    rooms: rooms === null ? 1 : Math.min(Math.max(rooms, 1), 6),
+    checkOut: departure,
+    guests: clamp(number(params.guests), MAX_GUESTS),
+    rooms: clamp(number(params.rooms), MAX_ROOMS),
     tiers: parseList(params.tier).filter((entry): entry is AccommodationTier =>
       tierValues.includes(entry),
     ),
@@ -146,16 +142,19 @@ export function parseStaySearch(
   };
 }
 
-export function toHref(state: StaySearchState, now = new Date()): string {
-  const fallback = defaultDates(now);
+/**
+ * Every set field, and nothing else. An unset date or party size leaves no
+ * parameter behind, so a bare `/hotels` really is a search nobody has filled
+ * in yet — which is what the pickers read to decide their placeholders.
+ */
+export function toHref(state: StaySearchState): string {
   const params = new URLSearchParams();
 
   if (state.cityId !== null) params.set("city", String(state.cityId));
-  if (state.checkIn !== fallback.checkIn) params.set("checkin", state.checkIn);
-  if (state.checkOut !== fallback.checkOut)
-    params.set("checkout", state.checkOut);
-  if (state.guests !== 2) params.set("guests", String(state.guests));
-  if (state.rooms !== 1) params.set("rooms", String(state.rooms));
+  if (state.checkIn !== null) params.set("checkin", state.checkIn);
+  if (state.checkOut !== null) params.set("checkout", state.checkOut);
+  if (state.guests !== null) params.set("guests", String(state.guests));
+  if (state.rooms !== null) params.set("rooms", String(state.rooms));
   if (state.tiers.length) params.set("tier", state.tiers.join(","));
   if (state.maxPrice !== null) params.set("maxprice", String(state.maxPrice));
   if (state.sort !== "rekomendasi") params.set("sort", state.sort);
@@ -170,34 +169,46 @@ export function toHref(state: StaySearchState, now = new Date()): string {
  * availability check there answers for the stay the reader was planning. The
  * facets and paging are deliberately left behind — they describe the list.
  */
-export function stayHref(
-  state: StaySearchState,
-  id: string,
-  now = new Date(),
-): string {
-  const fallback = defaultDates(now);
+export function stayHref(state: StaySearchState, id: string): string {
   const params = new URLSearchParams();
 
-  if (state.checkIn !== fallback.checkIn) params.set("checkin", state.checkIn);
-  if (state.checkOut !== fallback.checkOut)
-    params.set("checkout", state.checkOut);
-  if (state.guests !== 2) params.set("guests", String(state.guests));
-  if (state.rooms !== 1) params.set("rooms", String(state.rooms));
+  if (state.checkIn !== null) params.set("checkin", state.checkIn);
+  if (state.checkOut !== null) params.set("checkout", state.checkOut);
+  if (state.guests !== null) params.set("guests", String(state.guests));
+  if (state.rooms !== null) params.set("rooms", String(state.rooms));
 
   const query = params.toString();
   return query ? `/hotels/${id}?${query}` : `/hotels/${id}`;
+}
+
+/**
+ * Checkout for one property. Only reachable from a dated search — there is
+ * nothing to reserve, price, or invoice until the nights are known, which the
+ * type makes the caller prove rather than re-check at runtime.
+ *
+ * Unlike `stayHref` this always writes all four values out, so the checkout
+ * never has to fall back to anything.
+ */
+export function stayBookingHref(state: DatedStaySearch, id: string): string {
+  const params = new URLSearchParams({
+    checkin: state.checkIn,
+    checkout: state.checkOut,
+    guests: String(state.guests ?? 1),
+    rooms: String(state.rooms ?? 1),
+  });
+  return `/hotels/${id}/pesan?${params.toString()}`;
 }
 
 /** Href for a state with `patch` applied; anything but paging resets to page 1. */
 export function withFilter(
   state: StaySearchState,
   patch: Partial<StaySearchState>,
-  now = new Date(),
 ): string {
-  return toHref(
-    { ...state, ...patch, page: "page" in patch ? (patch.page ?? 1) : 1 },
-    now,
-  );
+  return toHref({
+    ...state,
+    ...patch,
+    page: "page" in patch ? (patch.page ?? 1) : 1,
+  });
 }
 
 function toggle<T>(list: T[], value: T): T[] {
@@ -209,18 +220,19 @@ function toggle<T>(list: T[], value: T): T[] {
 export function withTierToggled(
   state: StaySearchState,
   tier: AccommodationTier,
-  now = new Date(),
 ) {
-  return withFilter(state, { tiers: toggle(state.tiers, tier) }, now);
+  return withFilter(state, { tiers: toggle(state.tiers, tier) });
 }
 
 export function activeFilterCount(state: StaySearchState): number {
   return state.tiers.length + (state.maxPrice !== null ? 1 : 0);
 }
 
-/** Whole nights between the searched dates; at least one. */
-export function nightCount(state: StaySearchState): number {
-  return nightsBetween(state.checkIn, state.checkOut);
+/** Whole nights between the searched dates, or null while they are unset. */
+export function nightCount(state: StaySearchState): number | null {
+  return hasStayDates(state)
+    ? nightsBetween(state.checkIn, state.checkOut)
+    : null;
 }
 
 /* ------------------------------------------------------- result shaping --- */
@@ -238,10 +250,12 @@ export function applyFilters(
     if (state.maxPrice !== null && stay.price_per_night > state.maxPrice)
       return false;
     // `max_guests` is per room, so the party has to fit across the rooms asked
-    // for. A row with no capacity recorded is not excluded on a guess.
+    // for. A row with no capacity recorded is not excluded on a guess, and
+    // neither is anything at all until the reader states a party size.
     if (
+      state.guests !== null &&
       stay.max_guests !== null &&
-      stay.max_guests * state.rooms < state.guests
+      stay.max_guests * (state.rooms ?? 1) < state.guests
     )
       return false;
     return true;
